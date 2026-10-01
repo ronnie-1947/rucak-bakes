@@ -1,1 +1,258 @@
 @AGENTS.md
+
+# CLAUDE.md
+
+Guidance for Claude Code when working in **sabiha-bakery**.
+
+## Commands
+
+| Script | Command |
+|---|---|
+| `pnpm dev` | `next dev` |
+| `pnpm build` | `next build` |
+| `pnpm start` | `next start` |
+| `pnpm lint` | `eslint` |
+
+Dev server runs on http://localhost:3000. Package manager: pnpm.
+
+## Stack
+
+- **Next.js 16.3.8** — App Router. If this version is newer than your
+  training data, read the bundled docs in `node_modules/next/dist/docs/`
+  (`01-app/`, `03-architecture/`) before writing non-trivial App Router code.
+- **React 19.2.8**
+- **Tailwind CSS 4.3.3** — config-light, no `tailwind.config.*`;
+  theme tokens live in `src/app/globals.css` under `@theme`.
+- **TypeScript 5.9.3**, `strict: true`. Path alias `@/*` → `./src/*`.
+
+## Deployment
+
+Hosted on Vercel. `next/image` optimization and server actions are handled by the
+platform with no extra configuration. Do not set `output: "export"` — it disables
+both.
+
+## Performance budget (mobile)
+
+Heavy below-the-fold code is lazy-mounted behind an IntersectionObserver gate —
+`src/components/ui/LazyOnView.tsx`.
+
+No `LazyOnView` usages yet.
+
+When adding a heavy widget below the fold (maps, charts, embeds, large forms,
+third-party scripts), use `next/dynamic(..., { ssr: false })` **wrapped in
+`LazyOnView`** rather than a bare client import. If the widget has a deep-link
+anchor, the `id` goes on the `LazyOnView` wrapper so the scroll target exists at
+first paint.
+
+→ `/lazy-widget <Component>` performs the split. Details: the
+`arkriti-nextjs-kit:nextjs-static-i18n` skill.
+
+## Layout
+
+```
+src/
+  app/
+    layout.tsx          the one root layout
+    page.tsx            homepage (source locale)
+    globals.css         @theme tokens
+    favicon.ico
+    actions/            server actions
+    sections/           landing bands (colocated, never a route)
+  components/
+    ui/
+      Button.tsx
+      Container.tsx
+      LazyOnView.tsx
+      icons/
+  content/
+    en.json
+  hooks/
+  lib/
+    content.ts          localePath / localeAlternates / htmlLang
+    i18n.ts             locales, defaultLocale, getDictionary
+public/
+```
+
+→ Which directory a new file belongs in, and what its folder is called, is
+defined in the `arkriti-nextjs-kit:project-conventions` skill. Read its placement
+table before creating a file. Every component folder is kebab-case; every `.tsx`
+inside it is PascalCase.
+
+**There is no `src/app/<route>/components/` folder in this project, and there
+must never be one.** A route directory holds `page.tsx`, its locale siblings, and
+server-only data modules — nothing that renders.
+
+Components live in exactly two trees:
+
+| Tree | Holds |
+| --- | --- |
+| `src/app/sections/` | landing bands — see **Section groups** below |
+| `src/components/` | everything else: leaf primitives in `ui/`, and each composed major component as its own kebab-case folder holding the parts that make it up |
+
+`src/app/sections/` is the **only** component tree under `src/app/`, and it is
+not a route: App Router creates a URL only for a folder containing `page.tsx` or
+`route.ts`, and nothing under `sections/` ever contains either. Never add one
+there — it would turn a component folder into a URL.
+
+A part earns its place in a folder by being used nowhere else; the moment
+something outside imports it, promote it to `ui/` or to its own folder.
+
+### Section groups
+
+A band that exists **only for one page** lives in that page's group — a folder
+under `sections/` named after the page:
+
+```
+src/app/sections/
+  sessions/                 group, named for the page it serves
+    README.md               index: the bands, in render order
+    intro/
+      Intro.tsx
+      README.md
+    quote/
+      Quote.tsx
+      README.md
+  pricing/                  ungrouped: more than one page imports it
+    Pricing.tsx
+    README.md
+```
+
+- **Never prefix sibling folder names to express the grouping.**
+  `sessions-intro/` beside `sessions-quote/` is a naming convention standing in
+  for a structural one. If a prefix repeats across siblings, that prefix is the
+  group.
+- **Exactly one group level.** `sections/<group>/<band>/`, never a third. Inside
+  a band folder, files are flat.
+- **A group is a namespace, not a component** — section folders and its own
+  `README.md`, no `.tsx` of its own. One component that renders every band would
+  be a major component under `src/components/`.
+- **Promote, don't duplicate.** When a second page starts importing a grouped
+  band, move it up to `src/app/sections/<band>/` — folder, README, and dict key
+  together, in one change.
+- **One group serves every locale.** Locale routes import the same entries.
+- **The dict mirrors the folders** — `dict.sessions.intro`, not
+  `dict.sessionsIntro`. The page passes each band only its own slice.
+
+→ `/new-section <Page>/<Name>` creates a grouped band; `/new-section <Name>`
+creates an ungrouped one. Details: §3.1 of the
+`arkriti-nextjs-kit:project-conventions` skill.
+
+## Routing & i18n
+
+Locales: `["en"]`. Source locale: **en**.
+
+The source locale owns the bare route; every other locale is a **literal trailing
+segment**:
+
+| Locale | File | URL |
+|---|---|---|
+| en | `src/app/<route>/page.tsx` | `/<route>` |
+| — none (single-locale project) | `src/app/<route>/<locale>/page.tsx` | `/<route>/<locale>` |
+
+Homepages are the exception: `/` and `/<locale>`. With one locale, every route
+is bare — add a locale to `locales` and a `src/content/<locale>.json` before
+creating any sibling segment.
+
+- `src/lib/i18n.ts` owns `locales`, `defaultLocale`, and the dictionary getter
+  **`getDictionary`** (async).
+- `src/lib/content.ts` provides `localePath`, `localeAlternates`, and `htmlLang`.
+  Use these rather than concatenating locale paths by hand.
+- **No `[lang]` dynamic segment, no locale prefix, no locale route groups, and no
+  `generateStaticParams` for a language param.** The suffix pattern is what keeps
+  every route statically pre-rendered at a literal on-disk path.
+- **One root layout for every locale.** Only a root layout may render `<html>`,
+  so it declares one `lang` — the source locale's. Every page re-declares its own
+  on its outermost element: `<div lang={htmlLang(locale)} className="contents">`.
+- Components receive copy through a `dict` prop. A section must **never** import
+  a content JSON directly.
+
+→ `/new-page <slug>` scaffolds one route per locale. `/i18n-add <key> …` adds a
+key to every locale file atomically. Details: the
+`arkriti-nextjs-kit:project-conventions` and `i18n-content` skills.
+
+## Conventions
+
+- **Server Components by default.** `"use client"` only when a component
+  genuinely needs browser APIs, state, or event handlers — and keep it as low in
+  the tree as possible.
+- **Fully static.** Every route pre-renders. No runtime content fetching — copy
+  resolves from `src/content/*.json` at build time. Server actions live in
+  `src/app/actions/` and are the exception, not the rule.
+  *Project note:* this app also reads orders, menu days, and settings from
+  Postgres (admin screens, cart revalidation, the order pipeline). The static
+  rule governs **copy**; application data is server truth, read at request time.
+  See `dev-docs/implementation.md`.
+- **No hardcoded user-facing text.** Every string lives in a locale file and
+  reaches the component through `dict`.
+- **Tailwind only.** No inline `style={{}}`. Use `@theme` tokens over raw hex.
+- **App Router only.** Never introduce a `pages/` directory.
+
+→ Details: the `arkriti-nextjs-kit:nextjs-static-i18n` and `i18n-content` skills.
+
+## Component splitting
+
+One component per file — strictly. No nested component definitions, no anonymous
+JSX helpers returning markup, and an explicit typed props interface on every
+component. Prefer over-splitting.
+
+Sections and major components compose primitives from `src/components/ui/` and
+must not redefine button styles, card chrome, or popover behavior locally. A
+design that wants a new button look gets a new **variant** in `Button.tsx`'s
+typed class map, never a second button component.
+
+Every section and every major composed component ships a `README.md`, written in
+the same change as the code and kept in sync with it — its **Files in this
+folder** section is what makes a flat folder of eight parts readable. Every
+section group ships one too, as a short index of its bands in render order. Leaf
+primitives in `src/components/ui/` do not.
+
+**A page never composes parts.** If a route's `page.tsx` imports more than one
+rendering component that is not a section, a major component is missing: create
+`src/components/<kebab-name>/`, put the composition in its entry file, and let
+the page import that one entry. Stacking a group's band entries in visual order
+is the exception — that is a page doing its job.
+
+→ `/new-section`, `/new-component`, `/new-ui-primitive`. Details: the
+`arkriti-nextjs-kit:component-architecture` skill, and the README template in
+`project-conventions/references/`.
+
+## Code Style
+
+- **No semicolons.**
+- **2-space indentation.**
+- **150-character print width.**
+- Style variants use a typed class map (`Record<Variant, string>`), not
+  conditional string concatenation.
+
+→ Details: the `arkriti-nextjs-kit:code-style` skill.
+
+## Responsive Design & Breakpoints
+
+Breakpoints come from `@theme` in `src/app/globals.css` — Tailwind is
+config-light, so those tokens *are* the scale. This project extends the default
+on both ends.
+
+| Token | Width | Source |
+|---|---|---|
+| `xxxs` | 20rem / 320px | custom |
+| `xxs` | 23.43rem / 375px | custom |
+| `xs` | 30rem / 480px | custom |
+| `sm` | 40rem / 640px | Tailwind default |
+| `md` | 48rem / 768px | Tailwind default |
+| `lg` | 64rem / 1024px | Tailwind default |
+| `xl` | 80rem / 1280px | Tailwind default |
+| `2xl` | 100rem / 1600px | overridden (default 96rem) |
+| `3xl` | 120rem / 1920px | custom |
+
+- **Mobile-first.** Author base styles at the smallest token and enhance upward.
+- **Don't skip the small custom breakpoints.** Buttons, navs, hero copy, and
+  grids must stay legible and tappable at 320px, with touch targets ≥ 44px.
+- **Design for the large end too** — cap line lengths, scale type, and widen
+  gutters so content isn't sparse at 1600px+.
+- **`Container.tsx` is the single source of truth** for max-width and horizontal
+  gutters. Extend it there; never re-declare `max-w-*` + `px-*` in a section.
+- Changing a breakpoint means editing the `--breakpoint-*` tokens in
+  `globals.css`.
+
+→ `/responsive-audit <Component>` sweeps the full scale. Details: the
+`arkriti-nextjs-kit:responsive-breakpoints` skill.

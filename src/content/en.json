@@ -1,0 +1,15 @@
+{
+  "meta": {
+    "home": {
+      "title": "Sabiha Bakery",
+      "description": "Order fresh bread, pastries and cakes from Sabiha Bakery for pickup. Pay in person when you collect."
+    }
+  },
+  "nav": {
+    "home": "Home",
+    "languageSwitch": "Language"
+  },
+  "footer": {
+    "copyright": "© Sabiha Bakery"
+  }
+}
