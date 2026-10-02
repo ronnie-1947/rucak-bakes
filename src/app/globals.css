@@ -1,15 +1,78 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * Design system — dev-docs/implementation.md §2. LOCKED.
+ *
+ * Tailwind's default palette, radius, type, weight and shadow scales are reset, so an
+ * off-system class (bg-orange-500, rounded-lg, text-sm, shadow-md) generates nothing
+ * instead of quietly drifting from the spec. Spacing keeps Tailwind's 4px base — use
+ * only 1 / 2 / 3 / 4 / 6 / 8 / 12 (4 / 8 / 12 / 16 / 24 / 32 / 48px).
+ */
+@theme {
+  /* Colour — runbook token names in the comments */
+  --color-*: initial;
+  --color-background: #ffffff;    /* --bg: page AND card surfaces — no off-white anywhere */
+  --color-sunken: #f9fafb;        /* strips, table headers, placeholders, empty states */
+  --color-border: #e5e7eb;
+  --color-border-strong: #d1d5db;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-foreground: #1f2937;    /* --text */
+  --color-muted: #6b7280;
+  --color-subtle: #9ca3af;
+
+  --color-o500: #f97316;          /* LARGE WARM FILLS ONLY — 2.8:1 on white, never under white text */
+  --color-o700: #c2410c;          /* ANYTHING TAPPED OR READ — button fills, links, prices (5.2:1) */
+  --color-o200: #fed7aa;
+  --color-o50: #fff7ed;
+
+  --color-green: #15803d;
+  --color-green-soft: #f0fdf4;
+  --color-red: #b91c1c;
+  --color-red-soft: #fef2f2;
+
+  --color-sidebar: #1f2937;       /* admin sidebar fill, white text */
+  --color-scrim: rgb(17 24 39 / 0.4);
+
+  /* Type — H1 24/30 · H2 19/26 · Body 16/24 or 15/22 · Small 14/20 or 13/18 · Micro 12/16 */
+  --text-*: initial;
+  --text-h1: 1.5rem;
+  --text-h1--line-height: 1.875rem;
+  --text-h2: 1.1875rem;
+  --text-h2--line-height: 1.625rem;
+  --text-body: 1rem;                          /* customer body, day sheet */
+  --text-body--line-height: 1.5rem;
+  --text-body-admin: 0.9375rem;
+  --text-body-admin--line-height: 1.375rem;
+  --text-small: 0.875rem;
+  --text-small--line-height: 1.25rem;
+  --text-small-admin: 0.8125rem;
+  --text-small-admin--line-height: 1.125rem;
+  --text-micro: 0.75rem;                      /* pair with `uppercase` */
+  --text-micro--line-height: 1rem;
+  --text-micro--letter-spacing: 0.02em;
+
+  /* Inter 400/500/600, Fraunces 600 */
+  --font-weight-*: initial;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+
+  /* Radius */
+  --radius-*: initial;
+  --radius-chip: 0.5rem;          /* 8 — chips */
+  --radius-field: 0.5rem;         /* 8 — inputs */
+  --radius-button: 0.75rem;       /* 12 — buttons */
+  --radius-panel: 0.75rem;        /* 12 — admin cards */
+  --radius-card: 1rem;            /* 16 — customer cards */
+  --radius-sheet: 1.5rem;         /* 24 — hero, sheets */
+  --radius-pill: 999px;
+
+  /* Cards are a 1px border, never a shadow. This is for sticky bars, sheets and dialogs only. */
+  --shadow-*: initial;
+  --shadow-raised: 0 4px 12px rgb(17 24 39 / 0.07);
+
+  /* Motion — transform and opacity only. Controls: duration-150 ease-out. Sheets: duration-250 ease-sheet. */
+  --ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
 
   /* Extends the Tailwind default scale on both ends — see the responsive-breakpoints skill. */
 
@@ -25,7 +88,19 @@
   --breakpoint-3xl: 120rem;    /* 1920px — Full HD / ultra-wide */
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
+/* next/font sets these variables on <html>; `inline` makes the utilities read them directly. */
+@theme inline {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  :where(h1, h2, h3, h4, h5, h6) {
+    font-family: var(--font-display);
+    font-weight: var(--font-weight-semibold);
+  }
 }

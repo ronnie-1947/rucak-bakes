@@ -9,9 +9,9 @@ export default async function Home() {
 
   return (
     <div lang={htmlLang(locale)} className="contents">
-      <Container as="main" className="flex flex-1 flex-col justify-center gap-4 py-16">
-        <h1 className="text-3xl font-semibold">{dict.meta.home.title}</h1>
-        <p className="max-w-prose text-base">{dict.meta.home.description}</p>
+      <Container as="main" className="flex flex-1 flex-col justify-center gap-4 py-12">
+        <h1 className="text-h1">{dict.meta.home.title}</h1>
+        <p className="max-w-prose text-muted">{dict.meta.home.description}</p>
       </Container>
     </div>
   )

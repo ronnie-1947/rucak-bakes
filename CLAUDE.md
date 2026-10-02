@@ -185,6 +185,11 @@ key to every locale file atomically. Details: the
 - **No hardcoded user-facing text.** Every string lives in a locale file and
   reaches the component through `dict`.
 - **Tailwind only.** No inline `style={{}}`. Use `@theme` tokens over raw hex.
+- **The design system is locked** (`dev-docs/implementation.md` §2). `globals.css` resets
+  Tailwind's default colour, radius, type, font-weight and shadow scales, so only its
+  tokens exist — `bg-o700`, `text-muted`, `rounded-card`, `text-body-admin`,
+  `shadow-raised`. A default class like `text-sm`, `rounded-lg` or `bg-orange-500`
+  silently generates nothing. Spacing keeps the 4px base: use only `1 2 3 4 6 8 12`.
 - **App Router only.** Never introduce a `pages/` directory.
 
 → Details: the `arkriti-nextjs-kit:nextjs-static-i18n` and `i18n-content` skills.

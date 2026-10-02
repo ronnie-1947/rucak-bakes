@@ -1,2 +1,7 @@
 allowBuilds:
   unrs-resolver: false
+  # Prisma: preinstall environment check, and the schema-engine binary download migrate needs
+  prisma: true
+  "@prisma/engines": true
+  # tsx's bundler: verifies its platform binary
+  esbuild: true

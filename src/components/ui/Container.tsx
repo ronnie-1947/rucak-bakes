@@ -17,8 +17,8 @@ const widths: Record<Width, string> = {
   wide: "max-w-none",
 }
 
-/** Gutters grow with the viewport so content never touches the edge at 320px or looks cramped at 1920px. */
-const gutters = "px-4 xxs:px-5 xs:px-6 sm:px-8 lg:px-10 2xl:px-14 3xl:px-20"
+/** Design-system gutters (§2): 16px mobile, 24px tablet, 32px desktop. */
+const gutters = "px-4 md:px-6 lg:px-8"
 
 export function Container({ children, width = "default", as: Tag = "div", className }: ContainerProps) {
   return <Tag className={`mx-auto w-full ${widths[width]} ${gutters} ${className ?? ""}`}>{children}</Tag>

@@ -23,12 +23,7 @@ export function LazyOnView({ children, id, rootMargin = "600px", className, fall
     const node = ref.current
     if (!node) return
 
-    // No IntersectionObserver (old browser, some test envs) — render immediately rather than never.
-    if (typeof IntersectionObserver === "undefined") {
-      setShown(true)
-      return
-    }
-
+    // Every browser Next 16 supports (Safari 16.4+, Chromium/Firefox 111+) ships IntersectionObserver.
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting)) {
