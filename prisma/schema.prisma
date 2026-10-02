@@ -1,0 +1,232 @@
+// Nine models — dev-docs/implementation.md §4, Step 1.2.
+// Constraints, the order-code sequence, triggers and partial/trigram indexes the schema
+// language can't express live in the `constraints` migration.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+// The connection URL lives in prisma.config.ts (Prisma 7).
+datasource db {
+  provider = "postgresql"
+}
+
+enum OrderStatus {
+  PENDING
+  VERIFIED
+  READY
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum FulfilmentType {
+  PICKUP
+  DELIVERY
+}
+
+enum StaffRole {
+  OWNER
+  STAFF
+}
+
+model MenuItem {
+  id               String    @id @default(cuid())
+  slug             String    @unique
+  name             String
+  shortDescription String
+  about            String?
+  category         String? // MenuCategory.slug
+  basePricePaise   Int
+  priceUnit        String    @default("EACH") // EACH | PER_BOX | PER_KG | PER_SLICE
+  ingredients      String[]  @default([])
+  allergens        String[]  @default([]) // GLUTEN DAIRY EGGS NUTS PEANUTS SOY SESAME
+  images           String[]  @default([]) // Cloudinary public_ids, first = cover
+  defaultQuantity  Int       @default(10)
+  isActive         Boolean   @default(true)
+  archivedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  dayItems   MenuDayItem[]
+  orderItems OrderItem[]
+
+  @@index([isActive, archivedAt])
+  @@index([category])
+  @@map("menu_items")
+}
+
+model MenuCategory {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([isActive, sortOrder])
+  @@map("menu_categories")
+}
+
+model MenuDay {
+  id               String   @id @default(cuid())
+  date             DateTime @unique @db.Date
+  isOpen           Boolean  @default(true)
+  closureNote      String?
+  cutoffAt         DateTime // THE source of truth
+  cutoffTime       String   @default("18:00") // display only
+  cutoffDaysBefore Int      @default(1) // display only
+  maxOrders        Int      @default(10)
+  overbookLimit    Int      @default(15)
+  publicNote       String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  items  MenuDayItem[]
+  orders Order[]
+
+  @@index([date, isOpen])
+  @@map("menu_days")
+}
+
+model MenuDayItem {
+  id                 String    @id @default(cuid())
+  menuDayId          String
+  menuDay            MenuDay   @relation(fields: [menuDayId], references: [id], onDelete: Cascade)
+  menuItemId         String
+  menuItem           MenuItem  @relation(fields: [menuItemId], references: [id])
+  quantityAvailable  Int
+  quantityOrdered    Int       @default(0)
+  priceOverridePaise Int?
+  bakedAt            DateTime?
+
+  @@unique([menuDayId, menuItemId])
+  @@index([menuItemId])
+  @@map("menu_day_items")
+}
+
+model Customer {
+  id              String    @id @default(cuid())
+  phoneE164       String    @unique
+  name            String
+  address         String?
+  isTrusted       Boolean   @default(false)
+  isBlocked       Boolean   @default(false)
+  orderCount      Int       @default(0)
+  completedCount  Int       @default(0)
+  noShowCount     Int       @default(0)
+  totalSpentPaise Int       @default(0)
+  internalNote    String?
+  firstOrderAt    DateTime?
+  lastOrderAt     DateTime?
+  createdAt       DateTime  @default(now())
+
+  orders Order[]
+
+  @@index([lastOrderAt])
+  @@map("customers")
+}
+
+model Staff {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  name        String
+  role        StaffRole @default(STAFF)
+  googleSub   String?   @unique
+  isActive    Boolean   @default(true)
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  verified  Order[] @relation("OrderVerifiedBy")
+  cancelled Order[] @relation("OrderCancelledBy")
+
+  @@map("staff")
+}
+
+model Order {
+  id                 String         @id @default(cuid())
+  code               String         @unique
+  idempotencyKey     String         @unique
+  customerId         String
+  customer           Customer       @relation(fields: [customerId], references: [id])
+  menuDayId          String
+  menuDay            MenuDay        @relation(fields: [menuDayId], references: [id])
+  fulfilmentDate     DateTime       @db.Date
+  status             OrderStatus    @default(PENDING)
+  fulfilmentType     FulfilmentType @default(PICKUP)
+  customerName       String // SNAPSHOT
+  customerPhone      String // SNAPSHOT
+  deliveryAddress    String?
+  pickupTime         String?
+  subtotalPaise      Int
+  deliveryFeePaise   Int            @default(0)
+  totalPaise         Int
+  customerNote       String? // ALLERGIES LIVE HERE
+  internalNote       String?
+  isSuspected        Boolean        @default(false)
+  notificationFailed Boolean        @default(false)
+  verifiedAt         DateTime?
+  verifiedById       String?
+  verifiedBy         Staff?         @relation("OrderVerifiedBy", fields: [verifiedById], references: [id])
+  readyAt            DateTime?
+  completedAt        DateTime?
+  cancelledAt        DateTime?
+  cancelledById      String?
+  cancelledBy        Staff?         @relation("OrderCancelledBy", fields: [cancelledById], references: [id])
+  cancellationNote   String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  items OrderItem[]
+
+  @@index([fulfilmentDate, status])
+  @@index([customerId, createdAt])
+  @@index([menuDayId, status])
+  @@map("orders")
+}
+
+model OrderItem {
+  id             String   @id @default(cuid())
+  orderId        String
+  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId     String
+  menuItem       MenuItem @relation(fields: [menuItemId], references: [id])
+  name           String // SNAPSHOT
+  unitPricePaise Int // SNAPSHOT
+  quantity       Int
+  lineTotalPaise Int
+
+  @@index([orderId])
+  @@index([menuItemId])
+  @@map("order_items")
+}
+
+model Settings {
+  id                   Int       @id @default(1)
+  bakeryName           String    @default("Bakery")
+  tagline              String?
+  publicPhone          String?
+  pickupAddress        String?
+  openingHours         Json      @default("{}")
+  heroImage            String?
+  defaultMaxOrders     Int       @default(10)
+  defaultOverbook      Int       @default(15)
+  defaultCutoffTime    String    @default("18:00")
+  defaultCutoffDays    Int       @default(1)
+  orderAheadDays       Int       @default(7)
+  autoVerifyTrusted    Boolean   @default(false)
+  pickupEnabled        Boolean   @default(true)
+  deliveryEnabled      Boolean   @default(false)
+  deliveryFeePaise     Int       @default(0)
+  deliveryRadiusKm     Int?
+  telegramChatId       String?
+  telegramConnectedAt  DateTime?
+  announcement         String?
+  orderingPaused       Boolean   @default(false)
+  orderingPausedReason String?
+  timezone             String    @default("Asia/Kolkata")
+  updatedAt            DateTime  @updatedAt
+
+  @@map("settings")
+}
