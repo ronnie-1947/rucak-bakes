@@ -3,7 +3,7 @@
 import { useId, useState } from "react"
 import { Button } from "@/components/ui/Button"
 import { Notice } from "@/components/ui/Notice"
-import { inputClasses } from "@/components/ui/TextInput"
+import { inputShellClasses } from "@/components/ui/TextInput"
 import { fill } from "@/lib/template"
 import type { ItemCopy } from "./types"
 
@@ -30,10 +30,7 @@ export function SlugLine({ slug, savedSlug, onChange, error, dict }: SlugLinePro
             {dict.slugLabel}
           </label>
           <div
-            className={inputClasses(
-              Boolean(error),
-              "flex items-stretch overflow-hidden px-0 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-o700",
-            )}
+            className={inputShellClasses(error ? "invalid" : "valid")}
           >
             <span className="flex shrink-0 items-center border-r border-border bg-sunken px-2 font-mono text-small-admin text-muted">
               {dict.slugPrefix}

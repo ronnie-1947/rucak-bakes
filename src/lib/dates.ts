@@ -121,10 +121,38 @@ export function dayBounds(date: IsoDate, timeZone: string): { start: Date; end: 
 }
 
 const dayLabel = new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "short", day: "numeric", month: "short" })
+const longDayLabel = new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "long", day: "numeric", month: "short" })
+const weekdayName = new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "long" })
+const shortDate = new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", day: "numeric", month: "short" })
 
 /** "Sat 3 Oct" */
 export function formatDayLabel(date: IsoDate): string {
   return dayLabel.format(toDbDate(date))
+}
+
+/** "Sat 3" — inside a list where the month is already plain. */
+export function formatDayNumber(date: IsoDate): string {
+  return formatDayLabel(date).replace(/ \S+$/, "")
+}
+
+/** "Saturday 3 Oct" */
+export function formatLongDayLabel(date: IsoDate): string {
+  return longDayLabel.format(toDbDate(date))
+}
+
+/** "Saturday" */
+export function formatWeekday(date: IsoDate): string {
+  return weekdayName.format(toDbDate(date))
+}
+
+/** "3 Oct" */
+export function formatShortDate(date: IsoDate): string {
+  return shortDate.format(toDbDate(date))
+}
+
+/** The Monday of the week `date` falls in — the bakery plans Monday to Sunday. */
+export function weekStart(date: IsoDate): IsoDate {
+  return addDays(date, -((weekday(date) + 6) % 7))
 }
 
 /** "11:02" — an instant's wall-clock time in the bakery's timezone, 24-hour. */

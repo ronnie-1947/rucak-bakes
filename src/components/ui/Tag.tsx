@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 
-export type TagTone = "warm" | "green" | "red" | "neutral" | "quiet"
+export type TagTone = "warm" | "accent" | "green" | "red" | "neutral" | "quiet"
 
 type TagProps = {
   children: ReactNode
@@ -10,6 +10,8 @@ type TagProps = {
 
 const tones: Record<TagTone, string> = {
   warm: "border-o200 bg-o50 text-o700",
+  /** The large warm fill with ink text — a fact that changes what a customer pays ("Override ₹260"). */
+  accent: "border-o500 bg-o500 text-foreground",
   green: "border-green-soft bg-green-soft text-green",
   red: "border-red-soft bg-red-soft text-red",
   neutral: "border-border bg-sunken text-foreground",

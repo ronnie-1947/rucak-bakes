@@ -9,7 +9,7 @@ import { fill } from "@/lib/template"
 import { usageText } from "./copy"
 import { ItemMenu } from "./ItemMenu"
 import { ItemSwitch } from "./ItemSwitch"
-import { ItemThumb } from "./ItemThumb"
+import { ItemThumb } from "@/components/ui/ItemThumb"
 import type { AdminCopy } from "./types"
 
 type MenuRowProps = {

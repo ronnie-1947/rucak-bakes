@@ -19,7 +19,6 @@ admin-menu/
   MenuCard.tsx             "use client" — grid card (4:3 cover, footer with switch and ⋯ opening upward)
   MenuTable.tsx            list view from 1024px — table shell, header widths
   MenuTableRow.tsx         "use client" — one table row; the name links to the item
-  ItemThumb.tsx            56px photo square, picture glyph when none, photo-count pill
   ItemCover.tsx            the card's 4:3 cover — photo or "No photo", Inactive and "3 photos" markers
   ItemSwitch.tsx           "use client" — Switch (ui) wired to activate / deactivate
   ItemMenu.tsx             "use client" — ⋯ menu: Edit, Duplicate, Archive (red)
@@ -41,10 +40,10 @@ AdminMenu dict=dict.admin library filters
 │  ├─ SearchBox (ui) + ViewToggle × 1–2
 │  └─ ChipLink × categories | ChipLink × statuses | SortSelect
 ├─ MenuActionsProvider (src/components/menu-actions) — undo strip, dialogs
-│  ├─ ArchivedList > ItemThumb, RestoreButton
+│  ├─ ArchivedList > ItemThumb (ui), RestoreButton
 │  │  or EmptyState (.emptyAll + Add your first item | .emptySearch/.emptyFilters + Clear filters)
 │  │  or MenuBoard
-│  │     ├─ MenuRow × n   → ItemThumb, ItemMenu, ItemSwitch, SelectBox (ui)
+│  │     ├─ MenuRow × n   → ItemThumb (ui), ItemMenu, ItemSwitch, SelectBox (ui)
 │  │     ├─ MenuCard × n  → ItemCover, ItemMenu (up), ItemSwitch, SelectBox (ui)
 │  │     ├─ MenuTable > MenuTableRow × n
 │  │     └─ BulkBar (select mode)
@@ -62,7 +61,7 @@ AdminMenu dict=dict.admin library filters
 | `@/lib/menu/copy` | `priceText` |
 | `@/hooks/useMenuActions` | context: `request(kind, targets, onDone?)`, `pending`; `ItemTarget` |
 | `@/hooks/useDismiss` | ⋯ menu closes on outside press / Escape |
-| `@/components/ui/*` | `Button`/`buttonClasses`, `ButtonLink`, `Checkbox`, `ChipLink`, `Container`, `Dialog`, `EmptyState`, `Notice`, `SearchBox`, `SelectBox`, `Switch`, `Tag`, `Icon`, `CheckIcon`, `CloseIcon` |
+| `@/components/ui/*` | `Button`/`buttonClasses`, `ButtonLink`, `Checkbox`, `ChipLink`, `Container`, `Dialog`, `EmptyState`, `ItemThumb`, `Notice`, `SearchBox`, `SelectBox`, `Switch`, `Tag`, `Icon`, `CheckIcon`, `CloseIcon` |
 | `@/lib/cloudinary` · `@/lib/money` · `@/lib/template` | `imageUrl`, `formatPaise`, `fill` |
 
 External: `next/image` (Cloudinary URLs, `unoptimized` — Cloudinary already sizes and compresses), `next/link`, `next/navigation`.
@@ -81,7 +80,6 @@ SortSelect          { value; options: { value; label; href }[]; label; className
 MenuBoard           { dict: AdminCopy; items: MenuItemRow[]; view: ViewMode; selectMode; exitSelectHref }
 MenuRow / MenuCard / MenuTableRow { item; dict: AdminCopy; selectMode; checked; onToggle }
 MenuTable           { dict; selectMode; children }
-ItemThumb           { images; muted }
 ItemCover           { images; isActive; dict }
 ItemSwitch          { item; dict; className? }
 ItemMenu            { item; dict; direction?: "down" | "up" }

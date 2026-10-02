@@ -92,8 +92,9 @@ src/
     api/auth/[...nextauth]/route.ts
     sections/           landing bands (colocated, never a route)
   components/
-    ui/                 Button (+ ButtonLink), Checkbox, Chip(Link), Container, Dialog, EmptyState, LazyOnView, Notice, Rich,
-                        SearchBox (?q=), SelectBox (bulk tick), Spinner, Switch, Tag; form: Field, TextInput, Stepper
+    ui/                 Button (+ ButtonLink), Checkbox, Chip(Link), Container, Dialog, EmptyState, ItemThumb, LazyOnView, Meter,
+                        Notice, Rich, SearchBox (?q=), SelectBox (bulk tick), Spinner, StatusBadge, Switch, Tag;
+                        form: Field, TextInput (+ inputShellClasses), SelectField, Stepper
       icons/
     admin-login/        the /admin/login screen
     admin-shell/        sidebar / tab bar frame for /admin/(shell)
@@ -102,6 +103,9 @@ src/
     admin-menu/         the menu library (/admin/menu): list / grid / table, Active switch, archive, undo
     admin-menu-item/    the item form (/admin/menu/new, /admin/menu/[id]): photos, details, live preview
     menu-actions/       activate / deactivate / archive / restore / duplicate + confirms and the undo strip
+    admin-calendar/     the week planner (/admin/calendar): day cards with live controls, Copy last week, Apply to all days
+    admin-calendar-day/ the day editor (/admin/calendar/[date]): items, quantities, overrides, settings, customer preview
+    close-day-dialog/   the confirm naming a day's orders before it closes (both calendar screens)
   content/
     en.json
   hooks/                useOrderActions, useMenuActions (action contexts), useDismiss (popover close)
@@ -122,6 +126,8 @@ src/
     menu/               queries.ts (library read model), filters.ts (URL state), changes.ts (writes + undo snapshots),
                         item.ts (form read model), form.ts (form values + rules, client-safe), save.ts (form writes),
                         copy.ts, units.ts, allergens.ts
+    calendar/           week.ts / day.ts (read models), writes.ts (patchDay, applyToWeek, copyWeek, saveDay),
+                        form.ts (DayPlan + rules, client-safe), cutoffs.ts, copy-plan.ts (planWeekCopy), routes.ts
 public/
 ```
 

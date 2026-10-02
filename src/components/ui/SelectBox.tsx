@@ -7,6 +7,8 @@ type SelectBoxProps = {
   label: string
   /** `cover`: the input stretches over its positioned ancestor, so the whole card toggles. */
   cover?: boolean
+  /** Can't be changed — the label should say why ("3 ordered — it stays on this day"). */
+  disabled?: boolean
 }
 
 const hitAreas: Record<"cover" | "box", string> = {
@@ -21,13 +23,20 @@ const wrappers: Record<"cover" | "box", string> = {
 }
 
 /** The bulk-selection tick. A real checkbox (keyboard, screen readers) with the design's 22px box drawn beside it. */
-export function SelectBox({ checked, onChange, label, cover = false }: SelectBoxProps) {
+export function SelectBox({ checked, onChange, label, cover = false, disabled = false }: SelectBoxProps) {
   return (
     <span className={wrappers[cover ? "cover" : "box"]}>
-      <input type="checkbox" checked={checked} onChange={onChange} aria-label={label} className={`peer appearance-none ${hitAreas[cover ? "cover" : "box"]}`} />
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={onChange}
+        aria-label={label}
+        disabled={disabled}
+        className={`peer appearance-none disabled:cursor-default ${hitAreas[cover ? "cover" : "box"]}`}
+      />
       <span
         aria-hidden
-        className="pointer-events-none flex size-5 items-center justify-center rounded-chip border-2 border-border-strong bg-background text-background peer-checked:border-o700 peer-checked:bg-o700 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-o700"
+        className="pointer-events-none flex size-5 items-center justify-center rounded-chip border-2 border-border-strong bg-background text-background peer-checked:border-o700 peer-checked:bg-o700 peer-disabled:opacity-50 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-o700"
       >
         <CheckIcon className="size-3.5" />
       </span>

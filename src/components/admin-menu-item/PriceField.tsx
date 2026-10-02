@@ -2,7 +2,7 @@
 
 import { useId } from "react"
 import { Field } from "@/components/ui/Field"
-import { inputClasses } from "@/components/ui/TextInput"
+import { inputShellClasses } from "@/components/ui/TextInput"
 import type { ItemCopy } from "./types"
 
 type PriceFieldProps = {
@@ -19,10 +19,7 @@ export function PriceField({ value, onChange, error, required, dict }: PriceFiel
   return (
     <Field id={id} label={dict.price} tag={required} hint={dict.priceHint} error={error}>
       <div
-        className={inputClasses(
-          Boolean(error),
-          "flex items-stretch overflow-hidden px-0 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-o700",
-        )}
+        className={inputShellClasses(error ? "invalid" : "valid")}
       >
         <span aria-hidden className="flex w-9 shrink-0 items-center justify-center border-r border-border bg-sunken text-muted">
           ₹

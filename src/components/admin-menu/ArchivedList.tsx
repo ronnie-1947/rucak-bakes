@@ -1,7 +1,7 @@
 import { EmptyState } from "@/components/ui/EmptyState"
 import type { ArchivedItemRow } from "@/lib/menu/queries"
 import { archivedMeta } from "./copy"
-import { ItemThumb } from "./ItemThumb"
+import { ItemThumb } from "@/components/ui/ItemThumb"
 import { RestoreButton } from "./RestoreButton"
 import type { MenuCopy } from "./types"
 

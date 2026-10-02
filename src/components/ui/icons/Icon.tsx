@@ -27,6 +27,8 @@ const paths = {
   send: "M4 12 20 4l-6 16-3-7z",
   list: "M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01",
   grid: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
+  clock: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2",
+  lock: "M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4",
 } as const
 
 export type IconName = keyof typeof paths
