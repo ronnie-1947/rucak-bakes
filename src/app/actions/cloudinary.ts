@@ -2,11 +2,8 @@
 
 import { v2 as cloudinary } from "cloudinary"
 import { requireStaff } from "@/auth"
-import { CLOUDINARY_FOLDER, type UploadSignature } from "@/lib/cloudinary"
+import { CLOUDINARY_FOLDER, isOurPublicId, type UploadSignature } from "@/lib/cloudinary"
 import { prisma } from "@/lib/db"
-
-/** Auto-generated ids inside our folder — the only shape this app ever creates. */
-const PUBLIC_ID = new RegExp(`^${CLOUDINARY_FOLDER}/[A-Za-z0-9_-]+$`)
 
 function configure() {
   const { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } = process.env
@@ -34,7 +31,7 @@ export type DeleteImageResult = { ok: true } | { ok: false; reason: "INVALID" | 
  */
 export async function deleteImage(publicId: string): Promise<DeleteImageResult> {
   await requireStaff()
-  if (typeof publicId !== "string" || !PUBLIC_ID.test(publicId)) return { ok: false, reason: "INVALID" }
+  if (typeof publicId !== "string" || !isOurPublicId(publicId)) return { ok: false, reason: "INVALID" }
 
   const [items, heroes] = await Promise.all([
     prisma.menuItem.count({ where: { images: { has: publicId } } }),

@@ -2,31 +2,32 @@
 
 import { type ReactNode, useCallback, useMemo, useRef, useState, useTransition } from "react"
 import { archiveMenuItems, duplicateMenuItem, type MenuChangeResult, restoreMenuItem, setMenuItemsActive, undoMenuChange } from "@/app/actions/menu"
-import { Notice } from "@/components/ui/Notice"
 import { type ItemTarget, type MenuActionKind, MenuActionsContext, type MenuActionsApi } from "@/hooks/useMenuActions"
 import type { MenuSnapshot } from "@/lib/menu/changes"
+import { targetsLabel } from "@/lib/menu/copy"
 import { fill } from "@/lib/template"
 import { ArchiveDialog } from "./ArchiveDialog"
-import { targetsLabel } from "./copy"
 import { DeactivateDialog } from "./DeactivateDialog"
+import { MenuActionsStatus } from "./MenuActionsStatus"
 import type { MenuCopy } from "./types"
-import { UndoBar } from "./UndoBar"
 
 type MenuActionsProviderProps = {
   dict: MenuCopy
+  /** `top` renders the undo strip above the children; `manual` leaves it to a MenuActionsStatus inside them. */
+  statusPlacement?: "top" | "manual"
   children: ReactNode
 }
 
 type OpenDialog = { kind: "deactivate" | "archive"; targets: ItemTarget[] }
 
-type Undo = { text: string; snapshot: MenuSnapshot }
+type Undo = { text: string; snapshot: MenuSnapshot; link?: { href: string; label: string } }
 
 /**
  * Owns every change on the menu library: the confirm dialogs, the server actions, and the green undo
  * strip each change leaves behind. Rows, cards, the ⋯ menu and the bulk bar call useMenuActions().request().
  * The actions revalidate, so the list refreshes itself.
  */
-export function MenuActionsProvider({ dict, children }: MenuActionsProviderProps) {
+export function MenuActionsProvider({ dict, statusPlacement = "top", children }: MenuActionsProviderProps) {
   const [dialog, setDialog] = useState<OpenDialog | null>(null)
   const [undo, setUndo] = useState<Undo | null>(null)
   const [failed, setFailed] = useState(false)
@@ -40,7 +41,7 @@ export function MenuActionsProvider({ dict, children }: MenuActionsProviderProps
       if (kind === "activate") return fill(changed.activated, { label })
       if (kind === "archive") return fill(changed.archived, { label })
       if (kind === "restore") return fill(changed.restored, { label })
-      if (kind === "duplicate") return fill(changed.duplicated, { label: result.name ?? label })
+      if (kind === "duplicate") return fill(changed.duplicated, { label: result.copy?.name ?? label })
       if (result.removedDays === 0) return fill(changed.deactivated, { label })
       return fill(result.removedDays === 1 ? changed.deactivatedRemovedOne : changed.deactivatedRemoved, { label, count: result.removedDays })
     },
@@ -65,11 +66,12 @@ export function MenuActionsProvider({ dict, children }: MenuActionsProviderProps
           setFailed(true)
           return
         }
-        setUndo({ text: describe(kind, targets, result), snapshot: result.undo })
+        const link = result.copy ? { href: `/admin/menu/${result.copy.id}`, label: dict.openCopy } : undefined
+        setUndo({ text: describe(kind, targets, result), snapshot: result.undo, link })
         onDoneRef.current?.()
       })
     },
-    [describe],
+    [describe, dict],
   )
 
   const request = useCallback<MenuActionsApi["request"]>(
@@ -83,7 +85,7 @@ export function MenuActionsProvider({ dict, children }: MenuActionsProviderProps
     [run],
   )
 
-  const revert = () => {
+  const revert = useCallback(() => {
     if (!undo) return
     setFailed(false)
     startTransition(async () => {
@@ -91,14 +93,18 @@ export function MenuActionsProvider({ dict, children }: MenuActionsProviderProps
       if (result.ok) setUndo(null)
       else setFailed(true)
     })
-  }
+  }, [undo])
 
-  const api = useMemo(() => ({ request, pending }), [request, pending])
+  const dismiss = useCallback(() => setUndo(null), [])
+
+  const api = useMemo<MenuActionsApi>(
+    () => ({ request, pending, status: { undo: undo ? { text: undo.text, link: undo.link } : null, failed, revert, dismiss } }),
+    [request, pending, undo, failed, revert, dismiss],
+  )
 
   return (
     <MenuActionsContext.Provider value={api}>
-      {failed ? <Notice tone="error">{dict.failed}</Notice> : null}
-      {undo ? <UndoBar text={undo.text} dict={dict} pending={pending} onUndo={revert} onDismiss={() => setUndo(null)} /> : null}
+      {statusPlacement === "top" ? <MenuActionsStatus dict={dict} /> : null}
       {children}
       {dialog?.kind === "deactivate" ? (
         <DeactivateDialog

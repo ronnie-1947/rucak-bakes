@@ -43,6 +43,9 @@ model MenuItem {
   ingredients      String[]  @default([])
   allergens        String[]  @default([]) // GLUTEN DAIRY EGGS NUTS PEANUTS SOY SESAME
   images           String[]  @default([]) // Cloudinary public_ids, first = cover
+  imageAlts        String[]  @default([]) // alt text, parallel to images ("" = none)
+  sizeNote         String? // "About 900 g", shown on the item page
+  storageNote      String? // "Best on the day"
   defaultQuantity  Int       @default(10)
   isActive         Boolean   @default(true)
   archivedAt       DateTime?
@@ -125,6 +128,8 @@ model Customer {
   orders Order[]
 
   @@index([lastOrderAt])
+  // Created by the constraints migration; declared here so `migrate diff` stops wanting to drop it.
+  @@index([phoneE164(ops: raw("gin_trgm_ops"))], type: Gin, map: "customers_phone_trgm")
   @@map("customers")
 }
 

@@ -74,7 +74,7 @@ first paint.
 ```
 prisma/
   schema.prisma         the nine models
-  migrations/           init + constraints (raw SQL the schema can't express)
+  migrations/           init + constraints (raw SQL the schema can't express) + later additive ones
   seed.ts
 scripts/                one-off tsx scripts (telegram-test.ts)
 src/
@@ -93,13 +93,15 @@ src/
     sections/           landing bands (colocated, never a route)
   components/
     ui/                 Button (+ ButtonLink), Checkbox, Chip(Link), Container, Dialog, EmptyState, LazyOnView, Notice, Rich,
-                        SearchBox (?q=), SelectBox (bulk tick), Spinner, Switch, Tag …
+                        SearchBox (?q=), SelectBox (bulk tick), Spinner, Switch, Tag; form: Field, TextInput, Stepper
       icons/
     admin-login/        the /admin/login screen
     admin-shell/        sidebar / tab bar frame for /admin/(shell)
     admin-orders/       the orders queue;  admin-order-detail/  one order (page + 2xl pane)
     order-actions/      status changes + their confirm dialogs;  order-tag-list/  an order's fact tags
     admin-menu/         the menu library (/admin/menu): list / grid / table, Active switch, archive, undo
+    admin-menu-item/    the item form (/admin/menu/new, /admin/menu/[id]): photos, details, live preview
+    menu-actions/       activate / deactivate / archive / restore / duplicate + confirms and the undo strip
   content/
     en.json
   hooks/                useOrderActions, useMenuActions (action contexts), useDismiss (popover close)
@@ -118,7 +120,8 @@ src/
     orders/             status.ts (state machine), lifecycle.ts (transitions), place.ts (createOrder tx),
                         notify.ts, queries.ts (admin read models), filters.ts (queue URL state)
     menu/               queries.ts (library read model), filters.ts (URL state), changes.ts (writes + undo snapshots),
-                        units.ts (priceUnit domain)
+                        item.ts (form read model), form.ts (form values + rules, client-safe), save.ts (form writes),
+                        copy.ts, units.ts, allergens.ts
 public/
 ```
 

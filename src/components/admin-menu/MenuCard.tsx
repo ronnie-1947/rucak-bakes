@@ -2,9 +2,10 @@
 
 import Link from "next/link"
 import { SelectBox } from "@/components/ui/SelectBox"
+import { priceText } from "@/lib/menu/copy"
 import type { MenuItemRow } from "@/lib/menu/queries"
 import { fill } from "@/lib/template"
-import { priceText, usageText } from "./copy"
+import { usageText } from "./copy"
 import { ItemCover } from "./ItemCover"
 import { ItemMenu } from "./ItemMenu"
 import { ItemSwitch } from "./ItemSwitch"

@@ -3,8 +3,8 @@
 import { Button } from "@/components/ui/Button"
 import { Dialog } from "@/components/ui/Dialog"
 import type { ItemTarget } from "@/hooks/useMenuActions"
+import { targetsLabel } from "@/lib/menu/copy"
 import { fill } from "@/lib/template"
-import { targetsLabel } from "./copy"
 import { ScheduleLines } from "./ScheduleLines"
 import type { MenuCopy } from "./types"
 

@@ -1,5 +1,5 @@
 import type { ItemTarget } from "@/hooks/useMenuActions"
-import { daysText } from "./copy"
+import { daysText } from "@/lib/menu/copy"
 import type { MenuCopy } from "./types"
 
 type ScheduleLinesProps = {

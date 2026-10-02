@@ -9,6 +9,13 @@
 /** Every upload lands here — the signature pins it, so a browser can't write anywhere else. */
 export const CLOUDINARY_FOLDER = "sabiha-bakery"
 
+const PUBLIC_ID = new RegExp(`^${CLOUDINARY_FOLDER}/[A-Za-z0-9_-]+$`)
+
+/** An auto-generated id inside our folder — the only shape this app ever creates or accepts back. */
+export function isOurPublicId(value: string): boolean {
+  return PUBLIC_ID.test(value)
+}
+
 /** What getUploadSignature() hands the browser for one direct upload. */
 export type UploadSignature = {
   cloudName: string

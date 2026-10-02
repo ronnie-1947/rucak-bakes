@@ -14,11 +14,6 @@ admin-menu/
   MenuFilterBar.tsx        sticky: SearchBox (ui) + ViewToggle, then category chips · status chips · SortSelect
   ViewToggle.tsx           List / Grid segmented links; with no ?view= the bar renders one per breakpoint
   SortSelect.tsx           "use client" — native select swapping ?sort=
-  MenuActionsProvider.tsx  "use client" — dialogs, server actions, undo strip, failure notice; useMenuActions() context
-  DeactivateDialog.tsx     "use client" — names the upcoming days; "Also remove it from these days" (ticked)
-  ArchiveDialog.tsx        "use client" — soft archive confirm naming the days it comes off
-  ScheduleLines.tsx        a dialog's item list: name, then its upcoming days ("Sat 3 Oct (today) · 4 ordered")
-  UndoBar.tsx              the green "Seeded rye is now inactive · Undo · ×" strip
   MenuBoard.tsx            "use client" — rows / grid / table by view; bulk selection; BulkBar
   MenuRow.tsx              "use client" — list view below 1024px
   MenuCard.tsx             "use client" — grid card (4:3 cover, footer with switch and ⋯ opening upward)
@@ -32,7 +27,7 @@ admin-menu/
   RestoreButton.tsx        "use client" — the archived view's Restore
   ArchivedList.tsx         ?archived=1 — rows with "Archived Mon 12 Jan · 31 past orders still reference it"
   AddFab.tsx               phones: the round Add item button, sticky 16px above the tab bar
-  copy.ts                  priceText, usageText, archivedMeta, daysText, targetsLabel — dict strings filled
+  copy.ts                  usageText, archivedMeta — dict strings filled (priceText is in src/lib/menu/copy.ts)
   types.ts                 AdminCopy, MenuCopy, PriceUnitCopy, ViewMode
   README.md
 ```
@@ -45,8 +40,7 @@ AdminMenu dict=dict.admin library filters
 ├─ MenuFilterBar (not archived, items > 0) .searchLabel · .views · .allCategories · .statuses · .sorts
 │  ├─ SearchBox (ui) + ViewToggle × 1–2
 │  └─ ChipLink × categories | ChipLink × statuses | SortSelect
-├─ MenuActionsProvider                     .failed · .changed.* · .undo/.dismiss · .dialogs.*
-│  ├─ Notice (failed) · UndoBar
+├─ MenuActionsProvider (src/components/menu-actions) — undo strip, dialogs
 │  ├─ ArchivedList > ItemThumb, RestoreButton
 │  │  or EmptyState (.emptyAll + Add your first item | .emptySearch/.emptyFilters + Clear filters)
 │  │  or MenuBoard
@@ -54,7 +48,6 @@ AdminMenu dict=dict.admin library filters
 │  │     ├─ MenuCard × n  → ItemCover, ItemMenu (up), ItemSwitch, SelectBox (ui)
 │  │     ├─ MenuTable > MenuTableRow × n
 │  │     └─ BulkBar (select mode)
-│  └─ DeactivateDialog | ArchiveDialog > ScheduleLines
 └─ AddFab (phones, not select / archived)
 ```
 
@@ -65,7 +58,8 @@ AdminMenu dict=dict.admin library filters
 | `@/lib/menu/queries` | `loadMenuLibrary` → `MenuLibrary`, `MenuItemRow`, `ArchivedItemRow`, `ScheduledDay` |
 | `@/lib/menu/filters` | parse / build view URLs (`menuHref`), `isFiltered`, `CLEARED` |
 | `@/app/actions/menu` | `setMenuItemsActive`, `archiveMenuItems`, `restoreMenuItem`, `duplicateMenuItem`, `undoMenuChange` |
-| `@/lib/menu/changes` | `MenuSnapshot` (type) — what Undo sends back |
+| `@/components/menu-actions/MenuActionsProvider` | every change: confirms, server actions, the undo strip |
+| `@/lib/menu/copy` | `priceText` |
 | `@/hooks/useMenuActions` | context: `request(kind, targets, onDone?)`, `pending`; `ItemTarget` |
 | `@/hooks/useDismiss` | ⋯ menu closes on outside press / Escape |
 | `@/components/ui/*` | `Button`/`buttonClasses`, `ButtonLink`, `Checkbox`, `ChipLink`, `Container`, `Dialog`, `EmptyState`, `Notice`, `SearchBox`, `SelectBox`, `Switch`, `Tag`, `Icon`, `CheckIcon`, `CloseIcon` |
@@ -84,11 +78,6 @@ MenuHeader          { dict: MenuCopy; filters; totalCount; activeCount; archived
 MenuFilterBar       { dict; filters; view: ViewMode; categories: { slug; name }[] }
 ViewToggle          { filters; current: "list" | "grid"; dict; className }   // className sets the display
 SortSelect          { value; options: { value; label; href }[]; label; className? }
-MenuActionsProvider { dict; children }
-DeactivateDialog    { targets: ItemTarget[]; dict; pending; onClose; onConfirm(removeFromDays) }
-ArchiveDialog       { targets; dict; pending; onClose; onConfirm }
-ScheduleLines       { targets; dict: MenuCopy["dialogs"] }
-UndoBar             { text; dict; pending; onUndo; onDismiss }
 MenuBoard           { dict: AdminCopy; items: MenuItemRow[]; view: ViewMode; selectMode; exitSelectHref }
 MenuRow / MenuCard / MenuTableRow { item; dict: AdminCopy; selectMode; checked; onToggle }
 MenuTable           { dict; selectMode; children }
@@ -116,7 +105,7 @@ AddFab              { label }
 - **Remove from days** — deactivate (when ticked) and archive delete `MenuDayItem` rows on today-or-later days **with nothing
   ordered**. A day that already has orders keeps the item, so those orders still bake; the dialogs say so.
 - **Duplicate** — "Name (copy)", inactive, on no day, photos shared (`deleteImage` refuses while any item uses one).
-- **Edit / Add** link to `/admin/menu/[id]` and `/admin/menu/new` (5.3).
+- **Edit / Add** open the item form at `/admin/menu/[id]` and `/admin/menu/new` (`src/components/admin-menu-item`).
 
 ## Responsive behavior
 
