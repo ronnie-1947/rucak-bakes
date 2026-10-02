@@ -11,8 +11,7 @@ admin-orders/
   AdminOrders.tsx        entry (server) — header, filter bar, banner, empty states, board, 2xl split pane
   OrdersHeader.tsx       h1, capacity meters, Select / Done (a link toggling ?select=1)
   CapacityMeters.tsx     today / tomorrow verified vs maxOrders, Meter bar, red "· full"
-  OrdersFilterBar.tsx    sticky: SearchBox + Date / Status / Show chip rows (ChipLink) + Clear filters
-  SearchBox.tsx          "use client" — debounced ?q= (code, name, 3+ phone digits)
+  OrdersFilterBar.tsx    sticky: SearchBox (ui) + Date / Status / Show chip rows (ChipLink) + Clear filters
   CustomDateChip.tsx     "use client" — a chip over a native date input → ?date=YYYY-MM-DD
   UnnotifiedBanner.tsx   warm notice linking pending orders whose Telegram notification failed
   OrderBoard.tsx         "use client" — day groups; cards <1024, table ≥1024; bulk selection state
@@ -22,7 +21,6 @@ admin-orders/
   OrderTableRow.tsx      "use client" — one row; code links to the page (<2xl) or the pane (2xl)
   ItemsLine.tsx          "2× Sourdough loaf, 1× Brownie box +1 more"
   WhenLine.tsx           "Pickup 11:30" / "Delivery"
-  SelectBox.tsx          the bulk-select checkbox (real input, drawn box); `cover` stretches over the card
   BulkBar.tsx            "use client" — sticky bottom: N selected · Cancel all · Verify all
   types.ts               AdminCopy, OrdersCopy, OrderLinks, BoardOrder
   README.md
@@ -59,7 +57,7 @@ AdminOrders dict=dict.admin queue filters pane
 | `@/components/order-tag-list/OrderTagList` | the facts row |
 | `@/components/admin-order-detail/OrderDetail` | the 2xl pane |
 | `@/hooks/useOrderActions` | bulk actions |
-| `@/components/ui/*` | `Button`/`buttonClasses`, `ButtonLink`, `ChipLink`, `chipClasses`, `EmptyState`, `Meter`, `Notice`, `Rich`, `StatusBadge`, `Tag`, `Icon`, `CheckIcon` |
+| `@/components/ui/*` | `Button`/`buttonClasses`, `ButtonLink`, `ChipLink`, `chipClasses`, `EmptyState`, `Meter`, `Notice`, `Rich`, `SearchBox` (debounced `?q=`), `SelectBox` (bulk tick), `StatusBadge`, `Tag`, `Icon`, `CheckIcon` |
 | `@/lib/money` · `@/lib/template` · `@/lib/dates` | `formatPaise`, `fill`, `isIsoDate` |
 
 External: `next/link`, `next/navigation`. Tokens: `border-o500` (new-order edge), `border-o700` (selected), `bg-o50`, `text-o700`,
@@ -73,7 +71,6 @@ AdminOrders      { dict: AdminCopy; queue: OrderQueue; filters: OrderFilters; pa
 OrdersHeader     { dict: OrdersCopy; capacity: CapacityData[]; filters }
 CapacityMeters   { capacity; dict; className? }
 OrdersFilterBar  { dict; filters; paneOpen }                 // paneOpen: stop sticking at 2xl so the pane can
-SearchBox        { filters; label; placeholder }
 CustomDateChip   { filters; label }
 UnnotifiedBanner { orders: { id; code }[]; dict }
 OrderBoard       { dict; groups (orders: BoardOrder[]); selectMode; exitSelectHref; paneOpen; currentId }
@@ -83,7 +80,6 @@ OrderTable       { dict; paneOpen; children }
 OrderTableRow    { order; dict; selectMode; checked; onToggle; paneOpen; current }
 ItemsLine        { lines; dict; show?; className? }
 WhenLine         { fulfilmentType; pickupTime; dict }
-SelectBox        { checked; onChange; label; cover? }
 BulkBar          { dict; selectedCount; verifiable; cancellable; pending; onVerify; onCancel }
 ```
 

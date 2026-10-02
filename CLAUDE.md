@@ -88,19 +88,21 @@ src/
     favicon.ico
     actions/            server actions
     admin/login/        staff sign-in (outside the admin shell)
-    admin/(shell)/      every signed-in screen: layout.tsx (requireStaff + AdminShell), orders/, more/ …
+    admin/(shell)/      every signed-in screen: layout.tsx (requireStaff + AdminShell), orders/, menu/, more/ …
     api/auth/[...nextauth]/route.ts
     sections/           landing bands (colocated, never a route)
   components/
-    ui/                 Button (+ ButtonLink), Checkbox, Container, Dialog, LazyOnView, Notice, Rich, Spinner
+    ui/                 Button (+ ButtonLink), Checkbox, Chip(Link), Container, Dialog, EmptyState, LazyOnView, Notice, Rich,
+                        SearchBox (?q=), SelectBox (bulk tick), Spinner, Switch, Tag …
       icons/
     admin-login/        the /admin/login screen
     admin-shell/        sidebar / tab bar frame for /admin/(shell)
     admin-orders/       the orders queue;  admin-order-detail/  one order (page + 2xl pane)
     order-actions/      status changes + their confirm dialogs;  order-tag-list/  an order's fact tags
+    admin-menu/         the menu library (/admin/menu): list / grid / table, Active switch, archive, undo
   content/
     en.json
-  hooks/                useOrderActions (context for order-actions)
+  hooks/                useOrderActions, useMenuActions (action contexts), useDismiss (popover close)
   lib/
     content.ts          localePath / localeAlternates / htmlLang
     i18n.ts             locales, defaultLocale, getDictionary
@@ -115,6 +117,8 @@ src/
     settings.ts         getSettings() / findSettings() — the singleton row, cached per request
     orders/             status.ts (state machine), lifecycle.ts (transitions), place.ts (createOrder tx),
                         notify.ts, queries.ts (admin read models), filters.ts (queue URL state)
+    menu/               queries.ts (library read model), filters.ts (URL state), changes.ts (writes + undo snapshots),
+                        units.ts (priceUnit domain)
 public/
 ```
 

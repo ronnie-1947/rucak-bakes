@@ -5,12 +5,12 @@ import { StatusMenu } from "@/components/order-actions/StatusMenu"
 import { OrderTagList } from "@/components/order-tag-list/OrderTagList"
 import { buttonClasses } from "@/components/ui/Button"
 import { Icon } from "@/components/ui/icons/Icon"
+import { SelectBox } from "@/components/ui/SelectBox"
 import { StatusBadge } from "@/components/ui/StatusBadge"
 import { Tag } from "@/components/ui/Tag"
 import { formatPaise } from "@/lib/money"
 import { fill } from "@/lib/template"
 import { ItemsLine } from "./ItemsLine"
-import { SelectBox } from "./SelectBox"
 import type { AdminCopy, BoardOrder } from "./types"
 
 type OrderTableRowProps = {

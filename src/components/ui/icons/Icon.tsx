@@ -25,6 +25,8 @@ const paths = {
   alert: "M12 9v4M12 17h.01M10.3 4.2 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0z",
   pause: "M8 5v14M16 5v14",
   send: "M4 12 20 4l-6 16-3-7z",
+  list: "M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01",
+  grid: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
 } as const
 
 export type IconName = keyof typeof paths

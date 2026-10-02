@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useId, useRef, useState } from "react"
+import { useCallback, useId, useRef, useState } from "react"
 import { Icon } from "@/components/ui/icons/Icon"
 import { CheckIcon } from "@/components/ui/icons/CheckIcon"
 import { OrderStatus } from "@/generated/prisma/enums"
+import { useDismiss } from "@/hooks/useDismiss"
 import { type ActionTarget, useOrderActions } from "@/hooks/useOrderActions"
 import type { Dict } from "@/lib/i18n"
 import { TRANSITIONS } from "@/lib/orders/status"
@@ -39,19 +40,9 @@ export function StatusMenu({ target, status, label, statusLabels, className }: S
   const root = useRef<HTMLDivElement>(null)
   const menuId = useId()
   const next = TRANSITIONS[status]
+  const close = useCallback(() => setOpen(false), [])
 
-  useEffect(() => {
-    if (!open) return
-    const close = (event: PointerEvent | KeyboardEvent) => {
-      if (event instanceof KeyboardEvent ? event.key === "Escape" : !root.current?.contains(event.target as Node)) setOpen(false)
-    }
-    document.addEventListener("pointerdown", close)
-    document.addEventListener("keydown", close)
-    return () => {
-      document.removeEventListener("pointerdown", close)
-      document.removeEventListener("keydown", close)
-    }
-  }, [open])
+  useDismiss(root, open, close)
 
   if (next.length === 0) return null
 

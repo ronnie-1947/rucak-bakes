@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useRef, useState } from "react"
 import { Icon } from "@/components/ui/icons/Icon"
 import { OrderStatus } from "@/generated/prisma/enums"
+import { useDismiss } from "@/hooks/useDismiss"
 import { type ActionTarget, useOrderActions } from "@/hooks/useOrderActions"
 import { canTransition } from "@/lib/orders/status"
 import type { DetailCopy } from "./types"
@@ -29,18 +30,8 @@ export function OrderMenu({ target, status, copyText, dict }: OrderMenuProps) {
   const [copied, setCopied] = useState(false)
   const root = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    if (!open) return
-    const close = (event: PointerEvent | KeyboardEvent) => {
-      if (event instanceof KeyboardEvent ? event.key === "Escape" : !root.current?.contains(event.target as Node)) setOpen(false)
-    }
-    document.addEventListener("pointerdown", close)
-    document.addEventListener("keydown", close)
-    return () => {
-      document.removeEventListener("pointerdown", close)
-      document.removeEventListener("keydown", close)
-    }
-  }, [open])
+  const close = useCallback(() => setOpen(false), [])
+  useDismiss(root, open, close)
 
   return (
     <div ref={root} className="relative print:hidden">

@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { buttonClasses } from "@/components/ui/Button"
 import { ChipLink } from "@/components/ui/ChipLink"
+import { SearchBox } from "@/components/ui/SearchBox"
 import {
   CLEARED,
   datePresets,
@@ -12,7 +13,6 @@ import {
   toggle,
 } from "@/lib/orders/filters"
 import { CustomDateChip } from "./CustomDateChip"
-import { SearchBox } from "./SearchBox"
 import type { OrdersCopy } from "./types"
 
 type OrdersFilterBarProps = {
@@ -40,7 +40,7 @@ export function OrdersFilterBar({ dict, filters, paneOpen }: OrdersFilterBarProp
   return (
     <div className={`z-20 border-y border-border bg-background shadow-raised ${sticking[paneOpen ? "open" : "closed"]}`}>
       <div className="flex flex-col gap-2 px-4 py-2 md:px-6 lg:px-8">
-        <SearchBox filters={filters} label={dict.searchLabel} placeholder={dict.searchPlaceholder} />
+        <SearchBox value={filters.q} baseHref={filtersHref({ ...base, q: "" })} label={dict.searchLabel} placeholder={dict.searchPlaceholder} />
 
         <div className={rowClass}>
           <span className={labelClass}>{dict.filters.date}</span>

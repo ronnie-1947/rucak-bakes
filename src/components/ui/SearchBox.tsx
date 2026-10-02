@@ -3,31 +3,38 @@
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Icon } from "@/components/ui/icons/Icon"
-import { type OrderFilters, filtersHref } from "@/lib/orders/filters"
 
 type SearchBoxProps = {
-  filters: OrderFilters
+  /** The current search, from the URL. */
+  value: string
+  /** The screen's URL with every other filter and no `q` — the box adds `q` to it. Built on the server. */
+  baseHref: string
   label: string
   placeholder: string
 }
 
-/** Matches order code, name, or any 3+ digits of the phone. Updates the URL 300ms after typing stops. */
-export function SearchBox({ filters, label, placeholder }: SearchBoxProps) {
+function withQuery(baseHref: string, q: string): string {
+  if (!q) return baseHref
+  return `${baseHref}${baseHref.includes("?") ? "&" : "?"}q=${encodeURIComponent(q)}`
+}
+
+/** A full-width search field whose text lives in the URL's `?q=`. Updates the URL 300ms after typing stops. */
+export function SearchBox({ value: q, baseHref, label, placeholder }: SearchBoxProps) {
   const router = useRouter()
-  const [value, setValue] = useState(filters.q)
-  const [seenQ, setSeenQ] = useState(filters.q)
+  const [value, setValue] = useState(q)
+  const [seenQ, setSeenQ] = useState(q)
 
   // "Clear filters" empties q in the URL — empty the box too. (Adjusting state on a prop change, not in an effect.)
-  if (filters.q !== seenQ) {
-    setSeenQ(filters.q)
-    if (filters.q === "") setValue("")
+  if (q !== seenQ) {
+    setSeenQ(q)
+    if (q === "") setValue("")
   }
 
   useEffect(() => {
-    if (value.trim() === filters.q) return
-    const timer = setTimeout(() => router.replace(filtersHref({ ...filters, q: value.trim(), order: null }), { scroll: false }), 300)
+    if (value.trim() === q) return
+    const timer = setTimeout(() => router.replace(withQuery(baseHref, value.trim()), { scroll: false }), 300)
     return () => clearTimeout(timer)
-  }, [value, filters, router])
+  }, [value, q, baseHref, router])
 
   return (
     <label className="relative block">
