@@ -11,5 +11,22 @@
   },
   "footer": {
     "copyright": "© Sabiha Bakery"
+  },
+  "telegram": {
+    "newOrder": "New order {code}",
+    "fulfilment": {
+      "PICKUP": "Pickup",
+      "DELIVERY": "Delivery"
+    },
+    "orderedBefore": "Ordered before ({count})",
+    "autoVerified": "Auto-verified — trusted customer",
+    "suspected": "Blocked number — accepted and flagged",
+    "total": "Total {amount}",
+    "note": "Note: \"{note}\"",
+    "pending": "Pending {pending}/{max} {day}",
+    "today": "today",
+    "tomorrow": "tomorrow",
+    "onDay": "for {day}",
+    "test": "Test message from {bakery}. New orders will be announced here."
   }
 }

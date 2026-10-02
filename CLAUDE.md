@@ -12,8 +12,29 @@ Guidance for Claude Code when working in **sabiha-bakery**.
 | `pnpm build` | `next build` |
 | `pnpm start` | `next start` |
 | `pnpm lint` | `eslint` |
+| `pnpm telegram:test` | `tsx scripts/telegram-test.ts` — sends a test + sample order (`--dry-run` prints it) |
+| `postinstall` | `prisma generate` |
 
 Dev server runs on http://localhost:3000. Package manager: pnpm.
+
+### Database
+
+Local Postgres runs in Docker — `docker compose up -d --wait` (`docker-compose.yml`) —
+with the `DATABASE_URL` from `.env.example`. Prisma 7: the URL lives in
+`prisma.config.ts` (which loads `.env` the way Next does), and the client is generated
+into `src/generated/prisma` (gitignored — `pnpm install` regenerates it).
+
+| Task | Command |
+|---|---|
+| Apply pending migrations | `pnpm exec prisma migrate deploy` |
+| Migration for a schema change | `pnpm exec prisma migrate dev --create-only --name <name>` — read the SQL before applying |
+| Seed (needs `SEED_OWNERS`) | `pnpm exec prisma db seed` |
+| Browse | `pnpm exec prisma studio` |
+| Regenerate the client | `pnpm exec prisma generate` — Prisma 7's `migrate` no longer does it |
+
+The `constraints` migration holds what the schema language can't express: CHECKs, the
+order-code sequence, the immutable-code trigger, partial and trigram indexes. Never
+edit an applied migration — add a new one.
 
 ## Stack
 
@@ -50,13 +71,22 @@ first paint.
 ## Layout
 
 ```
+prisma/
+  schema.prisma         the nine models
+  migrations/           init + constraints (raw SQL the schema can't express)
+  seed.ts
+scripts/                one-off tsx scripts (telegram-test.ts)
 src/
+  auth.ts               Auth.js — Google only, staff allowlist, requireStaff()
+  proxy.ts              guards /admin/* (Next 16's renamed middleware)
+  generated/prisma/     generated client — gitignored
   app/
     layout.tsx          the one root layout
     page.tsx            homepage (source locale)
     globals.css         @theme tokens
     favicon.ico
     actions/            server actions
+    api/auth/[...nextauth]/route.ts
     sections/           landing bands (colocated, never a route)
   components/
     ui/
@@ -70,6 +100,13 @@ src/
   lib/
     content.ts          localePath / localeAlternates / htmlLang
     i18n.ts             locales, defaultLocale, getDictionary
+    db.ts               Prisma singleton, serializable(), OrderError
+    dates.ts            calendar dates, computeCutoffAt, bakery-local time
+    money.ts            toPaise / formatPaise — Int paise only
+    phone.ts            normalise → E.164 / formatForDisplay
+    cloudinary.ts       imageUrl, browser uploadImage (no secrets)
+    telegram.ts         notifyOwner, formatOrderMessage
+    template.ts         fill() for {placeholders} in dict strings
 public/
 ```
 
@@ -182,6 +219,9 @@ key to every locale file atomically. Details: the
   Postgres (admin screens, cart revalidation, the order pipeline). The static
   rule governs **copy**; application data is server truth, read at request time.
   See `dev-docs/implementation.md`.
+- **Every admin server action starts with `await requireStaff()`** (`src/auth.ts`).
+  `proxy.ts` guards page navigations only — a server action is a separate entry
+  point, and the JWT outlives a staff member's deactivation.
 - **No hardcoded user-facing text.** Every string lives in a locale file and
   reaches the component through `dict`.
 - **Tailwind only.** No inline `style={{}}`. Use `@theme` tokens over raw hex.
