@@ -103,6 +103,11 @@
   padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
 }
 
+/* A pane pinned beside a scrolling list (the 2xl orders split view): one viewport, less its 16px insets. */
+@utility h-pane {
+  height: calc(100dvh - 2rem);
+}
+
 @layer base {
   :root {
     color-scheme: light;

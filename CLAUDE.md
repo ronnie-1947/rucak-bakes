@@ -13,6 +13,7 @@ Guidance for Claude Code when working in **sabiha-bakery**.
 | `pnpm start` | `next start` |
 | `pnpm lint` | `eslint` |
 | `pnpm telegram:test` | `tsx scripts/telegram-test.ts` — sends a test + sample order (`--dry-run` prints it) |
+| `pnpm orders:sample` | `tsx scripts/sample-orders.ts` — 14 local sample orders through the real pipeline (needs the seed; re-runnable) |
 | `postinstall` | `prisma generate` |
 
 Dev server runs on http://localhost:3000. Package manager: pnpm.
@@ -87,15 +88,19 @@ src/
     favicon.ico
     actions/            server actions
     admin/login/        staff sign-in (outside the admin shell)
+    admin/(shell)/      every signed-in screen: layout.tsx (requireStaff + AdminShell), orders/, more/ …
     api/auth/[...nextauth]/route.ts
     sections/           landing bands (colocated, never a route)
   components/
     ui/                 Button (+ ButtonLink), Checkbox, Container, Dialog, LazyOnView, Notice, Rich, Spinner
       icons/
     admin-login/        the /admin/login screen
+    admin-shell/        sidebar / tab bar frame for /admin/(shell)
+    admin-orders/       the orders queue;  admin-order-detail/  one order (page + 2xl pane)
+    order-actions/      status changes + their confirm dialogs;  order-tag-list/  an order's fact tags
   content/
     en.json
-  hooks/
+  hooks/                useOrderActions (context for order-actions)
   lib/
     content.ts          localePath / localeAlternates / htmlLang
     i18n.ts             locales, defaultLocale, getDictionary
@@ -108,6 +113,8 @@ src/
     template.ts         fill() for {placeholders} in dict strings
     admin-routes.ts     ADMIN_HOME, admin sections, safeAdminPath (post-login redirects)
     settings.ts         getSettings() / findSettings() — the singleton row, cached per request
+    orders/             status.ts (state machine), lifecycle.ts (transitions), place.ts (createOrder tx),
+                        notify.ts, queries.ts (admin read models), filters.ts (queue URL state)
 public/
 ```
 

@@ -16,6 +16,13 @@ import { prisma } from "@/lib/db"
 export const KEEP_SIGNED_IN_COOKIE = "bakery.keep-signed-in"
 const SHORT_SESSION_MS = 12 * 60 * 60 * 1000
 
+/**
+ * TEMPORARY — `ADMIN_AUTH_BYPASS=1` switches the admin login off while the screens are built: the proxy
+ * lets /admin/* through and requireStaff() acts as the first active owner, so actions still record a
+ * real staff id. Refused on a Vercel production deploy. Delete the env line to restore the login.
+ */
+export const authBypassed = process.env.ADMIN_AUTH_BYPASS === "1" && process.env.VERCEL_ENV !== "production"
+
 declare module "next-auth" {
   interface Session {
     user: { staffId: string; role: StaffRole } & DefaultSession["user"]
@@ -91,10 +98,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
  * Cached per request, so the layout and a page can both ask without a second query.
  */
 export const getStaff = cache(async () => {
+  const select = { id: true, name: true, email: true, role: true, isActive: true } as const
   const session = await auth()
   const staffId = session?.user?.staffId
-  if (!staffId) return null
-  const staff = await prisma.staff.findUnique({ where: { id: staffId }, select: { id: true, name: true, email: true, role: true, isActive: true } })
+  if (!staffId) {
+    if (!authBypassed) return null
+    return prisma.staff.findFirst({ where: { isActive: true, role: "OWNER" }, orderBy: { createdAt: "asc" }, select })
+  }
+  const staff = await prisma.staff.findUnique({ where: { id: staffId }, select })
   return staff?.isActive ? staff : null
 })
 

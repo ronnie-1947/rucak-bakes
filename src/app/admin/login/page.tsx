@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
-import { getStaff } from "@/auth"
+import { authBypassed, getStaff } from "@/auth"
 import { AdminLogin } from "@/components/admin-login/AdminLogin"
 import { adminSectionOf, safeAdminPath } from "@/lib/admin-routes"
 import { htmlLang } from "@/lib/content"
@@ -20,8 +20,9 @@ export default async function LoginPage({ searchParams }: PageProps<"/admin/logi
   const params = await searchParams
   const callbackUrl = safeAdminPath(firstParam(params.callbackUrl))
 
-  // Already signed in (and still on the allowlist): go where they were headed.
-  if (await getStaff()) redirect(callbackUrl)
+  // Already signed in (and still on the allowlist): go where they were headed. Under the bypass the
+  // screen stays reachable, so it can still be looked at.
+  if (!authBypassed && (await getStaff())) redirect(callbackUrl)
 
   const [dict, settings] = await Promise.all([getDictionary(locale), findSettings()])
   const section = adminSectionOf(callbackUrl)

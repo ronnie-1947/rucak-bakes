@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { auth } from "@/auth"
+import { auth, authBypassed } from "@/auth"
 
 /**
  * Keeps signed-out visitors off /admin/* (except the login screen) and remembers where they were
@@ -8,7 +8,7 @@ import { auth } from "@/auth"
  */
 export default auth((request) => {
   const { pathname, search } = request.nextUrl
-  if (pathname === "/admin/login" || request.auth?.user?.staffId) return NextResponse.next()
+  if (authBypassed || pathname === "/admin/login" || request.auth?.user?.staffId) return NextResponse.next()
 
   const login = new URL("/admin/login", request.nextUrl.origin)
   login.searchParams.set("callbackUrl", `${pathname}${search}`)

@@ -126,3 +126,31 @@ const dayLabel = new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "s
 export function formatDayLabel(date: IsoDate): string {
   return dayLabel.format(toDbDate(date))
 }
+
+/** "11:02" — an instant's wall-clock time in the bakery's timezone, 24-hour. */
+export function formatTimeIn(instant: Date, timeZone: string): string {
+  const { hour, minute } = wallClock(instant, timeZone)
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`
+}
+
+/** "Fri 2 Oct, 11:02" — an instant as a bakery-local day and time. */
+export function formatDayTimeIn(instant: Date, timeZone: string): string {
+  return `${formatDayLabel(isoDateInZone(instant, timeZone))}, ${formatTimeIn(instant, timeZone)}`
+}
+
+/** Every date from `start` to `end`, inclusive. */
+export function dateRange(start: IsoDate, end: IsoDate): IsoDate[] {
+  const dates: IsoDate[] = []
+  for (let date = start; date <= end; date = addDays(date, 1)) dates.push(date)
+  return dates
+}
+
+export function isIsoDate(value: string): value is IsoDate {
+  if (!ISO_DATE.test(value)) return false
+  try {
+    parseIsoDate(value)
+    return true
+  } catch {
+    return false
+  }
+}

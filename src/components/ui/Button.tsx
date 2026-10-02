@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react"
 
-export type ButtonVariant = "primary" | "ink" | "ghost" | "outline" | "outlineAccent" | "danger" | "dangerOutline" | "link"
+export type ButtonVariant = "primary" | "ink" | "ghost" | "outline" | "outlineLink" | "outlineAccent" | "danger" | "dangerOutline" | "link"
 export type ButtonSize = "sm" | "md" | "lg" | "inline"
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -24,6 +24,8 @@ const variants: Record<ButtonVariant, string> = {
   ghost: "bg-transparent text-foreground hover:bg-sunken",
   /** Neutral secondary — the Google sign-in button, Cancel in a dialog. */
   outline: "border border-border-strong bg-background text-foreground hover:bg-sunken",
+  /** Neutral border, accent text — Call and WhatsApp beside a primary action. */
+  outlineLink: "border border-border-strong bg-background font-semibold text-o700 hover:bg-o50",
   /** The recovery action next to an error — "Try again", "Try a different account". */
   outlineAccent: "border border-o700 bg-background font-semibold text-o700 hover:bg-o50",
   /** The confirm button of a destructive dialog. */
