@@ -2,9 +2,19 @@ import NextAuth, { type DefaultSession } from "next-auth"
 // Not a no-op: pulls next-auth/jwt into the program so the JWT augmentation below can resolve it.
 import type {} from "next-auth/jwt"
 import Google from "next-auth/providers/google"
+import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
+import { cache } from "react"
 import type { StaffRole } from "@/generated/prisma/client"
+import { ADMIN_LOGIN } from "@/lib/admin-routes"
 import { prisma } from "@/lib/db"
+
+/**
+ * Set by the sign-in action from "Keep me signed in on this device", read once when the token is minted.
+ * "0" gives the session a hard end SHORT_SESSION_MS later instead of the default 30 days.
+ */
+export const KEEP_SIGNED_IN_COOKIE = "bakery.keep-signed-in"
+const SHORT_SESSION_MS = 12 * 60 * 60 * 1000
 
 declare module "next-auth" {
   interface Session {
@@ -16,6 +26,8 @@ declare module "next-auth/jwt" {
   interface JWT {
     staffId?: string
     role?: StaffRole
+    /** Epoch ms. Set only when the user unticked "Keep me signed in". */
+    endsAt?: number
   }
 }
 
@@ -54,7 +66,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.staffId = staff.id
           token.role = staff.role
         }
+        // This runs inside the OAuth callback request, so the cookie the sign-in action set is readable.
+        const jar = await cookies()
+        if (jar.get(KEEP_SIGNED_IN_COOKIE)?.value === "0") token.endsAt = Date.now() + SHORT_SESSION_MS
+        jar.delete(KEEP_SIGNED_IN_COOKIE)
       }
+      // Null ends the session: Auth.js clears the cookie and the proxy sends the next navigation to login.
+      if (token.endsAt && Date.now() > token.endsAt) return null
       return token
     },
 
@@ -69,16 +87,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 })
 
 /**
+ * The signed-in staff member if the session is valid AND the staff row is still active — else null.
+ * Cached per request, so the layout and a page can both ask without a second query.
+ */
+export const getStaff = cache(async () => {
+  const session = await auth()
+  const staffId = session?.user?.staffId
+  if (!staffId) return null
+  const staff = await prisma.staff.findUnique({ where: { id: staffId }, select: { id: true, name: true, email: true, role: true, isActive: true } })
+  return staff?.isActive ? staff : null
+})
+
+/**
  * The signed-in staff member, re-checked against the database. A JWT outlives a deactivation, so the
  * allowlist is consulted on every admin render and every server action — and proxy.ts guards pages,
  * not server actions. Call this first in every admin action.
  */
 export async function requireStaff() {
-  const session = await auth()
-  const staffId = session?.user?.staffId
-  const staff = staffId
-    ? await prisma.staff.findUnique({ where: { id: staffId }, select: { id: true, name: true, email: true, role: true, isActive: true } })
-    : null
-  if (!staff?.isActive) redirect("/admin/login")
+  const staff = await getStaff()
+  if (!staff) redirect(ADMIN_LOGIN)
   return staff
 }

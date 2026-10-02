@@ -12,6 +12,52 @@
   "footer": {
     "copyright": "© Sabiha Bakery"
   },
+  "admin": {
+    "nav": {
+      "orders": "Orders",
+      "daysheet": "Day sheet",
+      "calendar": "Calendar",
+      "menu": "Menu",
+      "customers": "Customers",
+      "settings": "Settings",
+      "more": "More"
+    },
+    "login": {
+      "metaTitle": "Kitchen login",
+      "title": "Kitchen login",
+      "subtitle": "Sign in to manage orders and the menu.",
+      "google": "Continue with Google",
+      "opening": "Opening Google…",
+      "rejected": {
+        "title": "This account isn’t approved",
+        "body": "{email} isn’t set up for this bakery. Ask the owner to add it in Settings.",
+        "unknownEmail": "The Google account you used"
+      },
+      "tryDifferent": "Try a different account",
+      "network": "Couldn’t reach Google. Check your connection and try again.",
+      "failed": "Something went wrong while signing you in. Wait a minute and try again.",
+      "retry": "Try again",
+      "cancelled": "Sign-in was cancelled.",
+      "expired": "Your session ended. Sign in again to continue — you’ll go back to {destination}.",
+      "expiredFallback": "the page you were on",
+      "approvedOnly": "Only approved bakery accounts can sign in.",
+      "keep": {
+        "label": "Keep me signed in on this device",
+        "hint": "Leave this on for the kitchen tablet. Turn it off on a shared or personal device."
+      },
+      "help": {
+        "open": "Trouble signing in?",
+        "title": "Trouble signing in?",
+        "close": "Close",
+        "steps": [
+          "Make sure you’re using the bakery’s Google account, not a personal one.",
+          "If you’ve never signed in before, the owner needs to add your email in Settings first."
+        ],
+        "call": "Still stuck? Call the owner on {phone}."
+      },
+      "back": "← Back to the bakery"
+    }
+  },
   "telegram": {
     "newOrder": "New order {code}",
     "fulfilment": {

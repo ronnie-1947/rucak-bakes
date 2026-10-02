@@ -94,6 +94,15 @@
   --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
 }
 
+/* §2 Interaction: sticky bars and sheets clear the home indicator — never less than the base padding. */
+@utility pb-safe {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+@utility pb-safe-lg {
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+}
+
 @layer base {
   :root {
     color-scheme: light;

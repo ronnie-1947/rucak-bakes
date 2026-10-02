@@ -86,14 +86,13 @@ src/
     globals.css         @theme tokens
     favicon.ico
     actions/            server actions
+    admin/login/        staff sign-in (outside the admin shell)
     api/auth/[...nextauth]/route.ts
     sections/           landing bands (colocated, never a route)
   components/
-    ui/
-      Button.tsx
-      Container.tsx
-      LazyOnView.tsx
+    ui/                 Button (+ ButtonLink), Checkbox, Container, Dialog, LazyOnView, Notice, Rich, Spinner
       icons/
+    admin-login/        the /admin/login screen
   content/
     en.json
   hooks/
@@ -107,6 +106,8 @@ src/
     cloudinary.ts       imageUrl, browser uploadImage (no secrets)
     telegram.ts         notifyOwner, formatOrderMessage
     template.ts         fill() for {placeholders} in dict strings
+    admin-routes.ts     ADMIN_HOME, admin sections, safeAdminPath (post-login redirects)
+    settings.ts         getSettings() / findSettings() — the singleton row, cached per request
 public/
 ```
 
