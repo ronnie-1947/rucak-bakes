@@ -18,16 +18,16 @@ type AdminShellProps = {
  */
 export function AdminShell({ dict, data, children }: AdminShellProps) {
   return (
-    <div className="flex h-dvh overflow-hidden bg-background text-body-admin">
+    <div className="flex h-dvh overflow-hidden bg-background text-body-admin print:block print:h-auto print:overflow-visible">
       <Sidebar dict={dict} data={data} />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col print:block">
         {data.bypassed ? (
-          <p role="status" className="shrink-0 bg-o50 px-4 py-1 text-center text-small-admin text-o700">
+          <p role="status" className="shrink-0 bg-o50 px-4 py-1 text-center text-small-admin text-o700 print:hidden">
             {fill(dict.shell.bypass, { name: data.staffName })}
           </p>
         ) : null}
         <MobileHeader dict={dict} data={data} />
-        <main id="admin-main" className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        <main id="admin-main" className="min-h-0 flex-1 overflow-y-auto overscroll-contain print:overflow-visible">
           {children}
         </main>
         <TabBar dict={dict} pendingCount={data.pendingCount} />

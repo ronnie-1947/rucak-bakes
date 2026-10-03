@@ -31,6 +31,7 @@ const paths = {
   lock: "M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4",
   pencil: "M4 20h4L19 9l-4-4L4 16v4Z",
   map: "M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",
+  note: "M4 4h16v12H8l-4 4z",
 } as const
 
 export type IconName = keyof typeof paths

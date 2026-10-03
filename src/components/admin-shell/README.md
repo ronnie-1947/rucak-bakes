@@ -66,6 +66,8 @@ ShellData     { bakeryName; todayLabel; pendingCount; staffName; bypassed }
   `revalidatePath("/admin", "layout")`, so the badge refreshes with the screen.
 - `More` lights up for `/admin/more`, `/admin/customers` and `/admin/settings` (its `match`).
 - Server components except `NavLink` (pathname). Sign-out is a plain form — works before hydration.
+- **Print** — the sidebar, header, tab bar and bypass line are `print:hidden`, and the shell drops its one-viewport height so `main`
+  flows onto paper. Only the day sheet has a print layout (`admin-daysheet/PrintSheet.tsx`).
 
 ## Responsive behavior
 

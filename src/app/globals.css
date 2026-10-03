@@ -33,6 +33,8 @@
   --color-sidebar: #1f2937;       /* admin sidebar fill, white text */
   --color-scrim: rgb(17 24 39 / 0.4);
 
+  --color-print: #000000;         /* the printed day sheet only — A4, black on white (5.6) */
+
   /* Type — H1 24/30 · H2 19/26 · Body 16/24 or 15/22 · Small 14/20 or 13/18 · Micro 12/16 */
   --text-*: initial;
   --text-h1: 1.5rem;
@@ -50,6 +52,11 @@
   --text-micro: 0.75rem;                      /* pair with `uppercase` */
   --text-micro--line-height: 1rem;
   --text-micro--letter-spacing: 0.02em;
+  /* Day sheet bake quantities, read standing from a metre away (5.6): 32px phones, 40px from tablet */
+  --text-glance: 2rem;
+  --text-glance--line-height: 2.25rem;
+  --text-glance-lg: 2.5rem;
+  --text-glance-lg--line-height: 2.75rem;
 
   /* Inter 400/500/600, Fraunces 600 */
   --font-weight-*: initial;
@@ -106,6 +113,12 @@
 /* A pane pinned beside a scrolling list (the 2xl orders split view): one viewport, less its 16px insets. */
 @utility h-pane {
   height: calc(100dvh - 2rem);
+}
+
+/* The day sheet is the one printed screen. */
+@page {
+  size: A4 portrait;
+  margin: 12mm 14mm;
 }
 
 @layer base {

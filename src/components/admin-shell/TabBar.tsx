@@ -11,7 +11,7 @@ type TabBarProps = {
 /** Under 768px: five tabs at the bottom, clear of the home indicator. */
 export function TabBar({ dict, pendingCount }: TabBarProps) {
   return (
-    <nav aria-label={dict.shell.navLabel} className="shrink-0 border-t border-border bg-background px-1 pt-1 pb-safe md:hidden">
+    <nav aria-label={dict.shell.navLabel} className="shrink-0 border-t border-border bg-background px-1 pt-1 pb-safe md:hidden print:hidden">
       <ul className="grid grid-cols-5">
         {tabNav.map((item) => (
           <li key={item.key}>

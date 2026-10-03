@@ -10,7 +10,7 @@ type MobileHeaderProps = {
 /** Under 768px: bakery, today, and the pending count — a tap opens the pending queue. */
 export function MobileHeader({ dict, data }: MobileHeaderProps) {
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-background px-4 md:hidden">
+    <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-background px-4 md:hidden print:hidden">
       <div className="flex min-w-0 flex-col">
         <span className="truncate font-display text-body-admin font-semibold">{data.bakeryName}</span>
         <span className="text-micro text-muted">{data.todayLabel}</span>

@@ -109,9 +109,10 @@ src/
     admin-customers/    the customers list (/admin/customers): phone/name search, Show chips, cards / table, 2xl pane
     admin-customer-detail/ one customer (page + 2xl pane): contact, trust / block, counts, history, patterns, note
     customer-actions/   trust / block / unblock + the confirm and undo strip;  customer-flags/  Trusted / Blocked / New tags
+    admin-daysheet/     the day sheet (/admin/daysheet): bake totals, notes, pickups, Baked / Collected ticks, A4 print layout
   content/
     en.json
-  hooks/                useOrderActions, useMenuActions, useCustomerActions (action contexts), useDismiss (popover close)
+  hooks/                useOrderActions, useMenuActions, useCustomerActions, useDaySheet (action contexts), useDismiss (popover close)
   lib/
     content.ts          localePath / localeAlternates / htmlLang
     i18n.ts             locales, defaultLocale, getDictionary
@@ -133,6 +134,8 @@ src/
                         form.ts (DayPlan + rules, client-safe), cutoffs.ts, copy-plan.ts (planWeekCopy), routes.ts
     customers/          queries.ts (list + trigram search), detail.ts (record read model), changes.ts (flags, rename, note),
                         filters.ts (URL state, client-safe), limits.ts
+    daysheet/           queries.ts (read model + poll version), ticks.ts (setBaked, setCollected), routes.ts (URL state),
+                        tick.ts (tick keys), notes.ts (allergen words) — client-safe except queries/ticks
 public/
 ```
 

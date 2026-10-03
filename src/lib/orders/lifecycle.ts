@@ -33,7 +33,7 @@ async function releaseQuantities(tx: Tx, orderId: string, menuDayId: string) {
 async function loadOrder(tx: Tx, orderId: string) {
   return tx.order.findUniqueOrThrow({
     where: { id: orderId },
-    select: { id: true, status: true, menuDayId: true, customerId: true, totalPaise: true, fulfilmentDate: true },
+    select: { id: true, status: true, menuDayId: true, customerId: true, totalPaise: true, fulfilmentDate: true, readyAt: true, completedAt: true },
   })
 }
 
@@ -108,6 +108,49 @@ export async function markCompleted(orderId: string) {
     await tx.customer.update({
       where: { id: order.customerId },
       data: { completedCount: { increment: 1 }, totalSpentPaise: { increment: order.totalPaise } },
+    })
+  })
+}
+
+/**
+ * The day sheet's Collected tick: VERIFIED | READY → COMPLETED in one step. The counter hands the bag over
+ * without marking it ready first, so a VERIFIED order passes through READY at the same instant — `readyAt`
+ * equal to `completedAt` is how undoCollected knows to put it back to VERIFIED.
+ */
+export async function markCollected(orderId: string) {
+  return serializable(async (tx) => {
+    const order = await loadOrder(tx, orderId)
+    if (order.status !== OrderStatus.VERIFIED && order.status !== OrderStatus.READY) {
+      throw new OrderError("INVALID_TRANSITION", { from: order.status, to: OrderStatus.COMPLETED })
+    }
+    const now = new Date()
+    await tx.order.update({ where: { id: orderId }, data: { status: OrderStatus.COMPLETED, completedAt: now, readyAt: order.readyAt ?? now } })
+    await tx.customer.update({
+      where: { id: order.customerId },
+      data: { completedCount: { increment: 1 }, totalSpentPaise: { increment: order.totalPaise } },
+    })
+  })
+}
+
+/**
+ * Unticking Collected on the day sheet — a mis-tap at the counter. The one way out of COMPLETED, and the
+ * caller only offers it on the order's own day or before: the order goes back to READY (or VERIFIED, if
+ * markCollected skipped READY) and the customer's counters move back with it.
+ */
+export async function undoCollected(orderId: string) {
+  return serializable(async (tx) => {
+    const order = await loadOrder(tx, orderId)
+    if (order.status !== OrderStatus.COMPLETED) throw new OrderError("INVALID_TRANSITION", { from: order.status, to: OrderStatus.READY })
+    const skippedReady = order.readyAt !== null && order.completedAt !== null && order.readyAt.getTime() === order.completedAt.getTime()
+    await tx.order.update({
+      where: { id: orderId },
+      data: skippedReady
+        ? { status: OrderStatus.VERIFIED, completedAt: null, readyAt: null }
+        : { status: OrderStatus.READY, completedAt: null },
+    })
+    await tx.customer.update({
+      where: { id: order.customerId },
+      data: { completedCount: { decrement: 1 }, totalSpentPaise: { decrement: order.totalPaise } },
     })
   })
 }
