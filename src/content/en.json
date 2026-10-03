@@ -741,6 +741,162 @@
         "close": "Close"
       }
     },
+    "customerFlags": {
+      "trusted": "Trusted",
+      "blocked": "Blocked",
+      "new": "New"
+    },
+    "customerActions": {
+      "trust": "Mark trusted",
+      "untrust": "Remove trusted",
+      "block": "Block",
+      "unblock": "Unblock",
+      "dialogs": {
+        "trustTitle": "Mark {name} as trusted?",
+        "trustBody": "Orders from {phone} will be verified automatically — you won’t need to call.",
+        "trustBodyManual": "Orders from {phone} will show as trusted. Auto-verify is off in Settings, so they still wait for your call.",
+        "trustOk": "Mark trusted",
+        "untrustTitle": "Remove trusted from {name}?",
+        "untrustBody": "Orders from {phone} will need a confirmation call again.",
+        "untrustBodyManual": "Orders from {phone} will no longer show as trusted.",
+        "untrustOk": "Remove trusted",
+        "blockTitle": "Block {name}?",
+        "blockBody": "Orders from {phone} are still accepted but flagged for review. They see nothing different.",
+        "blockOk": "Block number",
+        "unblockTitle": "Unblock {name}?",
+        "unblockBody": "Orders from {phone} will no longer be flagged.",
+        "unblockOk": "Unblock",
+        "cancel": "Cancel",
+        "close": "Close"
+      },
+      "done": {
+        "trust": "{name} marked trusted",
+        "untrust": "{name} no longer trusted",
+        "block": "{name} blocked",
+        "unblock": "{name} unblocked"
+      },
+      "undo": "Undo",
+      "dismiss": "Dismiss",
+      "failed": "That didn’t save — the customer may have just changed on another screen. Refresh the page and try again."
+    },
+    "customers": {
+      "metaTitle": "Customers",
+      "title": "Customers",
+      "count": "{count} customers · {trusted} trusted · {blocked} blocked",
+      "countOne": "1 customer · {trusted} trusted · {blocked} blocked",
+      "countNone": "No customers yet",
+      "searchLabel": "Search by phone or name",
+      "searchPlaceholder": "Search by phone or name",
+      "searchHint": "Paste or type any part of a number",
+      "clearSearch": "Clear search",
+      "showLabel": "Show",
+      "shows": {
+        "all": "All",
+        "trusted": "Trusted",
+        "before": "Ordered before",
+        "new": "New this month",
+        "noshow": "Has no-shows",
+        "blocked": "Blocked"
+      },
+      "sortLabel": "Sort",
+      "sorts": {
+        "recent": "Recent order",
+        "most": "Most orders",
+        "name": "Name A–Z"
+      },
+      "history": "{count} orders · last on {date}",
+      "historyOne": "1 order · last on {date}",
+      "historyNone": "No orders yet",
+      "noShows": "{count} no-shows",
+      "noShowsOne": "1 no-show",
+      "usual": "Usually orders: {name}",
+      "usualShort": "Usually: {name}",
+      "call": "Call",
+      "callName": "Call {name}",
+      "open": "Open {name}",
+      "moreActions": "More actions for {name}",
+      "view": "View",
+      "emptyAll": "No customers yet. They’ll appear here after the first order.",
+      "notFoundTitle": "No customer with {q}",
+      "notFoundBody": "This number hasn’t ordered before.",
+      "noMatchTitle": "No customers match",
+      "noMatchBody": "Try another name or clear the filters.",
+      "clearFilters": "Clear filters",
+      "capped": "Showing {shown} of {count} — search to find the rest.",
+      "table": {
+        "name": "Name",
+        "phone": "Phone",
+        "orders": "Orders",
+        "last": "Last order",
+        "noShows": "No-shows",
+        "flags": "Flags",
+        "actions": "Actions"
+      }
+    },
+    "customerDetail": {
+      "metaTitle": "{name} · Customers",
+      "back": "Back to customers",
+      "openFull": "Open full record",
+      "history": {
+        "title": "Order history",
+        "recent": "Recent orders",
+        "active": "Active",
+        "monthCount": "{count} orders",
+        "monthCountOne": "1 order",
+        "more": "Show older orders ({count})",
+        "none": "No orders yet."
+      },
+      "patterns": {
+        "title": "Patterns",
+        "usual": "Usually orders: {list}",
+        "usualItem": "{name} ({count} times)",
+        "usualItemOnce": "{name} (once)",
+        "weekday": "Usually collects on {day}s",
+        "average": "Average order: {amount}"
+      },
+      "note": {
+        "title": "Internal note",
+        "hint": "Only staff can see this.",
+        "placeholder": "Prefers a call after 5pm",
+        "save": "Save note",
+        "saved": "Saved",
+        "failed": "That didn’t save. Try again."
+      },
+      "contact": {
+        "call": "Call",
+        "whatsapp": "WhatsApp",
+        "name": "Name",
+        "editName": "Edit name",
+        "save": "Save",
+        "cancel": "Cancel",
+        "nameHint": "Past orders keep the name they were placed under.",
+        "nameFailed": "That didn’t save. Try again.",
+        "addressFrom": "From their last delivery order",
+        "maps": "Open in Maps",
+        "since": "Customer since {date}"
+      },
+      "flags": {
+        "trusted": "Trusted",
+        "notTrusted": "Not trusted",
+        "blocked": "Blocked",
+        "notBlocked": "Not blocked",
+        "trustLabel": "Trust {name}",
+        "blockLabel": "Block {name}",
+        "trustHelp": "Orders from this number are verified automatically. You won’t need to call.",
+        "trustHelpManual": "Marks someone you know. Auto-verify is off in Settings, so their orders still wait for your call.",
+        "trustLocked": "Unblock this number before marking it trusted.",
+        "blockHelp": "Orders are still accepted but flagged for review. The customer sees nothing different.",
+        "blockLocked": "Remove trusted before blocking this number."
+      },
+      "facts": {
+        "label": "Order counts",
+        "orders": "Total orders",
+        "completed": "Completed",
+        "cancelled": "Cancelled",
+        "noShows": "No-shows",
+        "spent": "Total spent {amount}"
+      }
+    },
     "more": {
       "metaTitle": "More",
       "title": "More",

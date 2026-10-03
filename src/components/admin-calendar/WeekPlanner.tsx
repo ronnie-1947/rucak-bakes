@@ -2,12 +2,12 @@
 
 import { type ReactNode, useState } from "react"
 import { Tag } from "@/components/ui/Tag"
+import { UndoBar } from "@/components/ui/UndoBar"
 import type { WeekPlan } from "@/lib/calendar/week"
 import { ApplyPanel } from "./ApplyPanel"
 import { CopyWeekDialog } from "./CopyWeekDialog"
 import { DayCard } from "./DayCard"
 import { EmptyWeek } from "./EmptyWeek"
-import { FlashLine } from "./FlashLine"
 import type { AdminCopy } from "./types"
 import { WeekActions } from "./WeekActions"
 
@@ -56,7 +56,7 @@ export function WeekPlanner({ week, nav, dict }: WeekPlannerProps) {
             {d.pastWeek}
           </Tag>
         )}
-        {flash ? <FlashLine text={flash} dismissLabel={d.dismiss} onDismiss={() => setFlash(null)} /> : null}
+        {flash ? <UndoBar text={flash} dismissLabel={d.dismiss} onDismiss={() => setFlash(null)} /> : null}
         {editable && applyOpen ? <ApplyPanel week={week} dict={dict} onClose={() => setApplyOpen(false)} onDone={done} /> : null}
       </div>
 

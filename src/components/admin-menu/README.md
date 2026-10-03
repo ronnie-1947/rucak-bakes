@@ -11,9 +11,8 @@ without it the owner reads the Active switch as "on sale today". View state live
 admin-menu/
   AdminMenu.tsx            entry (server) — header, filter bar, provider, then archived list | empty state | board; FAB
   MenuHeader.tsx           h1 + counts, Archived (n) / Back to menu, Select / Done, Add item (md+), the Calendar line
-  MenuFilterBar.tsx        sticky: SearchBox (ui) + ViewToggle, then category chips · status chips · SortSelect
+  MenuFilterBar.tsx        sticky: SearchBox (ui) + ViewToggle, then category chips · status chips · LinkSelect (ui)
   ViewToggle.tsx           List / Grid segmented links; with no ?view= the bar renders one per breakpoint
-  SortSelect.tsx           "use client" — native select swapping ?sort=
   MenuBoard.tsx            "use client" — rows / grid / table by view; bulk selection; BulkBar
   MenuRow.tsx              "use client" — list view below 1024px
   MenuCard.tsx             "use client" — grid card (4:3 cover, footer with switch and ⋯ opening upward)
@@ -38,7 +37,7 @@ AdminMenu dict=dict.admin library filters
 ├─ MenuHeader                              .title/.archivedTitle · .count · .archivedLink · .select/.done · .add · .explain
 ├─ MenuFilterBar (not archived, items > 0) .searchLabel · .views · .allCategories · .statuses · .sorts
 │  ├─ SearchBox (ui) + ViewToggle × 1–2
-│  └─ ChipLink × categories | ChipLink × statuses | SortSelect
+│  └─ ChipLink × categories | ChipLink × statuses | LinkSelect (ui)
 ├─ MenuActionsProvider (src/components/menu-actions) — undo strip, dialogs
 │  ├─ ArchivedList > ItemThumb (ui), RestoreButton
 │  │  or EmptyState (.emptyAll + Add your first item | .emptySearch/.emptyFilters + Clear filters)
@@ -76,7 +75,6 @@ AdminMenu           { dict: AdminCopy; library: MenuLibrary; filters: MenuFilter
 MenuHeader          { dict: MenuCopy; filters; totalCount; activeCount; archivedCount }
 MenuFilterBar       { dict; filters; view: ViewMode; categories: { slug; name }[] }
 ViewToggle          { filters; current: "list" | "grid"; dict; className }   // className sets the display
-SortSelect          { value; options: { value; label; href }[]; label; className? }
 MenuBoard           { dict: AdminCopy; items: MenuItemRow[]; view: ViewMode; selectMode; exitSelectHref }
 MenuRow / MenuCard / MenuTableRow { item; dict: AdminCopy; selectMode; checked; onToggle }
 MenuTable           { dict; selectMode; children }

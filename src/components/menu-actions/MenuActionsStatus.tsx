@@ -2,8 +2,8 @@
 
 import { Notice } from "@/components/ui/Notice"
 import { useMenuActions } from "@/hooks/useMenuActions"
+import { UndoBar } from "@/components/ui/UndoBar"
 import type { MenuCopy } from "./types"
-import { UndoBar } from "./UndoBar"
 
 type MenuActionsStatusProps = {
   dict: MenuCopy
@@ -16,7 +16,13 @@ export function MenuActionsStatus({ dict }: MenuActionsStatusProps) {
     <>
       {status.failed ? <Notice tone="error">{dict.failed}</Notice> : null}
       {status.undo ? (
-        <UndoBar text={status.undo.text} link={status.undo.link} dict={dict} pending={pending} onUndo={status.revert} onDismiss={status.dismiss} />
+        <UndoBar
+          text={status.undo.text}
+          link={status.undo.link}
+          undo={{ label: dict.undo, onUndo: status.revert, pending }}
+          dismissLabel={dict.dismiss}
+          onDismiss={status.dismiss}
+        />
       ) : null}
     </>
   )

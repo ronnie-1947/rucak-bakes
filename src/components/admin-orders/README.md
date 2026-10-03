@@ -19,7 +19,6 @@ admin-orders/
   OrderCard.tsx          "use client" — one order on phones/tablets; overlay link, Call + StatusMenu
   OrderTable.tsx         the ≥1024 table shell (thead, column widths)
   OrderTableRow.tsx      "use client" — one row; code links to the page (<2xl) or the pane (2xl)
-  ItemsLine.tsx          "2× Sourdough loaf, 1× Brownie box +1 more"
   WhenLine.tsx           "Pickup 11:30" / "Delivery"
   BulkBar.tsx            "use client" — sticky bottom: N selected · Cancel all · Verify all
   types.ts               AdminCopy, OrdersCopy, OrderLinks, BoardOrder
@@ -57,7 +56,7 @@ AdminOrders dict=dict.admin queue filters pane
 | `@/components/order-tag-list/OrderTagList` | the facts row |
 | `@/components/admin-order-detail/OrderDetail` | the 2xl pane |
 | `@/hooks/useOrderActions` | bulk actions |
-| `@/components/ui/*` | `Button`/`buttonClasses`, `ButtonLink`, `ChipLink`, `chipClasses`, `EmptyState`, `Meter`, `Notice`, `Rich`, `SearchBox` (debounced `?q=`), `SelectBox` (bulk tick), `StatusBadge`, `Tag`, `Icon`, `CheckIcon` |
+| `@/components/ui/*` | `Button`/`buttonClasses`, `ButtonLink`, `ChipLink`, `chipClasses`, `EmptyState`, `ItemsLine`, `Meter`, `Notice`, `Rich`, `SearchBox` (debounced `?q=`), `SelectBox` (bulk tick), `StatusBadge`, `Tag`, `Icon`, `CheckIcon` |
 | `@/lib/money` · `@/lib/template` · `@/lib/dates` | `formatPaise`, `fill`, `isIsoDate` |
 
 External: `next/link`, `next/navigation`. Tokens: `border-o500` (new-order edge), `border-o700` (selected), `bg-o50`, `text-o700`,
@@ -78,7 +77,6 @@ OrderGroupHeader { group; dict }
 OrderCard        { order: BoardOrder; dict; selectMode; checked; onToggle }
 OrderTable       { dict; paneOpen; children }
 OrderTableRow    { order; dict; selectMode; checked; onToggle; paneOpen; current }
-ItemsLine        { lines; dict; show?; className? }
 WhenLine         { fulfilmentType; pickupTime; dict }
 BulkBar          { dict; selectedCount; verifiable; cancellable; pending; onVerify; onCancel }
 ```

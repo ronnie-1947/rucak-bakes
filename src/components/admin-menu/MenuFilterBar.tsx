@@ -1,8 +1,8 @@
 import { ChipLink } from "@/components/ui/ChipLink"
 import { Container } from "@/components/ui/Container"
+import { LinkSelect } from "@/components/ui/LinkSelect"
 import { SearchBox } from "@/components/ui/SearchBox"
 import { type MenuFilters, menuHref, sortChoices, statusChoices } from "@/lib/menu/filters"
-import { SortSelect } from "./SortSelect"
 import type { MenuCopy, ViewMode } from "./types"
 import { ViewToggle } from "./ViewToggle"
 
@@ -52,7 +52,7 @@ export function MenuFilterBar({ dict, filters, view, categories }: MenuFilterBar
               {dict.statuses[status]}
             </ChipLink>
           ))}
-          <SortSelect value={filters.sort} options={sortOptions} label={dict.sortLabel} className="md:ml-auto" />
+          <LinkSelect value={filters.sort} options={sortOptions} label={dict.sortLabel} className="md:ml-auto" />
         </div>
       </Container>
     </div>

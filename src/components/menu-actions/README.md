@@ -9,8 +9,7 @@ and the item form ([admin-menu-item](../admin-menu-item/README.md)), the same wa
 ```
 menu-actions/
   MenuActionsProvider.tsx  "use client" — runs the server actions, owns the dialogs and the undo state; the useMenuActions() context
-  MenuActionsStatus.tsx    "use client" — the failure notice + UndoBar, wherever a screen places them
-  UndoBar.tsx              "Seeded rye is now inactive · [Open it] · Undo · ×"
+  MenuActionsStatus.tsx    "use client" — the failure notice + UndoBar (ui), wherever a screen places them
   DeactivateDialog.tsx     "use client" — names the upcoming days; "Also remove it from these days" (ticked)
   ArchiveDialog.tsx        "use client" — soft archive confirm naming the days it comes off
   ScheduleLines.tsx        a dialog's item list: name, then its upcoming days ("Sat 3 Oct (today) · 4 ordered")
@@ -44,7 +43,6 @@ Tokens: `bg-green-soft`, `text-green`, `text-o700`, `text-red`, `border-border`.
 ```ts
 MenuActionsProvider { dict: MenuCopy; statusPlacement?: "top" | "manual"; children }
 MenuActionsStatus   { dict }
-UndoBar             { text; link?: { href; label }; dict; pending; onUndo; onDismiss }
 DeactivateDialog    { targets: ItemTarget[]; dict; pending; onClose; onConfirm(removeFromDays) }
 ArchiveDialog       { targets; dict; pending; onClose; onConfirm }
 ScheduleLines       { targets; dict: MenuCopy["dialogs"] }

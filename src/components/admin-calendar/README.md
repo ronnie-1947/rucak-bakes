@@ -12,12 +12,11 @@ and capacity bars. Each day is edited in full by the day editor (`src/components
 admin-calendar/
   AdminCalendar.tsx     entry (server) — Container > WeekPlanner (keyed by week) with WeekNav as its nav slot
   WeekNav.tsx           ‹ range › links + This week; the week's numbers ("6 open days · 38 items scheduled · …")
-  WeekPlanner.tsx       "use client" — title + WeekActions, nav, Past week tag, FlashLine, ApplyPanel, EmptyWeek | day grid, CopyWeekDialog
+  WeekPlanner.tsx       "use client" — title + WeekActions, nav, Past week tag, UndoBar (ui, no undo), ApplyPanel, EmptyWeek | day grid, CopyWeekDialog
   WeekActions.tsx       Copy last week + Apply to all days — beside the title from 768px, stacked under the nav on phones
   ApplyPanel.tsx        "use client" — one Orders close + Max orders for every open day left; names the days and who keeps a higher max
   CopyWeekDialog.tsx    "use client" — "Copy last week?": the two ticks, Will change / Skipped lists, Copy into n days
   CopyRowList.tsx       a titled day list in that dialog ("Mon 5 · Replaces 6 items with 7 items")
-  FlashLine.tsx         the green line Copy / Apply leave behind, with Dismiss
   EmptyWeek.tsx         nothing planned this week: Copy last week · Plan Monday
   DayCard.tsx           "use client" — one day: header, then past line | open body | closed body; the close confirm
   DayCardHeader.tsx     weekday, date, Today tag, Open switch (not on past days)
@@ -36,7 +35,7 @@ admin-calendar/
 AdminCalendar dict=dict.admin week
 └─ WeekPlanner nav=<WeekNav/>                  .calendar.*
    ├─ WeekActions × 2 (wide md+, narrow <md)
-   ├─ Tag "Past week · read only" · FlashLine · ApplyPanel > SelectField, Stepper (ui)
+   ├─ Tag "Past week · read only" · UndoBar (the green line Copy / Apply leave) · ApplyPanel > SelectField, Stepper (ui)
    ├─ EmptyWeek | ol > DayCard × 7
    │                   ├─ DayCardHeader > Switch, Tag (ui)
    │                   ├─ DayCardOpen > DayItemsSummary, SelectField, Stepper, Meter, ButtonLink (ui)
@@ -55,7 +54,7 @@ AdminCalendar dict=dict.admin week
 | `@/lib/calendar/routes` | `dayHref`, `dayOrdersHref` (week links are built in `loadWeek`) |
 | `@/app/actions/calendar` | `updateDay`, `applyToAllDays`, `copyLastWeek` |
 | `@/components/close-day-dialog/CloseDayDialog` | the confirm that names a day's orders |
-| `@/components/ui/*` | `Button`/`buttonClasses`, `ButtonLink`, `Checkbox`, `Container`, `Dialog`, `Meter`, `SelectField`, `Stepper`, `Switch`, `Tag`, icons |
+| `@/components/ui/*` | `Button`/`buttonClasses`, `ButtonLink`, `Checkbox`, `Container`, `Dialog`, `Meter`, `SelectField`, `Stepper`, `Switch`, `Tag`, `UndoBar`, icons |
 
 Tokens: `bg-o500` (switch, meter), `text-o700`, `bg-o50`/`border-o200` (Today), `bg-green-soft`/`text-green` (flash, open, a 70%+ day),
 `border-red`/`bg-red-soft`/`text-red` (full, orders on a closed day, keeps), `bg-sunken` (empty week), `rounded-panel/chip`, `text-h1/h2`,
@@ -71,7 +70,6 @@ WeekActions     { layout: "wide" | "narrow"; applyOpen; onCopy; onApply; dict }
 ApplyPanel      { week; dict: AdminCopy; onClose; onDone(text) }
 CopyWeekDialog  { week; dict; onClose; onDone(text) }
 CopyRowList     { title; rows: { date; label; text }[]; empty?; muted? }
-FlashLine       { text; dismissLabel; onDismiss }
 EmptyWeek       { firstDay; onCopy; dict }
 DayCard         { day: WeekDay; dict: AdminCopy }
 DayCardHeader   { day; isOpen; onToggle; dict }

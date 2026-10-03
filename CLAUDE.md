@@ -92,9 +92,9 @@ src/
     api/auth/[...nextauth]/route.ts
     sections/           landing bands (colocated, never a route)
   components/
-    ui/                 Button (+ ButtonLink), Checkbox, Chip(Link), Container, Dialog, EmptyState, ItemThumb, LazyOnView, Meter,
-                        Notice, Rich, SearchBox (?q=), SelectBox (bulk tick), Spinner, StatusBadge, Switch, Tag;
-                        form: Field, TextInput (+ inputShellClasses), SelectField, Stepper
+    ui/                 Button (+ ButtonLink), Checkbox, Chip(Link), Container, Dialog, EmptyState, ItemsLine, ItemThumb, LazyOnView,
+                        LinkSelect (?sort=), Meter, Notice, Rich, SearchBox (?q=), SelectBox (bulk tick), Spinner, StatusBadge, Switch,
+                        Tag, UndoBar; form: Field, TextInput (+ inputShellClasses), SelectField, Stepper
       icons/
     admin-login/        the /admin/login screen
     admin-shell/        sidebar / tab bar frame for /admin/(shell)
@@ -106,9 +106,12 @@ src/
     admin-calendar/     the week planner (/admin/calendar): day cards with live controls, Copy last week, Apply to all days
     admin-calendar-day/ the day editor (/admin/calendar/[date]): items, quantities, overrides, settings, customer preview
     close-day-dialog/   the confirm naming a day's orders before it closes (both calendar screens)
+    admin-customers/    the customers list (/admin/customers): phone/name search, Show chips, cards / table, 2xl pane
+    admin-customer-detail/ one customer (page + 2xl pane): contact, trust / block, counts, history, patterns, note
+    customer-actions/   trust / block / unblock + the confirm and undo strip;  customer-flags/  Trusted / Blocked / New tags
   content/
     en.json
-  hooks/                useOrderActions, useMenuActions (action contexts), useDismiss (popover close)
+  hooks/                useOrderActions, useMenuActions, useCustomerActions (action contexts), useDismiss (popover close)
   lib/
     content.ts          localePath / localeAlternates / htmlLang
     i18n.ts             locales, defaultLocale, getDictionary
@@ -128,6 +131,8 @@ src/
                         copy.ts, units.ts, allergens.ts
     calendar/           week.ts / day.ts (read models), writes.ts (patchDay, applyToWeek, copyWeek, saveDay),
                         form.ts (DayPlan + rules, client-safe), cutoffs.ts, copy-plan.ts (planWeekCopy), routes.ts
+    customers/          queries.ts (list + trigram search), detail.ts (record read model), changes.ts (flags, rename, note),
+                        filters.ts (URL state, client-safe), limits.ts
 public/
 ```
 
