@@ -110,9 +110,11 @@ src/
     admin-customer-detail/ one customer (page + 2xl pane): contact, trust / block, counts, history, patterns, note
     customer-actions/   trust / block / unblock + the confirm and undo strip;  customer-flags/  Trusted / Blocked / New tags
     admin-daysheet/     the day sheet (/admin/daysheet): bake totals, notes, pickups, Baked / Collected ticks, A4 print layout
+    admin-settings/     settings (/admin/settings): five sections, save bars + leave guard, live switches, Telegram connect, staff access
   content/
     en.json
-  hooks/                useOrderActions, useMenuActions, useCustomerActions, useDaySheet (action contexts), useDismiss (popover close)
+  hooks/                useOrderActions, useMenuActions, useCustomerActions, useDaySheet (action contexts), useSettingsLeave (unsaved-changes guard),
+                        useDismiss (popover close)
   lib/
     content.ts          localePath / localeAlternates / htmlLang
     i18n.ts             locales, defaultLocale, getDictionary
@@ -121,10 +123,9 @@ src/
     money.ts            toPaise / formatPaise — Int paise only
     phone.ts            normalise → E.164 / formatForDisplay
     cloudinary.ts       imageUrl, browser uploadImage (no secrets)
-    telegram.ts         notifyOwner, formatOrderMessage
+    telegram.ts         notifyOwner, formatOrderMessage, TelegramError, botUsername / findChatWithCode (connect flow)
     template.ts         fill() for {placeholders} in dict strings
     admin-routes.ts     ADMIN_HOME, admin sections, safeAdminPath (post-login redirects)
-    settings.ts         getSettings() / findSettings() — the singleton row, cached per request
     orders/             status.ts (state machine), lifecycle.ts (transitions), place.ts (createOrder tx),
                         notify.ts, queries.ts (admin read models), filters.ts (queue URL state)
     menu/               queries.ts (library read model), filters.ts (URL state), changes.ts (writes + undo snapshots),
@@ -136,6 +137,9 @@ src/
                         filters.ts (URL state, client-safe), limits.ts
     daysheet/           queries.ts (read model + poll version), ticks.ts (setBaked, setCollected), routes.ts (URL state),
                         tick.ts (tick keys), notes.ts (allergen words) — client-safe except queries/ticks
+    settings/           row.ts (getSettings() / findSettings() — the singleton row, cached per request), queries.ts (screen read model),
+                        writes.ts, telegram.ts (connect code, state, recordDelivery), form.ts (values + rules, client-safe),
+                        hours.ts (opening hours, client-safe), sections.ts (?section=, client-safe)
 public/
 ```
 
@@ -250,7 +254,8 @@ key to every locale file atomically. Details: the
   See `dev-docs/implementation.md`.
 - **Every admin server action starts with `await requireStaff()`** (`src/auth.ts`).
   `proxy.ts` guards page navigations only — a server action is a separate entry
-  point, and the JWT outlives a staff member's deactivation.
+  point, and the JWT outlives a staff member's deactivation. Owner-only actions (settings,
+  staff access) start with `await requireOwner()` instead — it runs `requireStaff()` first.
 - **No hardcoded user-facing text.** Every string lives in a locale file and
   reaches the component through `dict`.
 - **Tailwind only.** No inline `style={{}}`. Use `@theme` tokens over raw hex.

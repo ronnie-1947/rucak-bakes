@@ -3,7 +3,7 @@ import { type CustomerFilters, phoneDigits, type ShowChoice, type SortChoice } f
 import { addDays, formatShortDate, isoDateInZone, todayIn, zonedTimeToUtc } from "@/lib/dates"
 import { prisma } from "@/lib/db"
 import { formatForDisplay } from "@/lib/phone"
-import { getSettings } from "@/lib/settings"
+import { getSettings } from "@/lib/settings/row"
 
 /** Read model for the customers list (/admin/customers). */
 

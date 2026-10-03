@@ -4,8 +4,42 @@ import { formatPaise } from "@/lib/money"
 import { formatForDisplay } from "@/lib/phone"
 import { fill } from "@/lib/template"
 
+/** Telegram refused (or never answered) a call. `description` is its own words — "Forbidden: bot was blocked by the user". */
+export class TelegramError extends Error {
+  constructor(
+    readonly status: number,
+    readonly description: string,
+  ) {
+    super(`Telegram ${status}: ${description}`)
+  }
+}
+
+/** The bot token is set — without it there is nothing to connect. */
+export function botConfigured(): boolean {
+  return Boolean(process.env.TELEGRAM_BOT_TOKEN)
+}
+
+type BotReply<T> = { ok: boolean; result?: T; description?: string }
+
+/** One Bot API call. A body makes it a POST; without one it's a GET, which `next.revalidate` can cache. */
+async function callBot<T>(method: string, body?: object, revalidate?: number): Promise<T> {
+  const token = process.env.TELEGRAM_BOT_TOKEN
+  if (!token) throw new TelegramError(0, "Telegram is not configured")
+  const res = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
+    ...(body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {}),
+    ...(revalidate ? { next: { revalidate } } : {}),
+    // A hung Telegram API must not hold the customer's request open.
+    signal: AbortSignal.timeout(8_000),
+  }).catch((error: unknown) => {
+    throw new TelegramError(0, error instanceof Error ? error.message : "Network error")
+  })
+  const reply = (await res.json().catch(() => null)) as BotReply<T> | null
+  if (!res.ok || !reply?.ok) throw new TelegramError(res.status, reply?.description ?? `HTTP ${res.status}`)
+  return reply.result as T
+}
+
 /**
- * Sends one message to the owner's Telegram chat; throws on any failure.
+ * Sends one message to the owner's Telegram chat; throws a TelegramError on any failure.
  *
  * The database write is the order — this is a notification sent AFTER the commit, never part of it.
  * Every caller wraps it so a failure sets `notificationFailed: true` on the order and nothing else.
@@ -13,18 +47,36 @@ import { fill } from "@/lib/template"
  * `chatId` is the chat the settings screen's connect flow stored; TELEGRAM_CHAT_ID is the fallback.
  */
 export async function notifyOwner(text: string, chatId?: string | null) {
-  const token = process.env.TELEGRAM_BOT_TOKEN
   const chat = chatId || process.env.TELEGRAM_CHAT_ID
-  if (!token || !chat) throw new Error("Telegram is not configured")
+  if (!chat) throw new TelegramError(0, "No Telegram chat is connected")
+  await callBot("sendMessage", { chat_id: chat, text, parse_mode: "HTML", link_preview_options: { is_disabled: true } })
+}
 
-  const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chat, text, parse_mode: "HTML", link_preview_options: { is_disabled: true } }),
-    // A hung Telegram API must not hold the customer's request open.
-    signal: AbortSignal.timeout(8_000),
-  })
-  if (!res.ok) throw new Error(`Telegram ${res.status}`)
+/** The bot's @username, for the connect steps — cached for a day. Null when Telegram can't be reached. */
+export async function botUsername(): Promise<string | null> {
+  try {
+    const me = await callBot<{ username?: string }>("getMe", undefined, 86_400)
+    return me.username ?? null
+  } catch (error) {
+    console.error("Telegram getMe failed:", error)
+    return null
+  }
+}
+
+type Update = { message?: { text?: string; chat: { id: number } } }
+
+/**
+ * The chat that sent the bot one of `codes` — "/start CODE" from the deep link, or the code typed — in the
+ * last day's messages (Telegram keeps unread updates for 24 hours). Newest first. Throws if Telegram can't
+ * be reached, or the bot has a webhook (getUpdates and webhooks are exclusive).
+ */
+export async function findChatWithCode(codes: string[]): Promise<string | null> {
+  const updates = await callBot<Update[]>("getUpdates", { limit: 100, allowed_updates: ["message"] })
+  for (const update of updates.toReversed()) {
+    const text = update.message?.text?.toUpperCase()
+    if (text && codes.some((code) => text.includes(code))) return String(update.message?.chat.id)
+  }
+  return null
 }
 
 /** Telegram's HTML mode rejects the whole message on a stray `<` — escape everything anyone typed. */

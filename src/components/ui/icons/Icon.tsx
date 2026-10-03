@@ -32,6 +32,8 @@ const paths = {
   pencil: "M4 20h4L19 9l-4-4L4 16v4Z",
   map: "M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",
   note: "M4 4h16v12H8l-4 4z",
+  store: "M4 10h16v10H4zM3 10l2-6h14l2 6M9 20v-5h6v5",
+  bell: "M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0",
 } as const
 
 export type IconName = keyof typeof paths

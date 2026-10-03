@@ -3,7 +3,7 @@ import { addDays, formatDayLabel, fromDbDate, type IsoDate, isoDateInZone, today
 import { prisma } from "@/lib/db"
 import type { MenuFilters, SortChoice } from "@/lib/menu/filters"
 import { asPriceUnit, type PriceUnit } from "@/lib/menu/units"
-import { getSettings } from "@/lib/settings"
+import { getSettings } from "@/lib/settings/row"
 
 /**
  * Read models for the menu library (/admin/menu). A bakery's menu is a few dozen items, so the whole

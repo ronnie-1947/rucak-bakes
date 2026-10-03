@@ -16,6 +16,10 @@ type StepperProps = {
   invalid?: boolean
   /** `full` stretches across its column, the value centred between the buttons. */
   width?: Width
+  /** How far one press moves the value — 10 for a fee in rupees. */
+  step?: number
+  /** The value as shown — "₹40", "3 km". The bare number when omitted; screen readers get it as aria-valuetext. */
+  display?: string
 }
 
 const button =
@@ -37,10 +41,25 @@ const values: Record<Width, string> = {
 }
 
 /** − value + in one bordered pill. Each button is a 44px target; the value is a spinbutton for screen readers. */
-export function Stepper({ id, value, min, max, onChange, decreaseLabel, increaseLabel, describedBy, invalid = false, width = "auto" }: StepperProps) {
+export function Stepper({
+  id,
+  value,
+  min,
+  max,
+  onChange,
+  decreaseLabel,
+  increaseLabel,
+  describedBy,
+  invalid = false,
+  width = "auto",
+  step = 1,
+  display,
+}: StepperProps) {
+  const down = () => onChange(Math.max(min, value - step))
+  const up = () => onChange(Math.min(max, value + step))
   return (
     <div className={`flex h-11 items-center rounded-field border bg-background ${frames[invalid ? "invalid" : "valid"]} ${widths[width]}`}>
-      <button type="button" aria-label={decreaseLabel} disabled={value <= min} onClick={() => onChange(Math.max(min, value - 1))} className={button}>
+      <button type="button" aria-label={decreaseLabel} disabled={value <= min} onClick={down} className={button}>
         <Icon name="minus" className="size-4" />
       </button>
       <span
@@ -50,19 +69,20 @@ export function Stepper({ id, value, min, max, onChange, decreaseLabel, increase
         aria-valuenow={value}
         aria-valuemin={min}
         aria-valuemax={max}
+        aria-valuetext={display}
         aria-invalid={invalid || undefined}
         aria-describedby={describedBy}
         onKeyDown={(event) => {
-          if (event.key === "ArrowUp" || event.key === "ArrowRight") onChange(Math.min(max, value + 1))
-          else if (event.key === "ArrowDown" || event.key === "ArrowLeft") onChange(Math.max(min, value - 1))
+          if (event.key === "ArrowUp" || event.key === "ArrowRight") up()
+          else if (event.key === "ArrowDown" || event.key === "ArrowLeft") down()
           else return
           event.preventDefault()
         }}
         className={`rounded-chip text-center font-semibold tabular-nums focus-visible:outline-2 focus-visible:outline-o700 ${values[width]}`}
       >
-        {value}
+        {display ?? value}
       </span>
-      <button type="button" aria-label={increaseLabel} disabled={value >= max} onClick={() => onChange(Math.min(max, value + 1))} className={button}>
+      <button type="button" aria-label={increaseLabel} disabled={value >= max} onClick={up} className={button}>
         <Icon name="plus" className="size-4" />
       </button>
     </div>

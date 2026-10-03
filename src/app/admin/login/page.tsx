@@ -6,7 +6,7 @@ import { adminSectionOf, safeAdminPath } from "@/lib/admin-routes"
 import { htmlLang } from "@/lib/content"
 import { getDictionary, type Locale } from "@/lib/i18n"
 import { formatForDisplay } from "@/lib/phone"
-import { findSettings } from "@/lib/settings"
+import { findSettings } from "@/lib/settings/row"
 import { firstParam, loginStateOf } from "./login-state"
 
 const locale: Locale = "en"

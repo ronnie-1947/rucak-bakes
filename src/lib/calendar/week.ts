@@ -5,7 +5,7 @@ import { dayHref, weekBounds, weekHref } from "@/lib/calendar/routes"
 import { addDays, dateRange, formatDayLabel, formatDayNumber, formatShortDate, formatWeekday, fromDbDate, type IsoDate, todayIn, toDbDate, weekStart } from "@/lib/dates"
 import { prisma } from "@/lib/db"
 import { LIVE_STATUSES, VERIFIED_STATUSES } from "@/lib/orders/status"
-import { getSettings } from "@/lib/settings"
+import { getSettings } from "@/lib/settings/row"
 
 /** Read model for the week planner (/admin/calendar). */
 

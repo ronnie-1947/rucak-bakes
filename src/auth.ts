@@ -119,3 +119,12 @@ export async function requireStaff() {
   if (!staff) redirect(ADMIN_LOGIN)
   return staff
 }
+
+/**
+ * requireStaff(), then the role: the staff member when they're an OWNER, null for STAFF — so an action can
+ * refuse in its own words. Settings and staff access are owner-only; everything else is open to all staff.
+ */
+export async function requireOwner() {
+  const staff = await requireStaff()
+  return staff.role === "OWNER" ? staff : null
+}

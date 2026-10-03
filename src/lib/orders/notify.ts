@@ -2,6 +2,7 @@ import { todayIn } from "@/lib/dates"
 import { prisma } from "@/lib/db"
 import { defaultLocale, getDictionary } from "@/lib/i18n"
 import type { PlacedOrder } from "@/lib/orders/place"
+import { recordDelivery } from "@/lib/settings/telegram"
 import { formatOrderMessage, notifyOwner } from "@/lib/telegram"
 
 /**
@@ -34,10 +35,15 @@ export async function notifyNewOrder(order: PlacedOrder, origin: string): Promis
       dict.telegram,
     )
     await notifyOwner(text, order.telegramChatId)
+    await recordDelivery(null)
   } catch (error) {
     console.error(`Telegram notification failed for ${order.code}:`, error)
-    await prisma.order.update({ where: { id: order.id }, data: { notificationFailed: true } }).catch((flagError) => {
-      console.error(`Could not flag ${order.code} as notificationFailed:`, flagError)
-    })
+    await Promise.all([
+      prisma.order.update({ where: { id: order.id }, data: { notificationFailed: true } }).catch((flagError) => {
+        console.error(`Could not flag ${order.code} as notificationFailed:`, flagError)
+      }),
+      // The settings screen turns red when alerts stop reaching the owner.
+      recordDelivery(error),
+    ])
   }
 }

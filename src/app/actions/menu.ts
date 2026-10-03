@@ -12,7 +12,7 @@ import { applySnapshot, archiveItems, duplicateItem, type MenuSnapshot, restoreI
 import { LIMITS, priceToPaise, QUANTITY, SLUG } from "@/lib/menu/form"
 import { saveItem } from "@/lib/menu/save"
 import { priceUnits } from "@/lib/menu/units"
-import { getSettings } from "@/lib/settings"
+import { getSettings } from "@/lib/settings/row"
 import { fill } from "@/lib/template"
 
 /**

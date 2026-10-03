@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db"
 import { paiseToPrice } from "@/lib/menu/form"
 import { asPriceUnit, type PriceUnit } from "@/lib/menu/units"
 import { LIVE_STATUSES, VERIFIED_STATUSES } from "@/lib/orders/status"
-import { getSettings } from "@/lib/settings"
+import { getSettings } from "@/lib/settings/row"
 
 /** Read model for the day editor (/admin/calendar/[date]). */
 

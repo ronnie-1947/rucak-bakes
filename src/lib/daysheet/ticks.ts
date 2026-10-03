@@ -2,7 +2,7 @@ import { OrderStatus } from "@/generated/prisma/client"
 import { fromDbDate, todayIn } from "@/lib/dates"
 import { OrderError, prisma } from "@/lib/db"
 import { markCollected, undoCollected } from "@/lib/orders/lifecycle"
-import { getSettings } from "@/lib/settings"
+import { getSettings } from "@/lib/settings/row"
 
 /**
  * The day sheet's two ticks. Both persist — the baker and the counter are different people on different

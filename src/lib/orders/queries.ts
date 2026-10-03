@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db"
 import { type OrderFilters, selectedDates } from "@/lib/orders/filters"
 import { FLOW, VERIFIED_STATUSES } from "@/lib/orders/status"
 import { formatForDisplay } from "@/lib/phone"
-import { getSettings } from "@/lib/settings"
+import { getSettings } from "@/lib/settings/row"
 
 /**
  * Read models for the admin order screens. Everything a client component renders arrives here as plain

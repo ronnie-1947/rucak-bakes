@@ -8,7 +8,7 @@ import { DAY_QUANTITY, LIMITS, MAX_ORDERS, OVERBOOK_MAX } from "@/lib/calendar/f
 import { inPlanningRange } from "@/lib/calendar/routes"
 import { applyToWeek, copyWeek, type DayRefusal, patchDay, saveDay } from "@/lib/calendar/writes"
 import { isIsoDate, todayIn, weekday } from "@/lib/dates"
-import { getSettings } from "@/lib/settings"
+import { getSettings } from "@/lib/settings/row"
 
 /**
  * The Calendar's server actions. Each re-checks the staff row, validates, and refuses dates outside the

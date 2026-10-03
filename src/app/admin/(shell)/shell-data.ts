@@ -3,7 +3,7 @@ import type { ShellData } from "@/components/admin-shell/types"
 import { OrderStatus } from "@/generated/prisma/enums"
 import { formatDayLabel, todayIn, toDbDate } from "@/lib/dates"
 import { prisma } from "@/lib/db"
-import { getSettings } from "@/lib/settings"
+import { getSettings } from "@/lib/settings/row"
 
 /** Everything the admin frame shows, read once per request in the layout. */
 export async function loadShellData(staffName: string): Promise<ShellData> {

@@ -8,7 +8,7 @@ import { asPriceUnit, type PriceUnit } from "@/lib/menu/units"
 import { CLEARED, filtersHref } from "@/lib/orders/filters"
 import { LIVE_STATUSES, VERIFIED_STATUSES } from "@/lib/orders/status"
 import { formatForDisplay } from "@/lib/phone"
-import { getSettings } from "@/lib/settings"
+import { getSettings } from "@/lib/settings/row"
 
 /**
  * Read model for the day sheet (/admin/daysheet): one fulfilment day's orders turned into what to bake and

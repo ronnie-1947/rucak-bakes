@@ -4,7 +4,7 @@ import { parseWeek } from "@/lib/calendar/routes"
 import { loadWeek } from "@/lib/calendar/week"
 import { todayIn } from "@/lib/dates"
 import { getDictionary, type Locale } from "@/lib/i18n"
-import { getSettings } from "@/lib/settings"
+import { getSettings } from "@/lib/settings/row"
 
 const locale: Locale = "en"
 

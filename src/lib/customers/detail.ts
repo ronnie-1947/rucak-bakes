@@ -3,7 +3,7 @@ import { isNewCustomer } from "@/lib/customers/queries"
 import { formatShortDate, formatWeekday, fromDbDate, type IsoDate, isoDateInZone, weekday } from "@/lib/dates"
 import { prisma } from "@/lib/db"
 import { formatForDisplay } from "@/lib/phone"
-import { getSettings } from "@/lib/settings"
+import { getSettings } from "@/lib/settings/row"
 
 /** Read model for one customer (/admin/customers/[id], and the list's 2xl pane). */
 

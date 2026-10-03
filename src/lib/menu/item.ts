@@ -5,7 +5,7 @@ import { isAllergen } from "@/lib/menu/allergens"
 import { BLANK, type MenuItemValues, paiseToPrice } from "@/lib/menu/form"
 import type { ScheduledDay } from "@/lib/menu/queries"
 import { asPriceUnit } from "@/lib/menu/units"
-import { getSettings } from "@/lib/settings"
+import { getSettings } from "@/lib/settings/row"
 
 /** Read model for the menu item form (/admin/menu/new and /admin/menu/[id]). */
 

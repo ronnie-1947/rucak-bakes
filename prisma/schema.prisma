@@ -227,6 +227,9 @@ model Settings {
   deliveryRadiusKm     Int?
   telegramChatId       String?
   telegramConnectedAt  DateTime?
+  telegramLastSentAt   DateTime? // the last message Telegram accepted
+  telegramFailedAt     DateTime? // the last one it refused — newer than telegramLastSentAt means alerts are failing
+  telegramError        String? // Telegram's own description of that refusal
   announcement         String?
   orderingPaused       Boolean   @default(false)
   orderingPausedReason String?
