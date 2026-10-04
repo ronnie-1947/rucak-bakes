@@ -2,11 +2,14 @@ import type { SelectHTMLAttributes } from "react"
 import { Icon } from "@/components/ui/icons/Icon"
 
 type Size = "md" | "sm"
+type Tone = "plain" | "active"
 
 type SelectFieldProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, "className" | "size"> & {
   options: { value: string; label: string }[]
   /** `sm` for narrow cards: admin small text from 768px. */
   size?: Size
+  /** `active`: the choice differs from the default — a filter that's narrowing the list (the orders queue's Date / Status / Show). */
+  tone?: Tone
   className?: string
 }
 
@@ -15,15 +18,21 @@ const texts: Record<Size, string> = {
   sm: "md:text-small-admin",
 }
 
+/** Active is the large warm fill's border on the o50 tint, semibold — the same signal a selected filter chip gives. */
+const tones: Record<Tone, string> = {
+  plain: "border-border bg-background",
+  active: "border-o500 bg-o50 font-semibold",
+}
+
 /**
  * A native select — the phone's own picker — in the text-field look, with a chevron. 16px text on phones so
  * iOS doesn't zoom on focus. `className` sizes the wrapper (its width); the select fills it.
  */
-export function SelectField({ options, size = "md", className, ...select }: SelectFieldProps) {
+export function SelectField({ options, size = "md", tone = "plain", className, ...select }: SelectFieldProps) {
   return (
     <span className={`relative block min-w-0 ${className ?? ""}`}>
       <select
-        className={`h-11 w-full cursor-pointer appearance-none truncate rounded-field border border-border bg-background pr-8 pl-3 text-body text-foreground tabular-nums focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-o700 disabled:cursor-default disabled:opacity-50 ${texts[size]}`}
+        className={`h-11 w-full cursor-pointer appearance-none truncate rounded-field border pr-8 pl-3 text-body text-foreground tabular-nums focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-o700 disabled:cursor-default disabled:opacity-50 ${tones[tone]} ${texts[size]}`}
         {...select}
       >
         {options.map((option) => (

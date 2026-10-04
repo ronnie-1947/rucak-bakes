@@ -1,19 +1,8 @@
 import Link from "next/link"
 import { buttonClasses } from "@/components/ui/Button"
-import { ChipLink } from "@/components/ui/ChipLink"
-import { SearchBox } from "@/components/ui/SearchBox"
-import {
-  CLEARED,
-  datePresets,
-  filtersHref,
-  isDefault,
-  type OrderFilters,
-  pickDate,
-  showToggles,
-  statusChoices,
-  toggle,
-} from "@/lib/orders/filters"
-import { CustomDateChip } from "./CustomDateChip"
+import { CLEARED, filtersHref, isDefault, type OrderFilters, showToggles, statusChoices } from "@/lib/orders/filters"
+import { DateFilter } from "./DateFilter"
+import { FilterSelect } from "./FilterSelect"
 import type { OrdersCopy } from "./types"
 
 type OrdersFilterBarProps = {
@@ -28,56 +17,47 @@ const sticking: Record<"open" | "closed", string> = {
   closed: "sticky top-0",
 }
 
+/** Phones share the row three ways; from 768px each select is 180px. */
+const selectWidth = "flex-1 md:w-45 md:flex-none"
+
+/** The value the Show select takes when no toggle is on. */
+const ANY = "any"
+
 /**
- * Search plus three chip rows — Date, Status, Show — every chip a link to the next filter state.
- * Sticky under the header. On phones each row scrolls sideways instead of wrapping.
+ * Date, Status, Show as three labelled selects in one row, and Clear once anything narrows the list. Sticky under the
+ * header at a fixed 82px (`h-20.5`) — the day headers stick right under it (`top-20.5`), so change both together.
  */
 export function OrdersFilterBar({ dict, filters, paneOpen }: OrdersFilterBarProps) {
   const base = { ...filters, order: null }
-  const rowClass = "flex min-w-0 items-center gap-2 overflow-x-auto -mx-4 px-4 md:mx-0 md:flex-wrap md:overflow-visible md:px-0"
-  const labelClass = "w-14 shrink-0 text-micro font-semibold text-muted uppercase"
+  const f = dict.filters
 
   return (
-    <div className={`z-20 border-y border-border bg-background shadow-raised ${sticking[paneOpen ? "open" : "closed"]}`}>
-      <div className="flex flex-col gap-2 px-4 py-2 md:px-6 lg:px-8">
-        <SearchBox value={filters.q} baseHref={filtersHref({ ...base, q: "" })} label={dict.searchLabel} placeholder={dict.searchPlaceholder} />
-
-        <div className={rowClass}>
-          <span className={labelClass}>{dict.filters.date}</span>
-          {datePresets.map((preset) => (
-            <ChipLink
-              key={preset}
-              href={filtersHref({ ...base, dates: pickDate(filters.dates, preset) })}
-              selected={filters.dates.includes(preset)}
-            >
-              {dict.filters.dates[preset]}
-            </ChipLink>
-          ))}
-          <CustomDateChip filters={filters} label={dict.filters.customDate} />
-        </div>
-
-        <div className={rowClass}>
-          <span className={labelClass}>{dict.filters.status}</span>
-          {statusChoices.map((status) => (
-            <ChipLink key={status} href={filtersHref({ ...base, status })} selected={filters.status === status}>
-              {dict.filters.statuses[status]}
-            </ChipLink>
-          ))}
-        </div>
-
-        <div className={rowClass}>
-          <span className={labelClass}>{dict.filters.show}</span>
-          {showToggles.map((key) => (
-            <ChipLink key={key} href={filtersHref({ ...base, show: toggle(filters.show, key) })} selected={filters.show.includes(key)}>
-              {dict.filters.toggles[key]}
-            </ChipLink>
-          ))}
-          {!isDefault(filters) ? (
-            <Link href={filtersHref({ ...CLEARED, order: null, select: filters.select })} scroll={false} className={buttonClasses("link", "sm", "ml-auto shrink-0")}>
-              {dict.filters.clear}
-            </Link>
-          ) : null}
-        </div>
+    <div className={`z-20 h-20.5 border-y border-border bg-background shadow-raised ${sticking[paneOpen ? "open" : "closed"]}`}>
+      <div className="flex h-full min-w-0 items-end gap-2 px-4 py-2 md:px-6 lg:px-8">
+        <DateFilter filters={filters} dict={f} className={selectWidth} />
+        <FilterSelect
+          label={f.status}
+          value={filters.status}
+          options={statusChoices.map((status) => ({ value: status, label: f.statuses[status], href: filtersHref({ ...base, status }) }))}
+          active={filters.status !== "ALL"}
+          className={selectWidth}
+        />
+        <FilterSelect
+          label={f.show}
+          value={filters.show[0] ?? ANY}
+          options={[
+            { value: ANY, label: f.showAll, href: filtersHref({ ...base, show: [] }) },
+            ...showToggles.map((key) => ({ value: key, label: f.toggles[key], href: filtersHref({ ...base, show: [key] }) })),
+          ]}
+          active={filters.show.length > 0}
+          className={selectWidth}
+        />
+        {!isDefault(filters) ? (
+          <Link href={filtersHref({ ...CLEARED, order: null, select: filters.select })} scroll={false} className={buttonClasses("link", "inline", "shrink-0 px-1")}>
+            <span className="md:hidden">{f.clearShort}</span>
+            <span className="hidden md:inline">{f.clear}</span>
+          </Link>
+        ) : null}
       </div>
     </div>
   )

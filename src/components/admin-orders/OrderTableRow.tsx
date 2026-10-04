@@ -34,11 +34,11 @@ const looks: Record<Look, string> = {
   plain: "hover:bg-sunken",
 }
 
-/** The left-edge marker lives on the first cell — a <tr> can't carry a border-left reliably. */
+/** The left edge lives on the first cell — under separate borders a <tr> draws none. New and current widen it in colour. */
 const edges: Record<Look, string> = {
   current: "border-l-2 border-l-o700",
   new: "border-l-2 border-l-o500",
-  plain: "border-l-2 border-l-transparent",
+  plain: "border-l border-l-border",
 }
 
 const dims: Record<"full" | "dim", string> = { full: "", dim: "opacity-70" }
@@ -46,18 +46,25 @@ const dims: Record<"full" | "dim", string> = { full: "", dim: "opacity-70" }
 /** Columns that only fit when the split pane is closed. */
 const wide: Record<"open" | "closed", string> = { open: "2xl:hidden", closed: "" }
 
+/** With the pane open, Status is the last cell showing at 2xl — it takes the right edge. */
+const statusEdges: Record<"open" | "closed", string> = { open: "2xl:border-r 2xl:border-r-border", closed: "" }
+
+/** Every cell draws the row's bottom rule (OrderTable uses separate borders). Colours per side, so the first cell's edge keeps its own. */
+const cell = "border-b border-b-border"
+
 const DIMMED = ["COMPLETED", "CANCELLED", "NO_SHOW"]
 
 export function OrderTableRow({ order, dict, selectMode, checked, onToggle, paneOpen, current }: OrderTableRowProps) {
   const look: Look = current ? "current" : order.isNew ? "new" : "plain"
   const dim = DIMMED.includes(order.status) || order.tags.suspected
-  const wideCell = wide[paneOpen ? "open" : "closed"]
+  const pane = paneOpen ? "open" : "closed"
+  const wideCell = `${cell} ${wide[pane]}`
   const target = { id: order.id, code: order.code, name: order.name }
   const linkClass = "font-semibold tracking-wide hover:underline"
 
   return (
-    <tr className={`border-b border-border ${looks[look]} ${dims[dim ? "dim" : "full"]}`}>
-      <td className={`py-2 pr-2 pl-3 ${edges[look]}`}>
+    <tr className={`${looks[look]} ${dims[dim ? "dim" : "full"]}`}>
+      <td className={`py-2 pr-2 pl-3 ${cell} ${edges[look]}`}>
         <span className="flex items-center gap-2">
           {selectMode ? <SelectBox checked={checked} onChange={onToggle} label={fill(dict.orders.selectOrder, { code: order.code })} /> : null}
           {/* Below 2xl the code opens the order's page; from 2xl it opens the split pane. */}
@@ -70,8 +77,8 @@ export function OrderTableRow({ order, dict, selectMode, checked, onToggle, pane
           {order.isNew ? <Tag tone="warm">{dict.orders.new}</Tag> : null}
         </span>
       </td>
-      <td className="px-2 py-2">{order.pickupTime ?? "—"}</td>
-      <td className="max-w-0 px-2 py-2">
+      <td className={`px-2 py-2 ${cell}`}>{order.pickupTime ?? "—"}</td>
+      <td className={`max-w-0 px-2 py-2 ${cell}`}>
         <span className="flex flex-col">
           <span className="truncate font-medium">{order.name}</span>
           {paneOpen ? <ItemsLine lines={order.lines} dict={dict.orders} className="hidden text-small-admin text-muted 2xl:block" /> : null}
@@ -86,14 +93,14 @@ export function OrderTableRow({ order, dict, selectMode, checked, onToggle, pane
         <ItemsLine lines={order.lines} dict={dict.orders} className="block" />
         <CustomLines lines={order.customLines} dict={dict} className="block" />
       </td>
-      <td className="px-2 py-2 text-right font-semibold text-o700">{formatPaise(order.totalPaise)}</td>
+      <td className={`px-2 py-2 text-right font-semibold text-o700 ${cell}`}>{formatPaise(order.totalPaise)}</td>
       <td className={`max-w-0 px-2 py-2 ${wideCell}`}>
         <OrderTagList tags={order.tags} dict={dict.orderTags} compact className="flex-nowrap overflow-hidden" />
       </td>
-      <td className="px-2 py-2">
+      <td className={`px-2 py-2 ${cell} ${statusEdges[pane]}`}>
         <StatusBadge status={order.status} label={dict.orderStatus[order.status]} />
       </td>
-      <td className={`py-2 pr-3 pl-2 ${wideCell}`}>
+      <td className={`border-r border-r-border py-2 pr-3 pl-2 ${wideCell}`}>
         {selectMode ? null : (
           <span className="flex justify-end gap-2">
             <a

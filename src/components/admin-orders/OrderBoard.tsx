@@ -9,6 +9,7 @@ import { BulkBar } from "./BulkBar"
 import { OrderCard } from "./OrderCard"
 import { OrderGroupHeader } from "./OrderGroupHeader"
 import { OrderTable } from "./OrderTable"
+import { OrderTableGroup } from "./OrderTableGroup"
 import { OrderTableRow } from "./OrderTableRow"
 import type { AdminCopy, BoardOrder } from "./types"
 
@@ -23,8 +24,9 @@ type OrderBoardProps = {
 }
 
 /**
- * The day groups. Cards (one column, two from 768px) below 1024px, a table from 1024px. Holds the
- * bulk selection; status changes go through the OrderActionsProvider above it.
+ * The day groups. Cards (one column, two from 768px) under sticky day bands below 1024px; from 1024px one table with a
+ * sticky header row and a sticky row per day. Holds the bulk selection; status changes go through the OrderActionsProvider
+ * above it.
  */
 export function OrderBoard({ dict, groups, selectMode, exitSelectHref, paneOpen, currentId }: OrderBoardProps) {
   const router = useRouter()
@@ -43,24 +45,31 @@ export function OrderBoard({ dict, groups, selectMode, exitSelectHref, paneOpen,
   }
 
   return (
-    <div className="flex flex-col gap-6 lg:gap-8">
-      {groups.map((group) => (
-        <section key={group.date} className="flex flex-col gap-2">
-          <OrderGroupHeader group={group} dict={dict.orders} />
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:hidden">
-            {group.orders.map((order) => (
-              <OrderCard
-                key={order.id}
-                order={order}
-                dict={dict}
-                selectMode={selectMode}
-                checked={selected.includes(order.id)}
-                onToggle={() => toggle(order.id)}
-              />
-            ))}
-          </div>
-          <div className="hidden lg:block">
-            <OrderTable dict={dict.orders} paneOpen={paneOpen}>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6 lg:hidden">
+        {groups.map((group) => (
+          <section key={group.date} className="flex flex-col gap-2">
+            <OrderGroupHeader group={group} dict={dict.orders} variant="cards" />
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {group.orders.map((order) => (
+                <OrderCard
+                  key={order.id}
+                  order={order}
+                  dict={dict}
+                  selectMode={selectMode}
+                  checked={selected.includes(order.id)}
+                  onToggle={() => toggle(order.id)}
+                />
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+
+      <div className="hidden lg:block">
+        <OrderTable dict={dict.orders} paneOpen={paneOpen}>
+          {groups.map((group) => (
+            <OrderTableGroup key={group.date} group={group} dict={dict.orders} paneOpen={paneOpen}>
               {group.orders.map((order) => (
                 <OrderTableRow
                   key={order.id}
@@ -73,10 +82,10 @@ export function OrderBoard({ dict, groups, selectMode, exitSelectHref, paneOpen,
                   current={order.id === currentId}
                 />
               ))}
-            </OrderTable>
-          </div>
-        </section>
-      ))}
+            </OrderTableGroup>
+          ))}
+        </OrderTable>
+      </div>
 
       {selectMode ? (
         <BulkBar

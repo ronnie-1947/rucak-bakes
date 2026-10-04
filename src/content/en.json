@@ -61,7 +61,7 @@
       "capacityUnplanned": "not planned",
       "select": "Select",
       "done": "Done",
-      "newOrder": "New order",
+      "addOrder": "Add a manual order",
       "searchLabel": "Search orders",
       "searchPlaceholder": "Search order code, name or phone",
       "filters": {
@@ -69,7 +69,7 @@
         "status": "Status",
         "show": "Show",
         "dates": { "upcoming": "Upcoming", "today": "Today", "tomorrow": "Tomorrow", "week": "This week" },
-        "customDate": "Custom date",
+        "customDate": "Custom date…",
         "statuses": {
           "ALL": "All",
           "PENDING": "Pending",
@@ -80,7 +80,9 @@
           "NO_SHOW": "No-show"
         },
         "toggles": { "trusted": "Trusted only", "before": "Ordered before", "call": "Needs call" },
-        "clear": "Clear filters"
+        "showAll": "All customers",
+        "clear": "Clear filters",
+        "clearShort": "Clear"
       },
       "groupTitle": "{day} — {count} orders",
       "groupTitleOne": "{day} — 1 order",

@@ -4,6 +4,7 @@ import { ButtonLink } from "@/components/ui/ButtonLink"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { CLEARED, filtersHref, isDefault, type OrderFilters } from "@/lib/orders/filters"
 import type { OrderDetailData, OrderQueue } from "@/lib/orders/queries"
+import { NewOrderFab } from "./NewOrderFab"
 import { OrderBoard } from "./OrderBoard"
 import { OrdersFilterBar } from "./OrdersFilterBar"
 import { OrdersHeader } from "./OrdersHeader"
@@ -32,7 +33,7 @@ const boardSpans: Record<"split" | "single", string> = {
 /**
  * /admin/orders — the queue. Default view: Upcoming — today onward, grouped by date, pending first. Phones get cards, the
  * kitchen tablet two columns of cards, laptops a table, and from 1600px an order can open in a split
- * pane beside the table.
+ * pane beside the table. The + for a manual order closes the queue column (hidden while selecting).
  */
 export function AdminOrders({ dict, queue, filters, pane }: AdminOrdersProps) {
   const split = pane ? "split" : "single"
@@ -46,11 +47,11 @@ export function AdminOrders({ dict, queue, filters, pane }: AdminOrdersProps) {
   const onlyToday = filters.dates.length === 1 && filters.dates[0] === "today" && filters.status === "ALL" && filters.show.length === 0 && !filters.q
 
   return (
-    <div className="flex flex-col">
+    <div className="flex min-h-full flex-col">
       <OrdersHeader dict={dict.orders} capacity={queue.capacity} filters={filters} />
       <OrdersFilterBar dict={dict.orders} filters={filters} paneOpen={Boolean(pane)} />
 
-      <div className={`grid gap-6 px-4 pt-4 pb-6 md:px-6 lg:px-8 ${layouts[split]}`}>
+      <div className={`grid flex-1 gap-6 px-4 pt-4 pb-6 md:px-6 lg:px-8 ${layouts[split]}`}>
         <div className={`flex min-w-0 flex-col gap-4 ${boardSpans[split]}`}>
           <UnnotifiedBanner orders={queue.unnotified} dict={dict.orders} />
           {boardGroups.length === 0 ? (
@@ -87,6 +88,7 @@ export function AdminOrders({ dict, queue, filters, pane }: AdminOrdersProps) {
               />
             </OrderActionsProvider>
           )}
+          {filters.select ? null : <NewOrderFab label={dict.orders.addOrder} />}
         </div>
 
         {pane ? (

@@ -3,11 +3,13 @@ import { addDays, dateRange, type IsoDate, isIsoDate } from "@/lib/dates"
 
 /**
  * The orders queue's filters, as they live in the URL — so a filtered view survives a refresh, the
- * back button, and being sent to a colleague. Client-safe: the filter chips are plain links built here.
+ * back button, and being sent to a colleague. Client-safe: every choice of the Date / Status / Show selects is a URL built
+ * here.
  *
- *   ?date=today,tomorrow&status=PENDING&show=trusted,before&q=meera&order=<id>
+ *   ?date=today&status=PENDING&show=trusted&q=meera&order=<id>
  *
- * The default is Upcoming — today onward, with no end (§10R: every order is booked ahead).
+ * The selects pick one value each; lists (`?date=today,tomorrow`, an older link) still parse and filter, the select showing
+ * the first. The default is Upcoming — today onward, with no end (§10R: every order is booked ahead).
  */
 
 export const datePresets = ["upcoming", "today", "tomorrow", "week"] as const
@@ -70,22 +72,6 @@ export function filtersHref(filters: OrderFilters, path = "/admin/orders"): stri
   if (filters.select) params.set("select", "1")
   const query = params.toString()
   return query ? `${path}?${query}` : path
-}
-
-/** Toggle one entry of a list. */
-export function toggle<T>(values: T[], value: T): T[] {
-  return values.includes(value) ? values.filter((v) => v !== value) : [...values, value]
-}
-
-/**
- * The date chips after tapping one. Upcoming stands alone (it holds every other preset); Today, Tomorrow and This week
- * combine, and turning the last of them off goes back to Upcoming. A custom date is dropped either way.
- */
-export function pickDate(dates: DateChoice[], preset: DatePreset): DateChoice[] {
-  if (preset === "upcoming") return ["upcoming"]
-  const picked = dates.filter((date): date is DatePreset => date !== "upcoming" && (datePresets as readonly string[]).includes(date))
-  const next = toggle(picked, preset)
-  return next.length > 0 ? next : ["upcoming"]
 }
 
 export const CLEARED: Omit<OrderFilters, "order" | "select"> = { dates: DEFAULT_DATES, status: "ALL", show: [], q: "" }

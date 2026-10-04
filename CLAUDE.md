@@ -95,7 +95,7 @@ src/
   components/
     ui/                 Button (+ ButtonLink; variant, size, shape), CallLink (tel:), Checkbox, Chip(Link) (tone, size, shape), Container, Dialog, EmptyState, ItemsLine, ItemThumb, LazyOnView,
                         LinkSelect (?sort=), Meter, Notice, Rich, SearchBox (?q=), SelectBox (bulk tick), Spinner (tone), StatusBadge, Switch,
-                        Tag (tone, size), UndoBar; form: Field, TextInput (+ inputShellClasses), SelectField, Stepper (size)
+                        Tag (tone, size), UndoBar; form: Field, TextInput (+ inputShellClasses), SelectField (tone), Stepper (size)
       icons/
     admin-login/        the /admin/login screen
     admin-shell/        sidebar / tab bar frame for /admin/(shell)
