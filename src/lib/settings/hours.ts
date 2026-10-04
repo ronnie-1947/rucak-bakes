@@ -38,6 +38,22 @@ export function weekdayKey(day: number): WeekdayKey {
   return WEEK[(day + 6) % 7]
 }
 
+/** A stretch of consecutive weekdays (Monday first) with the same hours — "Tue–Sun, 7am–4pm". */
+export type HoursRun = { first: WeekdayKey; last: WeekdayKey; hours: DayHours }
+
+const sameHours = (a: DayHours, b: DayHours) => a.open === b.open && (!a.open || (a.from === b.from && a.to === b.to))
+
+/** The week folded into runs of identical hours, for a one-glance summary. */
+export function hoursRuns(hours: OpeningHours): HoursRun[] {
+  const runs: HoursRun[] = []
+  for (const day of WEEK) {
+    const run = runs.at(-1)
+    if (run && sameHours(run.hours, hours[day])) run.last = day
+    else runs.push({ first: day, last: day, hours: hours[day] })
+  }
+  return runs
+}
+
 /** An open day must close after it opens. */
 export function hoursProblem(day: DayHours): boolean {
   return day.open && day.to <= day.from

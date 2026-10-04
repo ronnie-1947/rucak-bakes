@@ -123,6 +123,7 @@ export function dayBounds(date: IsoDate, timeZone: string): { start: Date; end: 
 const dayLabel = new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "short", day: "numeric", month: "short" })
 const longDayLabel = new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "long", day: "numeric", month: "short" })
 const weekdayName = new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "long" })
+const shortWeekdayName = new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "short" })
 const shortDate = new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", day: "numeric", month: "short" })
 
 /** "Sat 3 Oct" */
@@ -143,6 +144,11 @@ export function formatLongDayLabel(date: IsoDate): string {
 /** "Saturday" */
 export function formatWeekday(date: IsoDate): string {
   return weekdayName.format(toDbDate(date))
+}
+
+/** "Sat" */
+export function formatShortWeekday(date: IsoDate): string {
+  return shortWeekdayName.format(toDbDate(date))
 }
 
 /** "3 Oct" */

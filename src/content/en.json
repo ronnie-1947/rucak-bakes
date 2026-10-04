@@ -1388,5 +1388,180 @@
     "onDay": "for {day}",
     "test": "Test message from {bakery}. New orders will be announced here.",
     "connected": "Connected — new orders for {bakery} will arrive in this chat."
+  },
+  "store": {
+    "shell": {
+      "home": "{name}, home",
+      "pickupAt": "Pickup at {place}",
+      "paused": "Ordering is paused: {reason}",
+      "pausedNoReason": "Ordering is paused for now — please check back soon.",
+      "cart": "Cart",
+      "cartCount": "Cart, {count} items",
+      "cartCountOne": "Cart, 1 item",
+      "items": "{count} items",
+      "itemsOne": "1 item",
+      "viewCart": "View cart",
+      "back": "Back"
+    },
+    "switchDay": {
+      "title": "Switch to {day}?",
+      "body": "Your cart has {items} for {from}. An order is for one day, so switching will clear your cart.",
+      "confirm": "Clear cart and add",
+      "keep": "Keep my cart",
+      "close": "Close"
+    },
+    "days": {
+      "yesterday": "yesterday",
+      "today": "today",
+      "tomorrow": "tomorrow"
+    },
+    "item": {
+      "add": "Add",
+      "addLabel": "Add {name}",
+      "decrease": "One fewer {name}",
+      "increase": "One more {name}",
+      "units": {
+        "EACH": "",
+        "PER_BOX": "per box",
+        "PER_KG": "per kg",
+        "PER_SLICE": "per slice"
+      },
+      "soldOut": "Sold out",
+      "fewLeft": "Only {count} left",
+      "notToday": "Not today",
+      "forDay": "For {day}",
+      "reasons": {
+        "full": "Every order for {day} is taken",
+        "cutoff": "Orders for {day} closed at {time} {when}",
+        "closed": "Not baking {day}",
+        "unplanned": "The menu for {day} isn’t up yet",
+        "paused": "Ordering is paused",
+        "soldOut": "None left for {day}",
+        "back": "Back {day}",
+        "notThisWeek": "Not on the menu this week"
+      }
+    },
+    "itemPage": {
+      "metaTitle": "{name} · {bakery}",
+      "photos": "Photos of {name}",
+      "photo": "Photo {index} of {count}",
+      "showPhoto": "Show photo {index} of {count}",
+      "pickupDay": "Pickup day",
+      "labels": {
+        "today": "Today",
+        "tomorrow": "Tomorrow"
+      },
+      "day": "{label}, {date}",
+      "dayStatus": "{label}, {date}, {status}",
+      "status": {
+        "soldOut": "sold out",
+        "full": "fully booked",
+        "cutoff": "ordering closed",
+        "paused": "ordering paused",
+        "off": "not on the menu"
+      },
+      "line": {
+        "open": "Available {day} · order by {time} {when} · {left} of {quantity} left",
+        "soldOut": "Sold out {day}",
+        "full": "Fully booked {day}",
+        "cutoff": "Orders for {day} closed at {time} {when}",
+        "paused": "Ordering is paused",
+        "next": "{line} — available {day}",
+        "none": "Not on the menu this week"
+      },
+      "meter": "{taken} of {quantity} already ordered for {day}",
+      "add": "Add to cart · {total}",
+      "addPlain": "Add to cart",
+      "viewCart": "View cart",
+      "inCart": "{count} in your cart for {day}",
+      "call": "Call {phone}",
+      "about": "About",
+      "ingredients": "Ingredients",
+      "allergens": "Allergens",
+      "noAllergens": "No allergens declared.",
+      "disclaimer": "Made in a kitchen that handles nuts, dairy and gluten.",
+      "details": "Details",
+      "size": "Size",
+      "storage": "Storage",
+      "related": "You might also like"
+    },
+    "allergens": {
+      "GLUTEN": "Gluten",
+      "DAIRY": "Dairy",
+      "EGGS": "Eggs",
+      "NUTS": "Nuts",
+      "PEANUTS": "Peanuts",
+      "SOY": "Soy",
+      "SESAME": "Sesame"
+    }
+  },
+  "landing": {
+    "hero": {
+      "fallback": "Baked this morning, just round the corner",
+      "sub": "Order ahead, then pay when you collect."
+    },
+    "dayStrip": {
+      "label": "Choose a day",
+      "today": "Baking today",
+      "tomorrow": "Tomorrow",
+      "status": {
+        "open": "Available",
+        "few": "Selling fast",
+        "full": "Fully booked",
+        "cutoff": "Ordering closed",
+        "closed": "Closed",
+        "unplanned": "Menu soon",
+        "paused": "Paused"
+      },
+      "left": "{count} orders left · order by {time} {when}",
+      "leftOne": "1 order left · order by {time} {when}",
+      "cutoff": "Orders for {day} closed at {time} {when}.",
+      "full": "Every order for {day} is taken.",
+      "closed": "We aren’t baking for orders {day}.",
+      "unplanned": "The menu for {day} isn’t up yet.",
+      "paused": "Ordering is paused for now.",
+      "meter": "{taken} of {capacity} orders taken",
+      "empty": "Nothing on the menu {day} yet."
+    },
+    "howItWorks": {
+      "title": "How it works",
+      "steps": [
+        {
+          "title": "Pick your items",
+          "text": "Today’s tray or tomorrow’s bake."
+        },
+        {
+          "title": "Send your order",
+          "text": "Just your name and phone number. No account, no payment."
+        },
+        {
+          "title": "We call to confirm",
+          "text": "Within 2 hours. You pay when you collect."
+        }
+      ]
+    },
+    "menuGrid": {
+      "title": "Everything we bake"
+    },
+    "visitUs": {
+      "title": "Visit us",
+      "address": "Address",
+      "map": "Map",
+      "mapLabel": "Open the address in Maps",
+      "hours": "Hours",
+      "phone": "Phone",
+      "days": {
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat",
+        "sun": "Sun"
+      },
+      "range": "{first}–{last}",
+      "open": "{days}, {from}–{to}",
+      "closed": "{days} closed"
+    }
   }
 }

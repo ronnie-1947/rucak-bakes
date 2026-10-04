@@ -83,18 +83,18 @@ src/
   generated/prisma/     generated client — gitignored
   app/
     layout.tsx          the one root layout
-    page.tsx            homepage (source locale)
+    (store)/            customer screens: layout.tsx (StoreShell), page.tsx (the landing page, /), menu/[slug]/ (the item page)
     globals.css         @theme tokens
     favicon.ico
     actions/            server actions
     admin/login/        staff sign-in (outside the admin shell)
     admin/(shell)/      every signed-in screen: layout.tsx (requireStaff + AdminShell), orders/, menu/, more/ …
     api/auth/[...nextauth]/route.ts
-    sections/           landing bands (colocated, never a route)
+    sections/           landing bands (colocated, never a route) — landing/: hero, day-strip, how-it-works, menu-grid, visit-us
   components/
-    ui/                 Button (+ ButtonLink), Checkbox, Chip(Link), Container, Dialog, EmptyState, ItemsLine, ItemThumb, LazyOnView,
+    ui/                 Button (+ ButtonLink; variant, size, shape), Checkbox, Chip(Link) (tone, size), Container, Dialog, EmptyState, ItemsLine, ItemThumb, LazyOnView,
                         LinkSelect (?sort=), Meter, Notice, Rich, SearchBox (?q=), SelectBox (bulk tick), Spinner, StatusBadge, Switch,
-                        Tag, UndoBar; form: Field, TextInput (+ inputShellClasses), SelectField, Stepper
+                        Tag (tone, size), UndoBar; form: Field, TextInput (+ inputShellClasses), SelectField, Stepper (size)
       icons/
     admin-login/        the /admin/login screen
     admin-shell/        sidebar / tab bar frame for /admin/(shell)
@@ -111,10 +111,15 @@ src/
     customer-actions/   trust / block / unblock + the confirm and undo strip;  customer-flags/  Trusted / Blocked / New tags
     admin-daysheet/     the day sheet (/admin/daysheet): bake totals, notes, pickups, Baked / Collected ticks, A4 print layout
     admin-settings/     settings (/admin/settings): five sections, save bars + leave guard, live switches, Telegram connect, staff access
+    store-shell/        every customer screen's frame: banner, sticky header (home row on /, Back · title · cart elsewhere), View cart bar / pill,
+                        CartProvider + switch-day dialog, PageTitleProvider
+    item-card/          a customer item card (photo, chip, price, Add → stepper) and offer.ts — what Add does or why it can't
+    item-detail/        the item page (/menu/[slug]): gallery, pickup-day chips + availability + Add to cart (phone bar), about / details /
+                        ingredients / allergens, related; availability.ts — what each day offers
   content/
     en.json
   hooks/                useOrderActions, useMenuActions, useCustomerActions, useDaySheet (action contexts), useSettingsLeave (unsaved-changes guard),
-                        useDismiss (popover close)
+                        useDismiss (popover close), useCart (the customer cart's context), usePageTitle (the store header's title), useScrolled
   lib/
     content.ts          localePath / localeAlternates / htmlLang
     i18n.ts             locales, defaultLocale, getDictionary
@@ -130,7 +135,7 @@ src/
                         notify.ts, queries.ts (admin read models), filters.ts (queue URL state)
     menu/               queries.ts (library read model), filters.ts (URL state), changes.ts (writes + undo snapshots),
                         item.ts (form read model), form.ts (form values + rules, client-safe), save.ts (form writes),
-                        copy.ts, units.ts, allergens.ts
+                        copy.ts, units.ts, allergens.ts, about.ts (the About text's marks → blocks, client-safe)
     calendar/           week.ts / day.ts (read models), writes.ts (patchDay, applyToWeek, copyWeek, saveDay),
                         form.ts (DayPlan + rules, client-safe), cutoffs.ts, copy-plan.ts (planWeekCopy), routes.ts
     customers/          queries.ts (list + trigram search), detail.ts (record read model), changes.ts (flags, rename, note),
@@ -139,7 +144,12 @@ src/
                         tick.ts (tick keys), notes.ts (allergen words) — client-safe except queries/ticks
     settings/           row.ts (getSettings() / findSettings() — the singleton row, cached per request), queries.ts (screen read model),
                         writes.ts, telegram.ts (connect code, state, recordDelivery), form.ts (values + rules, client-safe),
-                        hours.ts (opening hours, client-safe), sections.ts (?section=, client-safe)
+                        hours.ts (opening hours + hoursRuns, client-safe), sections.ts (?section=, client-safe)
+    storefront/         customer read models: shell.ts (banner, today), landing.ts (today/tomorrow StoreDays, catalogue, visit),
+                        item.ts (an item, its days in the order-ahead window, related), catalogue.ts (card columns, menu order),
+                        status.ts (dayStatus — placeOrder's day rules), types.ts (StoreDay, ItemDay, DayStatus, client-safe),
+                        words.ts (relativeDay, client-safe), routes.ts (itemHref, ?day=, client-safe)
+    cart/               cart.ts (localStorage['bakery.cart'] model, pure), store.ts (external store for useSyncExternalStore)
 public/
 ```
 

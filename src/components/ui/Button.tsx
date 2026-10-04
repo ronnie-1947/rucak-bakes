@@ -1,18 +1,20 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react"
 
 export type ButtonVariant = "primary" | "ink" | "ghost" | "outline" | "outlineLink" | "outlineAccent" | "danger" | "dangerOutline" | "link"
-export type ButtonSize = "sm" | "md" | "lg" | "inline"
+export type ButtonSize = "sm" | "md" | "lg" | "block" | "inline"
+export type ButtonShape = "rounded" | "pill"
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   children: ReactNode
   variant?: ButtonVariant
   size?: ButtonSize
+  shape?: ButtonShape
   className?: string
 }
 
 /** No colour transition — the design system animates transform and opacity only. */
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-button font-medium transition-transform duration-150 ease-out active:scale-99 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-o700 disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none"
+  "inline-flex items-center justify-center gap-2 font-medium transition-transform duration-150 ease-out active:scale-99 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-o700 disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none"
 
 /**
  * o700 (#C2410C) is the runbook's "anything tapped or read" colour — 5.2:1 with white text.
@@ -34,22 +36,33 @@ const variants: Record<ButtonVariant, string> = {
   link: "bg-transparent font-semibold text-o700 hover:underline",
 }
 
-/** Every size clears a 44px touch target. Customer primary CTAs use `lg` (48px). `inline` drops the padding for link-styled buttons. */
+/**
+ * Every size clears a 44px touch target. Customer primary CTAs use `lg` (48px). `block` is a 48px button whose
+ * width comes from its row (flex-1 beside a stepper), so it keeps only a little padding for its label. `inline`
+ * drops the padding for link-styled buttons.
+ */
 const sizes: Record<ButtonSize, string> = {
   sm: "min-h-11 px-3 text-small",
   md: "min-h-11 px-4 text-body sm:text-small",
   lg: "min-h-12 px-6 text-body sm:px-8",
+  block: "min-h-12 px-3 text-body",
   inline: "min-h-11 px-0 text-small",
 }
 
-/** The class string for a button look — shared with ButtonLink so a link and a button can never drift apart. */
-export function buttonClasses(variant: ButtonVariant = "primary", size: ButtonSize = "md", className?: string) {
-  return `${base} ${variants[variant]} ${sizes[size]} ${className ?? ""}`
+/** 12px corners everywhere; `pill` is the customer's floating View cart, which sits over the page with a shadow. */
+const shapes: Record<ButtonShape, string> = {
+  rounded: "rounded-button",
+  pill: "rounded-pill shadow-raised",
 }
 
-export function Button({ children, variant = "primary", size = "md", className, type = "button", ...rest }: ButtonProps) {
+/** The class string for a button look — shared with ButtonLink so a link and a button can never drift apart. */
+export function buttonClasses(variant: ButtonVariant = "primary", size: ButtonSize = "md", className?: string, shape: ButtonShape = "rounded") {
+  return `${base} ${shapes[shape]} ${variants[variant]} ${sizes[size]} ${className ?? ""}`
+}
+
+export function Button({ children, variant = "primary", size = "md", shape = "rounded", className, type = "button", ...rest }: ButtonProps) {
   return (
-    <button type={type} className={buttonClasses(variant, size, className)} {...rest}>
+    <button type={type} className={buttonClasses(variant, size, className, shape)} {...rest}>
       {children}
     </button>
   )
