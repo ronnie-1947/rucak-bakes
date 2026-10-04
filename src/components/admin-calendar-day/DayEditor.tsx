@@ -14,6 +14,7 @@ import { DayPreview } from "./DayPreview"
 import { DaySettings } from "./DaySettings"
 import { ItemPicker } from "./ItemPicker"
 import { LeaveDialog } from "./LeaveDialog"
+import { OrdersSection } from "./OrdersSection"
 import { SaveBar } from "./SaveBar"
 import { SaveCard } from "./SaveCard"
 import type { AdminCopy } from "./types"
@@ -31,9 +32,9 @@ const resting: Record<"closed" | "open", string> = {
 }
 
 /**
- * /admin/calendar/[date]. The day's settings come first on phones and the tablet (2×2 there), above the item
- * list; from 1024px the list takes 62% beside a sticky settings column with Save; from 1600px a customer
- * preview joins as a third column. Past days are read-only.
+ * /admin/calendar/[date] (§10R): the day's orders, then its counter-items, then its settings — one column on phones and the
+ * tablet (settings 2×2 there); from 1024px orders and counter-items take 62% beside a sticky settings column with Save;
+ * from 1600px a customer preview of Fresh today joins as a third column. Past days are read-only.
  */
 export function DayEditor({ data, dict }: DayEditorProps) {
   const router = useRouter()
@@ -71,14 +72,15 @@ export function DayEditor({ data, dict }: DayEditorProps) {
           disabled={readOnly}
           className="grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(0,62fr)_minmax(0,38fr)] lg:gap-8 2xl:grid-cols-[minmax(0,45fr)_minmax(0,30fr)_minmax(0,25fr)]"
         >
-          <div className="flex min-w-0 flex-col gap-4">
+          <div className="flex min-w-0 flex-col gap-6">
             {editor.plan.isOpen ? null : <ClosedLine text={fill(d.closedLine, { day: data.title })} />}
+            <OrdersSection data={data} maxOrders={editor.plan.maxOrders} dict={dict} />
             <fieldset disabled={!editor.plan.isOpen} className={`min-w-0 transition-opacity duration-150 ease-out ${resting[state]}`}>
               <ItemPicker data={data} editor={editor} dict={dict} />
             </fieldset>
           </div>
 
-          <div className="-order-1 flex min-w-0 flex-col gap-4 lg:sticky lg:top-8 lg:order-none">
+          <div className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-8">
             <DaySettings data={data} editor={editor} dict={dict} />
             {readOnly ? null : <SaveCard editor={editor} dict={dict} />}
           </div>

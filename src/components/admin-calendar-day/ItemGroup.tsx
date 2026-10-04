@@ -32,13 +32,12 @@ export function ItemGroup({ name, items, all, editor, dict }: ItemGroupProps) {
             key={item.id}
             item={item}
             plan={editor.plan.items[item.id]}
-            ordered={editor.ordered[item.id] ?? 0}
             expanded={editor.expanded.has(item.id)}
             onToggle={() => editor.toggleItem(item.id)}
             onExpand={() => editor.toggleExpanded(item.id)}
             onQuantity={(quantity) => editor.setQuantity(item.id, quantity)}
             onOverride={(text) => editor.setOverride(item.id, text)}
-            onSoldOut={() => editor.soldOut(item.id)}
+            onSoldOut={() => editor.toggleSoldOut(item.id)}
             dict={dict}
           />
         ))}

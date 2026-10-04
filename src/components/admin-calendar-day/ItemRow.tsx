@@ -12,7 +12,6 @@ import type { DayCopy } from "./types"
 type ItemRowProps = {
   item: EditorItem
   plan: ItemPlan
-  ordered: number
   expanded: boolean
   onToggle: () => void
   onExpand: () => void
@@ -20,16 +19,6 @@ type ItemRowProps = {
   onOverride: (text: string) => void
   onSoldOut: () => void
   dict: DayCopy["items"]
-}
-
-const frames: Record<"conflict" | "plain", string> = {
-  conflict: "border-red",
-  plain: "border-border",
-}
-
-const metas: Record<"conflict" | "plain", string> = {
-  conflict: "font-semibold text-red",
-  plain: "",
 }
 
 const chevrons: Record<"open" | "shut", string> = {
@@ -43,26 +32,18 @@ const fades: Record<"included" | "left", string> = {
 }
 
 /**
- * One menu item on the day: tick to include it, its base price, "12 available · 3 ordered" and any override;
- * the chevron opens quantity, price override and Sold out. An item with orders can't be unticked.
+ * One menu item as a counter-item of the day: tick to bake it for the counter, its base price, "12 made" with any
+ * override and Sold out; the chevron opens quantity made, price override and Sold out.
  */
-export function ItemRow({ item, plan, ordered, expanded, onToggle, onExpand, onQuantity, onOverride, onSoldOut, dict }: ItemRowProps) {
-  const conflict = plan.included && plan.quantity < ordered
-  const locked = plan.included && ordered > 0
+export function ItemRow({ item, plan, expanded, onToggle, onExpand, onQuantity, onOverride, onSoldOut, dict }: ItemRowProps) {
   const override = plan.included ? overridePaise(plan.override, item.basePricePaise) : null
-  const state = conflict ? "conflict" : "plain"
   const fade = plan.included ? "included" : "left"
 
   return (
-    <li className={`rounded-panel border bg-background ${frames[state]}`}>
+    <li className="rounded-panel border border-border bg-background">
       <div className="grid min-h-14 grid-cols-[2.75rem_3rem_minmax(0,1fr)_2.75rem] items-center gap-2 py-1 pr-1">
         <span className="grid place-items-center">
-          <SelectBox
-            checked={plan.included}
-            onChange={onToggle}
-            disabled={locked}
-            label={locked ? `${item.name}: ${fill(dict.staysOrdered, { count: ordered })}` : fill(dict.include, { name: item.name })}
-          />
+          <SelectBox checked={plan.included} onChange={onToggle} label={fill(dict.include, { name: item.name })} />
         </span>
         <span className={fades[fade]}>
           <ItemThumb images={item.image ? [item.image] : []} muted={item.state !== "active"} size="md" />
@@ -74,12 +55,9 @@ export function ItemRow({ item, plan, ordered, expanded, onToggle, onExpand, onQ
           </span>
           <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-small-admin text-muted tabular-nums">
             <span>{formatPaise(item.basePricePaise)}</span>
-            {plan.included ? (
-              <span className={metas[state]}>
-                {ordered > 0 ? fill(dict.availableOrdered, { count: plan.quantity, ordered }) : fill(dict.available, { count: plan.quantity })}
-              </span>
-            ) : null}
+            {plan.included ? <span>{fill(dict.made, { count: plan.quantity })}</span> : null}
             {typeof override === "number" ? <Tag tone="accent">{fill(dict.overrideChip, { price: formatPaise(override) })}</Tag> : null}
+            {plan.included && plan.soldOut ? <Tag tone="red">{dict.soldOutChip}</Tag> : null}
           </span>
         </span>
         {plan.included ? (
@@ -98,7 +76,7 @@ export function ItemRow({ item, plan, ordered, expanded, onToggle, onExpand, onQ
         ) : null}
       </div>
       {plan.included && expanded ? (
-        <ItemControls item={item} plan={plan} ordered={ordered} onQuantity={onQuantity} onOverride={onOverride} onSoldOut={onSoldOut} dict={dict} />
+        <ItemControls item={item} plan={plan} onQuantity={onQuantity} onOverride={onOverride} onSoldOut={onSoldOut} dict={dict} />
       ) : null}
     </li>
   )

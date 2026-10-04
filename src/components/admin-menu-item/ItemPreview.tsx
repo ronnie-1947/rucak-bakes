@@ -3,6 +3,7 @@
 import { Tag } from "@/components/ui/Tag"
 import { priceToPaise } from "@/lib/menu/form"
 import { formatPaise } from "@/lib/money"
+import { noticeChip } from "@/lib/storefront/words"
 import { PhotoImage } from "./PhotoImage"
 import type { AdminCopy } from "./types"
 import type { Fields, PhotoDraft } from "./useItemForm"
@@ -18,9 +19,15 @@ const names: Record<"set" | "placeholder", string> = {
   placeholder: "text-subtle",
 }
 
+/** The card's button as customers see it — Call to order takes the accent border. */
+const actions: Record<"choose" | "call", string> = {
+  choose: "border-border-strong",
+  call: "border-o700",
+}
+
 /**
- * What customers will see, as you type: the menu card, then the top of the item page (name, price,
- * allergens, the kitchen disclaimer). Customer sizes — 16px body, 16px card radius.
+ * What customers will see, as you type: the menu card (with its notice chip and Choose date / Call to order), then the top
+ * of the item page (name, price, allergens, the kitchen disclaimer). Customer sizes — 16px body, 16px card radius.
  */
 export function ItemPreview({ fields, cover, dict }: ItemPreviewProps) {
   const p = dict.menuItem.previewPanel
@@ -30,6 +37,7 @@ export function ItemPreview({ fields, cover, dict }: ItemPreviewProps) {
   const name = fields.name.trim() || p.namePlaceholder
   const nameTone = names[fields.name.trim() ? "set" : "placeholder"]
   const description = fields.shortDescription.trim() || p.descriptionPlaceholder
+  const action = fields.orderable ? "choose" : "call"
 
   return (
     <div className="flex flex-col gap-3 text-body">
@@ -45,6 +53,12 @@ export function ItemPreview({ fields, cover, dict }: ItemPreviewProps) {
         <span className="text-small text-muted">{description}</span>
         <span className="font-semibold text-o700 tabular-nums">
           {price} {unit}
+        </span>
+        <Tag tone="neutral" className="self-start">
+          {noticeChip(fields.noticeDays, fields.orderable, p.notice)}
+        </Tag>
+        <span className={`flex h-10 items-center justify-center rounded-button border text-small font-semibold text-o700 ${actions[action]}`}>
+          {fields.orderable ? p.choose : p.call}
         </span>
       </div>
 

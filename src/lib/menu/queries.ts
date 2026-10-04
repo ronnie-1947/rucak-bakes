@@ -10,13 +10,11 @@ import { getSettings } from "@/lib/settings/row"
  * library is read once and searched, filtered and sorted here — the counts line needs the totals anyway.
  */
 
-/** One upcoming day an item is scheduled on — what the deactivate and archive dialogs name. */
+/** One upcoming day an item is a counter-item on — what the deactivate and archive dialogs name. */
 export type ScheduledDay = {
   date: IsoDate
   dayLabel: string
   isToday: boolean
-  /** Units already ordered on that day. A day with orders keeps the item when it's removed elsewhere. */
-  ordered: number
 }
 
 export type MenuItemRow = {
@@ -28,7 +26,10 @@ export type MenuItemRow = {
   /** Cloudinary public_ids, cover first. */
   images: string[]
   isActive: boolean
-  /** Open days in the next seven (today included) that carry it. */
+  /** Off → call only. */
+  orderable: boolean
+  noticeDays: number
+  /** Open days in the next seven (today included) it's a counter-item on. */
   daysThisWeek: number
   /** Units on this calendar month's live orders (cancelled and no-show left out). */
   orderedThisMonth: number
@@ -93,10 +94,12 @@ export async function loadMenuLibrary(filters: MenuFilters): Promise<MenuLibrary
         ingredients: true,
         images: true,
         isActive: true,
+        orderable: true,
+        noticeDays: true,
         updatedAt: true,
         dayItems: {
           where: { menuDay: { date: { gte: toDbDate(today) } } },
-          select: { quantityOrdered: true, menuDay: { select: { date: true, isOpen: true } } },
+          select: { menuDay: { select: { date: true, isOpen: true } } },
           orderBy: { menuDay: { date: "asc" } },
         },
       },
@@ -120,11 +123,7 @@ export async function loadMenuLibrary(filters: MenuFilters): Promise<MenuLibrary
   const orderedBy = new Map(ordered.map((row) => [row.menuItemId, row._sum.quantity ?? 0]))
 
   const entries = items.map((item): Entry => {
-    const upcoming = item.dayItems.map((dayItem) => ({
-      date: fromDbDate(dayItem.menuDay.date),
-      quantityOrdered: dayItem.quantityOrdered,
-      isOpen: dayItem.menuDay.isOpen,
-    }))
+    const upcoming = item.dayItems.map((dayItem) => ({ date: fromDbDate(dayItem.menuDay.date), isOpen: dayItem.menuDay.isOpen }))
     return {
       row: {
         id: item.id,
@@ -134,14 +133,11 @@ export async function loadMenuLibrary(filters: MenuFilters): Promise<MenuLibrary
         priceUnit: asPriceUnit(item.priceUnit),
         images: item.images,
         isActive: item.isActive,
+        orderable: item.orderable,
+        noticeDays: item.noticeDays,
         daysThisWeek: upcoming.filter((day) => day.isOpen && day.date <= weekEnd).length,
         orderedThisMonth: orderedBy.get(item.id) ?? 0,
-        upcoming: upcoming.map((day) => ({
-          date: day.date,
-          dayLabel: formatDayLabel(day.date),
-          isToday: day.date === today,
-          ordered: day.quantityOrdered,
-        })),
+        upcoming: upcoming.map((day) => ({ date: day.date, dayLabel: formatDayLabel(day.date), isToday: day.date === today })),
       },
       slug: item.category,
       ingredients: item.ingredients,

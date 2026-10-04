@@ -15,9 +15,9 @@ type DayCardProps = {
 }
 
 /**
- * One day of the week. Past days are a read-only line. Upcoming days carry their own controls — the Open
- * switch, Orders close and Max orders save as they change — and Edit day for everything else.
- * On the 820px tablet's two columns, Sunday spans both.
+ * One day of the week (§10R): its orders, then the controls that save as they change — the Open switch, Orders close and
+ * Max orders — then its counter-items, the way into the day editor. Past days are a read-only line. On the 820px tablet's
+ * two columns, Sunday spans both.
  */
 export function DayCard({ day, dict }: DayCardProps) {
   const d = dict.calendar
@@ -25,7 +25,7 @@ export function DayCard({ day, dict }: DayCardProps) {
   const { isOpen, cutoff, maxOrders } = patch.values
 
   return (
-    <li className="flex min-w-0 flex-col gap-3 rounded-panel border border-border bg-background p-3 md:last:col-span-2 xl:p-2 xl:last:col-span-1">
+    <li className="flex min-w-0 flex-col gap-3 rounded-panel border border-border bg-background p-3 md:last:col-span-2 xl:last:col-span-1">
       <DayCardHeader day={day} isOpen={isOpen} onToggle={() => patch.setOpen(!isOpen)} dict={d} />
 
       {day.isPast ? (

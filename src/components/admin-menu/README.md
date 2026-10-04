@@ -25,7 +25,7 @@ admin-menu/
   RestoreButton.tsx        "use client" — the archived view's Restore
   ArchivedList.tsx         ?archived=1 — rows with "Archived Mon 12 Jan · 31 past orders still reference it"
   AddFab.tsx               phones: the round Add item button, sticky 16px above the tab bar
-  copy.ts                  usageText, archivedMeta — dict strings filled (priceText is in src/lib/menu/copy.ts)
+  copy.ts                  noticeText, usageText, archivedMeta — dict strings filled (priceText is in src/lib/menu/copy.ts)
   types.ts                 AdminCopy, MenuCopy, PriceUnitCopy, ViewMode
   README.md
 ```
@@ -90,16 +90,18 @@ AddFab              { label }
 ## How it works
 
 - **Data** — `loadMenuLibrary(filters)` reads every non-archived item once (a bakery's menu is a few dozen) and searches (name or
-  any ingredient), filters and sorts in memory. "This week" = open days today … today+6 carrying the item; "ordered this month" =
-  units on this calendar month's orders, cancelled and no-show left out. Archived rows are only read for `?archived=1`.
+  any ingredient), filters and sorts in memory. "This week" = open days today … today+6 it's a counter-item on (§10R); "ordered
+  this month" = units on this calendar month's orders, cancelled and no-show left out. Archived rows are only read for `?archived=1`.
+- **Ordering (7R)** — a call-only item (`orderable` off) carries a neutral "Call only" tag after its name in rows, cards and the
+  table; the table's Notice column (80px, between Category and Price) reads "Same day" / "1 day" / "n days" / "—". No filter for it.
 - **View** — `?view=list|grid`; unset is `auto`: rows below 768px, grid from 768px. Explicit list = rows below 1024px, table
   from 1024px. Every layout a view uses is rendered and swapped by CSS — no resize logic.
 - **Changes** — rows, cards, the ⋯ menu and the bulk bar call `useMenuActions().request()`. Archive always confirms;
   deactivate confirms only when an item is on an upcoming day. Activate, restore and duplicate run straight away.
 - **Undo** — every action returns a `MenuSnapshot` of what it overwrote (item flags, removed day rows); the strip's Undo sends
   it to `undoMenuChange`, which puts it back (day rows only on days that haven't passed). Undoing a duplicate archives the copy.
-- **Remove from days** — deactivate (when ticked) and archive delete `MenuDayItem` rows on today-or-later days **with nothing
-  ordered**. A day that already has orders keeps the item, so those orders still bake; the dialogs say so.
+- **Remove from days** — deactivate (when ticked) and archive delete the item's counter-item rows (`MenuDayItem`) on today-or-later
+  days. Orders don't hang off those rows (§10R): an order for the item stays and still bakes from its own lines.
 - **Duplicate** — "Name (copy)", inactive, on no day, photos shared (`deleteImage` refuses while any item uses one).
 - **Edit / Add** open the item form at `/admin/menu/[id]` and `/admin/menu/new` (`src/components/admin-menu-item`).
 

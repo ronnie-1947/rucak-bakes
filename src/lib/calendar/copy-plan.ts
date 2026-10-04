@@ -6,22 +6,19 @@ import { addDays, formatDayNumber, type IsoDate } from "@/lib/dates"
  * Pure; server and client safe.
  */
 
-/** One day as the copy sees it. A day with no MenuDay row is `planned: false`. */
+/** One day as the copy sees it. A day with no MenuDay row is `planned: false` (and open unless the opening hours close it). */
 export type CopyDayFacts = {
   date: IsoDate
   planned: boolean
   isOpen: boolean
   /** Orders still alive on the day (pending, verified, ready, collected). */
   liveOrders: number
-  /** As a target: every item on the day. As a source: the ones that would copy — active and not archived. */
+  /** Counter-items. As a target: every one on the day. As a source: the ones that would copy — active and not archived. */
   items: number
 }
 
-export type CopyChange =
-  | { kind: "replace"; from: number; to: number }
-  | { kind: "fill"; to: number }
-  | { kind: "open"; to: number }
-  | { kind: "close" }
+/** A day before and after the copy — "Replaces 3 counter-items → open, 4 counter-items", "Closed → closed". */
+export type CopyChange = { before: { open: boolean; items: number }; after: { open: boolean; items: number } }
 
 export type CopySkip = { kind: "past" } | { kind: "orders"; count: number } | { kind: "unplanned" }
 
@@ -29,7 +26,7 @@ export type CopyRow = { date: IsoDate; label: string } & ({ change: CopyChange; 
 
 /**
  * Pairs each target day with the same weekday a week earlier. Skipped: days already past, days with live
- * orders (their plan is what those orders were placed against), and days whose source was never planned.
+ * orders (their limits are what those orders were placed against), and days whose source was never planned.
  */
 export function planWeekCopy(target: CopyDayFacts[], source: Map<IsoDate, CopyDayFacts>, today: IsoDate): CopyRow[] {
   return target.map((day): CopyRow => {
@@ -38,9 +35,10 @@ export function planWeekCopy(target: CopyDayFacts[], source: Map<IsoDate, CopyDa
     if (day.date < today) return { date: day.date, label, skip: { kind: "past" } }
     if (day.liveOrders > 0) return { date: day.date, label, skip: { kind: "orders", count: day.liveOrders } }
     if (!from?.planned) return { date: day.date, label, skip: { kind: "unplanned" } }
-    if (!from.isOpen) return { date: day.date, label, change: { kind: "close" } }
-    if (day.planned && day.isOpen && day.items > 0) return { date: day.date, label, change: { kind: "replace", from: day.items, to: from.items } }
-    if (day.planned && !day.isOpen) return { date: day.date, label, change: { kind: "open", to: from.items } }
-    return { date: day.date, label, change: { kind: "fill", to: from.items } }
+    const change: CopyChange = {
+      before: { open: day.isOpen, items: day.items },
+      after: { open: from.isOpen, items: from.isOpen ? from.items : 0 },
+    }
+    return { date: day.date, label, change }
   })
 }

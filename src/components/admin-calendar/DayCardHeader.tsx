@@ -18,8 +18,8 @@ const titleLooks: Record<"past" | "closed" | "open", string> = {
 }
 
 /**
- * Weekday, date and the Today tag; the Open switch for days not yet past. In a row on narrow cards,
- * stacked in the seven narrow columns from 1280px.
+ * Weekday, date and the Today tag; the Open switch for days not yet past. In a row on wide cards, stacked on the
+ * narrow ones from 1280px.
  */
 export function DayCardHeader({ day, isOpen, onToggle, dict }: DayCardHeaderProps) {
   const look = day.isPast ? "past" : isOpen ? "open" : "closed"

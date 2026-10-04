@@ -17,6 +17,9 @@ export type ItemRecord = {
   about: string
   ingredients: string[]
   allergens: Allergen[]
+  orderable: boolean
+  noticeDays: number
+  bakeSeparately: boolean
   defaultQuantity: number
   sizeNote: string
   storageNote: string
@@ -67,6 +70,9 @@ export async function saveItem(id: string | null, record: ItemRecord): Promise<S
         about: record.about || null,
         ingredients: record.ingredients,
         allergens: record.allergens,
+        orderable: record.orderable,
+        noticeDays: record.noticeDays,
+        bakeSeparately: record.bakeSeparately,
         defaultQuantity: record.defaultQuantity,
         sizeNote: record.sizeNote || null,
         storageNote: record.storageNote || null,

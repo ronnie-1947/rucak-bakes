@@ -5,21 +5,29 @@ import { z } from "zod"
 import { requireStaff } from "@/auth"
 import { isIsoDate } from "@/lib/dates"
 import { loadSheetVersion, type SheetVersion } from "@/lib/daysheet/queries"
-import { setBaked, setCollected, type TickOutcome } from "@/lib/daysheet/ticks"
+import { setCollected, setCounterBaked, setItemBaked, setLineBaked, type TickOutcome } from "@/lib/daysheet/ticks"
 
-/** The day sheet's server actions: the two ticks, and the version the open sheet polls. */
+/** The day sheet's server actions: the ticks, and the version the open sheet polls. */
 
 type Invalid = { ok: false; reason: "INVALID" }
 const invalid: Invalid = { ok: false, reason: "INVALID" }
 
-const tickInput = z.object({ id: z.string().min(1).max(40), done: z.boolean() })
+const id = z.string().min(1).max(40)
+const tickInput = z.object({ id, done: z.boolean() })
+const bakeInput = z.object({ kind: z.enum(["item", "line", "counter"]), id, date: z.string().refine(isIsoDate), done: z.boolean() })
 
-/** Baked / not baked. Undo is the same call the other way. */
-export async function tickBaked(input: z.input<typeof tickInput>): Promise<TickOutcome | Invalid> {
+/** Baked / not baked — a For orders row (`item`, every verified line of it that day), a Made to order line, or a counter-item. */
+export async function tickBaked(input: z.input<typeof bakeInput>): Promise<TickOutcome | Invalid> {
   await requireStaff()
-  const parsed = tickInput.safeParse(input)
+  const parsed = bakeInput.safeParse(input)
   if (!parsed.success) return invalid
-  const result = await setBaked(parsed.data.id, parsed.data.done)
+  const { kind, id: target, date, done } = parsed.data
+  const result =
+    kind === "item"
+      ? await setItemBaked(date, target, done)
+      : kind === "line"
+        ? await setLineBaked(target, done)
+        : await setCounterBaked(target, done)
   revalidatePath("/admin/daysheet")
   return result
 }

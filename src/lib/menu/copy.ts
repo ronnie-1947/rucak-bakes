@@ -14,15 +14,10 @@ export function priceText(item: { pricePaise: number; priceUnit: PriceUnit }, di
   return fill(dict.price, { price: formatPaise(item.pricePaise), unit: units[item.priceUnit] })
 }
 
-/** "Sat 3 Oct (today) · 4 ordered, Sun 4 Oct" — or "Not on any upcoming day". */
+/** "Sat 3 Oct (today), Sun 4 Oct" — or "Not on the counter on any upcoming day". */
 export function daysText(upcoming: ScheduledDay[], dict: MenuCopy["dialogs"]): string {
   if (upcoming.length === 0) return dict.notScheduled
-  return upcoming
-    .map((day) => {
-      const label = day.isToday ? fill(dict.today, { day: day.dayLabel }) : day.dayLabel
-      return day.ordered > 0 ? fill(dict.dayOrdered, { day: label, count: day.ordered }) : label
-    })
-    .join(", ")
+  return upcoming.map((day) => (day.isToday ? fill(dict.today, { day: day.dayLabel }) : day.dayLabel)).join(", ")
 }
 
 /** One item by name, several by count — "Seeded rye" / "4 items". */

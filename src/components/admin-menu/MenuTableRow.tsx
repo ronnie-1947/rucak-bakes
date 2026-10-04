@@ -6,7 +6,7 @@ import { Tag } from "@/components/ui/Tag"
 import { priceText } from "@/lib/menu/copy"
 import type { MenuItemRow } from "@/lib/menu/queries"
 import { fill } from "@/lib/template"
-import { usageText } from "./copy"
+import { noticeText, usageText } from "./copy"
 import { ItemMenu } from "./ItemMenu"
 import { ItemSwitch } from "./ItemSwitch"
 import { ItemThumb } from "@/components/ui/ItemThumb"
@@ -50,11 +50,13 @@ export function MenuTableRow({ item, dict, selectMode, checked, onToggle }: Menu
           <Link href={`/admin/menu/${item.id}`} className="font-medium hover:underline">
             {item.name}
           </Link>
+          {item.orderable ? null : <Tag tone="neutral">{d.callOnly}</Tag>}
           {item.images.length === 0 ? <Tag tone="warm">{d.noPhoto}</Tag> : null}
           {item.isActive ? null : <span className="text-small-admin text-muted">{d.inactiveNote}</span>}
         </span>
       </td>
       <td className={`${cell} px-2 text-small-admin text-muted ${dim}`}>{item.categoryName ?? "—"}</td>
+      <td className={`${cell} px-2 text-small-admin ${dim}`}>{noticeText(item, d)}</td>
       <td className={`${cell} px-2 text-right font-semibold text-o700 ${dim}`}>{priceText(item, d, dict.priceUnits)}</td>
       <td className={`${cell} px-2 text-small-admin text-muted ${dim}`}>{usageText(item, d)}</td>
       <td className={`${cell} px-2`}>

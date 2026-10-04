@@ -31,7 +31,7 @@ const dims: Record<"full" | "dim", string> = {
 }
 
 /**
- * One item in the list view below 1024px: photo, name and category, price, this week's usage, and the
+ * One item in the list view below 1024px: photo, name (+ Call only) and category, price, this week's usage, and the
  * ⋯ menu over the Active switch. The row opens the item; in select mode it toggles the tick instead.
  */
 export function MenuRow({ item, dict, selectMode, checked, onToggle }: MenuRowProps) {
@@ -52,6 +52,7 @@ export function MenuRow({ item, dict, selectMode, checked, onToggle }: MenuRowPr
       <div className={`flex min-w-0 flex-1 flex-col ${dims[item.isActive ? "full" : "dim"]}`}>
         <span className="flex flex-wrap items-baseline gap-x-2">
           <span className="font-medium">{item.name}</span>
+          {item.orderable ? null : <Tag tone="neutral" className="self-center">{d.callOnly}</Tag>}
           {item.categoryName ? <span className="text-small-admin text-muted">{item.categoryName}</span> : null}
         </span>
         <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-small-admin tabular-nums">

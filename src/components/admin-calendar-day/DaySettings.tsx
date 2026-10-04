@@ -6,7 +6,7 @@ import { TextInput } from "@/components/ui/TextInput"
 import { cutoffKey, cutoffLabel, cutoffOptions, formatClock, parseCutoffKey } from "@/lib/calendar/cutoffs"
 import type { DayEditorData } from "@/lib/calendar/day"
 import { LIMITS, MAX_ORDERS, OVERBOOK_MAX } from "@/lib/calendar/form"
-import { addDays, computeCutoffAt, formatLongDayLabel } from "@/lib/dates"
+import { addDays, computeCutoffAt, formatLongDayLabel, formatWeekday } from "@/lib/dates"
 import { fill } from "@/lib/template"
 import type { AdminCopy } from "./types"
 import type { DayEditor } from "./useDayEditor"
@@ -25,7 +25,8 @@ const resting: Record<"closed" | "open", string> = {
 
 /**
  * The day's own settings, each with the line saying what it does: open or closed (and why, when closed),
- * when orders close, how many orders to verify, how many to accept, and the note customers see.
+ * when orders close (and how much earlier a long-notice item closes), how many orders to verify, the overbook limit,
+ * and the note customers see.
  * One column on phones, 2×2 on the tablet, the sticky side column from 1024px.
  */
 export function DaySettings({ data, editor, dict }: DaySettingsProps) {
@@ -35,6 +36,16 @@ export function DaySettings({ data, editor, dict }: DaySettingsProps) {
   const cutoffDay = formatLongDayLabel(addDays(data.date, -plan.cutoff.daysBefore))
   const cutoffPassed = computeCutoffAt(data.date, plan.cutoff.time, plan.cutoff.daysBefore, data.timezone) <= new Date(data.now)
   const cutoffHelp = fill(cutoffPassed ? s.cutoffPassed : s.cutoffHelp, { time: formatClock(plan.cutoff.time), day: cutoffDay })
+  // The deadline rule (orders/deadline.ts): an item needing more notice than the day's own cutoff closes that much earlier.
+  const longest = !cutoffPassed && data.longestNotice && data.longestNotice.days > plan.cutoff.daysBefore ? data.longestNotice : null
+  const noticeHelp = longest
+    ? fill(s.noticeHelp, {
+        name: longest.name,
+        days: longest.days,
+        weekday: formatWeekday(addDays(data.date, -longest.days)),
+        time: formatClock(plan.cutoff.time),
+      })
+    : null
 
   return (
     <div className="flex flex-col gap-4">
@@ -77,8 +88,9 @@ export function DaySettings({ data, editor, dict }: DaySettingsProps) {
             }}
             aria-describedby="cutoff-help"
           />
-          <span id="cutoff-help" className="text-small-admin text-pretty text-muted tabular-nums">
-            {cutoffHelp}
+          <span id="cutoff-help" className="flex flex-col gap-1 text-small-admin text-pretty text-muted tabular-nums">
+            <span>{cutoffHelp}</span>
+            {noticeHelp ? <span>{noticeHelp}</span> : null}
           </span>
         </fieldset>
 

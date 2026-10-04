@@ -19,13 +19,12 @@ type DeactivateDialogProps = {
 }
 
 /**
- * Deactivating an item that's on upcoming days. Names those days, and offers to take it off them too
- * (ticked by default) — a day that already has orders for it keeps it.
+ * Deactivating an item that's a counter-item on upcoming days. Names those days, and offers to take it off them too
+ * (ticked by default). Orders already placed for it stay either way.
  */
 export function DeactivateDialog({ targets, dict, pending, onClose, onConfirm }: DeactivateDialogProps) {
   const [remove, setRemove] = useState(true)
   const d = dict.dialogs
-  const anyOrdered = targets.some((target) => target.upcoming.some((day) => day.ordered > 0))
 
   return (
     <Dialog
@@ -51,7 +50,6 @@ export function DeactivateDialog({ targets, dict, pending, onClose, onConfirm }:
           checked={remove}
           onChange={(event) => setRemove(event.target.checked)}
           label={targets.length > 1 ? d.removeFromDaysMany : d.removeFromDays}
-          hint={anyOrdered ? d.keepsOrdered : undefined}
         />
       </div>
     </Dialog>

@@ -13,6 +13,12 @@ import { getSettings } from "@/lib/settings/row"
 /** An order a close confirm names — code and customer. */
 export type DayOrder = { id: string; code: string; name: string }
 
+/** A live order on a week card: who, whether it's verified, and its biggest line. */
+export type WeekOrder = DayOrder & { verified: boolean; main: { name: string; quantity: number } | null }
+
+/** One counter-item (§10R) — what's baked for the counter, and how many. */
+export type CounterItem = { name: string; quantity: number }
+
 export type WeekDay = {
   date: IsoDate
   weekdayName: string
@@ -27,12 +33,12 @@ export type WeekDay = {
   closureNote: string | null
   cutoff: CutoffChoice
   maxOrders: number
-  /** Names, in category order. */
-  items: string[]
+  /** Its counter-items, in category order. */
+  counter: CounterItem[]
   verified: number
   pending: number
-  /** Orders still alive — what closing the day would leave stranded. */
-  liveOrders: DayOrder[]
+  /** Orders still alive, by pickup time — the card lists the first three; closing the day names them all. */
+  liveOrders: WeekOrder[]
   editHref: string
 }
 
@@ -82,7 +88,7 @@ export async function loadWeek(monday: IsoDate): Promise<WeekPlan> {
         cutoffTime: true,
         cutoffDaysBefore: true,
         maxOrders: true,
-        items: { select: { menuItem: { select: { name: true, category: true, isActive: true, archivedAt: true } } } },
+        items: { select: { quantityAvailable: true, menuItem: { select: { name: true, category: true, isActive: true, archivedAt: true } } } },
       },
     }),
   ])
@@ -90,22 +96,31 @@ export async function loadWeek(monday: IsoDate): Promise<WeekPlan> {
   const targetIds = days.filter((day) => fromDbDate(day.date) >= monday).map((day) => day.id)
   const orders = await prisma.order.findMany({
     where: { menuDayId: { in: targetIds }, status: { in: [...LIVE_STATUSES] } },
-    select: { id: true, code: true, customerName: true, status: true, menuDayId: true },
+    select: {
+      id: true,
+      code: true,
+      customerName: true,
+      status: true,
+      menuDayId: true,
+      pickupTime: true,
+      items: { select: { name: true, quantity: true }, orderBy: { lineTotalPaise: "desc" }, take: 1 },
+    },
     orderBy: { createdAt: "asc" },
   })
 
   const sortOrder = new Map(categories.map((category) => [category.slug, category.sortOrder]))
   const byDate = new Map(days.map((day) => [fromDbDate(day.date), day]))
-  const ordersOf = (menuDayId: string) => orders.filter((order) => order.menuDayId === menuDayId)
+  const ordersOf = (menuDayId: string) =>
+    orders.filter((order) => order.menuDayId === menuDayId).sort((a, b) => (a.pickupTime ?? "99:99").localeCompare(b.pickupTime ?? "99:99"))
   const count = (list: { status: OrderStatus }[], statuses: readonly OrderStatus[]) => list.filter((order) => statuses.includes(order.status)).length
 
   const weekDays = dateRange(monday, sunday).map((date): WeekDay => {
     const day = byDate.get(date)
     const live = day ? ordersOf(day.id) : []
-    const items = (day?.items ?? [])
-      .map((row) => row.menuItem)
-      .sort((a, b) => (sortOrder.get(a.category ?? "") ?? 99) - (sortOrder.get(b.category ?? "") ?? 99) || a.name.localeCompare(b.name))
-      .map((item) => item.name)
+    const rank = (category: string | null) => sortOrder.get(category ?? "") ?? 99
+    const counter = (day?.items ?? [])
+      .sort((a, b) => rank(a.menuItem.category) - rank(b.menuItem.category) || a.menuItem.name.localeCompare(b.menuItem.name))
+      .map((row) => ({ name: row.menuItem.name, quantity: row.quantityAvailable }))
     return {
       date,
       weekdayName: formatWeekday(date),
@@ -117,10 +132,16 @@ export async function loadWeek(monday: IsoDate): Promise<WeekPlan> {
       closureNote: day?.closureNote ?? null,
       cutoff: day ? { time: day.cutoffTime, daysBefore: day.cutoffDaysBefore } : { time: settings.defaultCutoffTime, daysBefore: settings.defaultCutoffDays },
       maxOrders: day?.maxOrders ?? settings.defaultMaxOrders,
-      items,
+      counter,
       verified: count(live, VERIFIED_STATUSES),
       pending: live.length - count(live, VERIFIED_STATUSES),
-      liveOrders: live.map((order) => ({ id: order.id, code: order.code, name: order.customerName })),
+      liveOrders: live.map((order) => ({
+        id: order.id,
+        code: order.code,
+        name: order.customerName,
+        verified: VERIFIED_STATUSES.includes(order.status),
+        main: order.items[0] ?? null,
+      })),
       editHref: dayHref(date),
     }
   })
@@ -128,7 +149,7 @@ export async function loadWeek(monday: IsoDate): Promise<WeekPlan> {
   const facts = (date: IsoDate, liveOrders: number, sourceRole: boolean): CopyDayFacts => {
     const day = byDate.get(date)
     const items = day?.items.filter((row) => !sourceRole || (row.menuItem.isActive && !row.menuItem.archivedAt)).length ?? 0
-    return { date, planned: Boolean(day), isOpen: day?.isOpen ?? true, liveOrders, items }
+    return { date, planned: Boolean(day), isOpen: day?.isOpen ?? openByDefault(date, settings.openingHours), liveOrders, items }
   }
   const source = new Map(dateRange(from, addDays(monday, -1)).map((date) => [date, facts(date, 0, true)]))
   const target = weekDays.map((day) => facts(day.date, day.liveOrders.length, false))

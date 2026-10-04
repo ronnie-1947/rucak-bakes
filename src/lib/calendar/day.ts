@@ -1,15 +1,32 @@
-import type { DayPlan } from "@/lib/calendar/form"
-import { dayHref, inPlanningRange, weekHref } from "@/lib/calendar/routes"
+import type { OrderStatus } from "@/generated/prisma/enums"
+import { DAY_QUANTITY, type DayPlan } from "@/lib/calendar/form"
+import { dayHref, dayOrdersHref, inPlanningRange, weekHref } from "@/lib/calendar/routes"
 import type { DayOrder } from "@/lib/calendar/week"
-import { addDays, formatDayLabel, formatLongDayLabel, fromDbDate, type IsoDate, todayIn, toDbDate, weekStart } from "@/lib/dates"
+import { mentionsAllergen } from "@/lib/daysheet/notes"
+import { addDays, formatDayLabel, formatLongDayLabel, fromDbDate, type IsoDate, todayIn, toDbDate, weekday, weekStart } from "@/lib/dates"
 import { prisma } from "@/lib/db"
 import { paiseToPrice } from "@/lib/menu/form"
 import { asPriceUnit, type PriceUnit } from "@/lib/menu/units"
 import { openByDefault } from "@/lib/orders/booking"
 import { LIVE_STATUSES, VERIFIED_STATUSES } from "@/lib/orders/status"
+import { formatForDisplay } from "@/lib/phone"
+import { parseOpeningHours, weekdayKey } from "@/lib/settings/hours"
 import { getSettings } from "@/lib/settings/row"
 
-/** Read model for the day editor (/admin/calendar/[date]). */
+/** Read model for the day editor (/admin/calendar/[date]): the day's orders, its counter-items (§10R) and its settings. */
+
+/** One live order for the day, as "Orders for this day" lists it. */
+export type EditorOrder = {
+  id: string
+  code: string
+  name: string
+  status: OrderStatus
+  lines: { name: string; quantity: number }[]
+  pickupTime: string | null
+  /** The customer's note: "allergen" when it names one (lib/daysheet/notes.ts). */
+  note: "allergen" | "note" | null
+  href: string
+}
 
 export type EditorItem = {
   id: string
@@ -46,16 +63,25 @@ export type DayEditorData = {
   weekHref: string
   planned: boolean
   saved: DayPlan
-  /** Units already ordered per item — a quantity can't go below it. */
-  ordered: Record<string, number>
   /** Listed in category order, then by name. */
   items: EditorItem[]
   /** Categories that have an item in the list, in the bakery's order. */
   categories: { slug: string; name: string }[]
+  /** Live orders, by pickup time. */
+  orders: EditorOrder[]
   verified: number
+  pending: number
+  /** The same orders as the close confirm names them. */
   liveOrders: DayOrder[]
+  /** "Open in Orders" — the queue on this date. */
+  ordersHref: string
+  /** The orderable item that needs the most notice — "a 2-day cake closes Thursday 6pm". Null when none needs more than a day. */
+  longestNotice: { name: string; days: number } | null
   copySources: CopySource[]
   bakeryName: string
+  /** For the customer preview: the counter's closing time that weekday ("16:00", opening hours) and the public phone. */
+  counterCloses: string | null
+  phone: string | null
   timezone: string
   /** When the page was read (ISO) — "Ordering closed at…" is judged against it, the same on server and client. */
   now: string
@@ -77,11 +103,35 @@ export async function loadDayEditor(date: IsoDate): Promise<DayEditorData | null
       where: { date: toDbDate(date) },
       include: {
         items: true,
-        orders: { where: { status: { in: [...LIVE_STATUSES] } }, select: { id: true, code: true, customerName: true, status: true }, orderBy: { createdAt: "asc" } },
+        orders: {
+          where: { status: { in: [...LIVE_STATUSES] } },
+          select: {
+            id: true,
+            code: true,
+            customerName: true,
+            status: true,
+            pickupTime: true,
+            customerNote: true,
+            items: { select: { name: true, quantity: true }, orderBy: { lineTotalPaise: "desc" } },
+          },
+          orderBy: { createdAt: "asc" },
+        },
       },
     }),
     prisma.menuItem.findMany({
-      select: { id: true, name: true, category: true, basePricePaise: true, priceUnit: true, images: true, defaultQuantity: true, isActive: true, archivedAt: true },
+      select: {
+        id: true,
+        name: true,
+        category: true,
+        basePricePaise: true,
+        priceUnit: true,
+        images: true,
+        defaultQuantity: true,
+        isActive: true,
+        archivedAt: true,
+        orderable: true,
+        noticeDays: true,
+      },
     }),
     prisma.menuDay.findMany({
       where: { date: { gte: toDbDate(windowStart), lt: toDbDate(addDays(date, 8)), not: toDbDate(date) }, items: { some: {} } },
@@ -119,8 +169,9 @@ export async function loadDayEditor(date: IsoDate): Promise<DayEditorData | null
           item.id,
           {
             included: Boolean(row),
-            quantity: row?.quantityAvailable ?? item.defaultQuantity,
+            quantity: Math.min(row?.quantityAvailable ?? item.defaultQuantity, DAY_QUANTITY.max),
             override: row?.priceOverridePaise != null ? paiseToPrice(row.priceOverridePaise) : "",
+            soldOut: Boolean(row?.soldOutAt),
           },
         ]
       }),
@@ -156,7 +207,12 @@ export async function loadDayEditor(date: IsoDate): Promise<DayEditorData | null
   const usedSlugs = new Set(items.map((item) => item.categorySlug))
   const prev = addDays(date, -1)
   const next = addDays(date, 1)
-  const orders = day?.orders ?? []
+  const orders = [...(day?.orders ?? [])].sort((a, b) => (a.pickupTime ?? "99:99").localeCompare(b.pickupTime ?? "99:99"))
+  const verified = orders.filter((order) => VERIFIED_STATUSES.includes(order.status)).length
+  const longest = catalogue
+    .filter((item) => item.isActive && !item.archivedAt && item.orderable && item.noticeDays > 1)
+    .sort((a, b) => b.noticeDays - a.noticeDays || a.name.localeCompare(b.name))[0]
+  const hours = parseOpeningHours(settings.openingHours)?.[weekdayKey(weekday(date))]
 
   return {
     date,
@@ -168,13 +224,27 @@ export async function loadDayEditor(date: IsoDate): Promise<DayEditorData | null
     weekHref: weekHref(weekStart(date), today),
     planned: Boolean(day),
     saved,
-    ordered: Object.fromEntries([...onDay.values()].map((row) => [row.menuItemId, row.quantityOrdered])),
     items,
     categories: categories.filter((category) => usedSlugs.has(category.slug)),
-    verified: orders.filter((order) => VERIFIED_STATUSES.includes(order.status)).length,
+    orders: orders.map((order) => ({
+      id: order.id,
+      code: order.code,
+      name: order.customerName,
+      status: order.status,
+      lines: order.items,
+      pickupTime: order.pickupTime,
+      note: order.customerNote ? (mentionsAllergen(order.customerNote) ? "allergen" : "note") : null,
+      href: `/admin/orders/${order.id}`,
+    })),
+    verified,
+    pending: orders.length - verified,
     liveOrders: orders.map((order) => ({ id: order.id, code: order.code, name: order.customerName })),
+    ordersHref: dayOrdersHref(date),
+    longestNotice: longest ? { name: longest.name, days: longest.noticeDays } : null,
     copySources,
     bakeryName: settings.bakeryName,
+    counterCloses: hours?.open ? hours.to : null,
+    phone: settings.publicPhone ? formatForDisplay(settings.publicPhone) : null,
     timezone: settings.timezone,
     now: new Date().toISOString(),
   }

@@ -3,14 +3,14 @@ import type { CutoffChoice } from "@/lib/calendar/cutoffs"
 import type { DayOrder } from "@/lib/calendar/week"
 import { addDays, computeCutoffAt, dateRange, fromDbDate, type IsoDate, toDbDate } from "@/lib/dates"
 import { serializable, type Tx } from "@/lib/db"
-import { type DayDefaults, newMenuDay } from "@/lib/orders/booking"
+import { type DayDefaults, newMenuDay, openByDefault } from "@/lib/orders/booking"
 import { LIVE_STATUSES, VERIFIED_STATUSES } from "@/lib/orders/status"
 
 /**
  * Every write behind the Calendar. Each runs in one serializable() transaction and takes the day's row
- * lock first — the same lock createOrder and verifyOrder take — so a plan never changes under an order
- * being placed. Nothing here deletes a MenuDay (orders point at it), and a MenuDayItem only goes when
- * nothing is ordered on it.
+ * lock first — the same lock createOrder and verifyOrder take — so a day's limits never change under an order
+ * being placed. Nothing here deletes a MenuDay (orders point at it). MenuDayItem rows are the day's counter-items
+ * (§10R): orders don't draw them down, so they come and go freely.
  */
 
 /** What the writes need from Settings: the defaults a new day starts from (opening hours included), and the bakery's clock. */
@@ -20,8 +20,6 @@ export type DayRefusal =
   | { ok: false; reason: "PAST" }
   /** Closing a day that still has orders — the confirm names them. */
   | { ok: false; reason: "HAS_ORDERS"; orders: DayOrder[] }
-  /** A quantity below what's already ordered, or an ordered item taken off. Carries the fresh counts. */
-  | { ok: false; reason: "BELOW_ORDERED"; ordered: Record<string, number> }
   /** An item that's archived or inactive was added. */
   | { ok: false; reason: "UNAVAILABLE_ITEM" }
 
@@ -104,14 +102,14 @@ export async function applyToWeek(monday: IsoDate, cutoff: CutoffChoice, maxOrde
 
 // ── Copy last week ──────────────────────────────────────────────────────────
 
-export type CopyOptions = { quantities: boolean; prices: boolean }
+export type CopyOptions = { quantities: boolean }
 
 /**
- * dev-docs/implementation.md 5.4 `copyWeek`. Each day of the week before `monday` lands on the same weekday:
- * open/closed, cutoff (recomputed for the new date — never copied), capacity, and its active items. Items
- * start with nothing ordered and nothing baked; quantities and price overrides only come across when
- * ticked (otherwise each item's default quantity and base price). Days already past, days with orders and
- * days whose source was never planned are skipped and returned, so the dialog can name them.
+ * dev-docs/implementation.md 5.4 `copyWeek` (revised by §10R). Each day of the week before `monday` lands on the same
+ * weekday: open/closed and its reason, cutoff (recomputed for the new date — never copied), max and overbook, and its
+ * active counter-items. Quantities come across when ticked (otherwise each item's usual batch); price overrides and
+ * sold-out marks never do, and nothing starts baked. Days already past, days with orders and days whose source was never
+ * planned are skipped and returned, so the dialog can name them.
  */
 export async function copyWeek(monday: IsoDate, options: CopyOptions, settings: PlanSettings, today: IsoDate) {
   const from = addDays(monday, -7)
@@ -135,7 +133,7 @@ export async function copyWeek(monday: IsoDate, options: CopyOptions, settings: 
       return {
         date,
         planned: Boolean(day),
-        isOpen: day?.isOpen ?? true,
+        isOpen: day?.isOpen ?? openByDefault(date, settings.openingHours),
         liveOrders: day && !asSource ? (liveBy.get(day.id) ?? 0) : 0,
         items: day ? (asSource ? copyable(day).length : day.items.length) : 0,
       }
@@ -164,15 +162,13 @@ export async function copyWeek(monday: IsoDate, options: CopyOptions, settings: 
         ? (await tx.menuDay.update({ where: { id: target.id }, data: settled, select: { id: true } })).id
         : (await tx.menuDay.create({ data: { date: toDbDate(row.date), ...settled }, select: { id: true } })).id
 
-      // No live orders on the day, so nothing is ordered on its items — the guard is belt and braces.
-      await tx.menuDayItem.deleteMany({ where: { menuDayId: targetId, quantityOrdered: 0 } })
+      await tx.menuDayItem.deleteMany({ where: { menuDayId: targetId } })
       if (original.isOpen) {
         await tx.menuDayItem.createMany({
           data: copyable(original).map((item) => ({
             menuDayId: targetId,
             menuItemId: item.menuItemId,
             quantityAvailable: options.quantities ? item.quantityAvailable : item.menuItem.defaultQuantity,
-            priceOverridePaise: options.prices ? item.priceOverridePaise : null,
           })),
           skipDuplicates: true,
         })
@@ -192,13 +188,13 @@ export type DayRecord = {
   overbookLimit: number
   publicNote: string
   closureNote: string
-  /** Every item that should be on the day. Anything on it now and missing here comes off. */
-  items: { menuItemId: string; quantityAvailable: number; priceOverridePaise: number | null }[]
+  /** Every counter-item the day should have. Anything on it now and missing here comes off. */
+  items: { menuItemId: string; quantityAvailable: number; priceOverridePaise: number | null; soldOut: boolean }[]
 }
 
 /**
- * Saves the whole day. Refuses — never clamps — when a quantity is below what's ordered or an ordered item
- * is taken off; the counts come back fresh, because orders may have arrived since the editor opened.
+ * Saves the whole day: its settings and its counter-items. A sold-out mark keeps the moment it was first set; clearing
+ * it puts the item back on the counter. Orders don't hang off the counter-items, so nothing here can strand one.
  */
 export async function saveDay(date: IsoDate, record: DayRecord, confirmClose: boolean, settings: PlanSettings, today: IsoDate) {
   if (date < today) return { ok: false, reason: "PAST" } as const
@@ -210,12 +206,9 @@ export async function saveDay(date: IsoDate, record: DayRecord, confirmClose: bo
       if (orders.length > 0) return { ok: false, reason: "HAS_ORDERS", orders }
     }
 
-    const current = await tx.menuDayItem.findMany({ where: { menuDayId: day.id }, select: { id: true, menuItemId: true, quantityOrdered: true } })
+    const current = await tx.menuDayItem.findMany({ where: { menuDayId: day.id }, select: { id: true, menuItemId: true, soldOutAt: true } })
     const wanted = new Map(record.items.map((item) => [item.menuItemId, item]))
-    const ordered = Object.fromEntries(current.map((row) => [row.menuItemId, row.quantityOrdered]))
-    const below = current.some((row) => row.quantityOrdered > 0 && (wanted.get(row.menuItemId)?.quantityAvailable ?? -1) < row.quantityOrdered)
-    if (below) return { ok: false, reason: "BELOW_ORDERED", ordered }
-
+    const soldOutSince = new Map(current.map((row) => [row.menuItemId, row.soldOutAt]))
     const onDay = new Set(current.map((row) => row.menuItemId))
     const added = record.items.filter((item) => !onDay.has(item.menuItemId)).map((item) => item.menuItemId)
     if (added.length > 0) {
@@ -236,17 +229,22 @@ export async function saveDay(date: IsoDate, record: DayRecord, confirmClose: bo
     })
 
     const removed = current.filter((row) => !wanted.has(row.menuItemId)).map((row) => row.id)
-    if (removed.length > 0) await tx.menuDayItem.deleteMany({ where: { id: { in: removed }, quantityOrdered: 0 } })
+    if (removed.length > 0) await tx.menuDayItem.deleteMany({ where: { id: { in: removed } } })
+    const now = new Date()
+    const counterRow = (item: DayRecord["items"][number]) => ({
+      quantityAvailable: item.quantityAvailable,
+      priceOverridePaise: item.priceOverridePaise,
+      soldOutAt: item.soldOut ? (soldOutSince.get(item.menuItemId) ?? now) : null,
+    })
     for (const item of record.items) {
       if (onDay.has(item.menuItemId)) {
-        await tx.menuDayItem.update({
-          where: { menuDayId_menuItemId: { menuDayId: day.id, menuItemId: item.menuItemId } },
-          data: { quantityAvailable: item.quantityAvailable, priceOverridePaise: item.priceOverridePaise },
-        })
+        await tx.menuDayItem.update({ where: { menuDayId_menuItemId: { menuDayId: day.id, menuItemId: item.menuItemId } }, data: counterRow(item) })
       }
     }
     const fresh = record.items.filter((item) => !onDay.has(item.menuItemId))
-    if (fresh.length > 0) await tx.menuDayItem.createMany({ data: fresh.map((item) => ({ menuDayId: day.id, ...item })) })
+    if (fresh.length > 0) {
+      await tx.menuDayItem.createMany({ data: fresh.map((item) => ({ menuDayId: day.id, menuItemId: item.menuItemId, ...counterRow(item) })) })
+    }
     return { ok: true }
   })
 }

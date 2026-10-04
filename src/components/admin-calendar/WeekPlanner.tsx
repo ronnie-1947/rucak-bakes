@@ -21,7 +21,8 @@ type WeekPlannerProps = {
 /**
  * The week planner's moving parts: Copy last week and Apply to all days (and the green line each leaves),
  * then the seven day cards — or, for a week with nothing planned, a way to start. Past weeks are read-only.
- * Never a month grid: it can't carry per-day item counts and capacity bars.
+ * Never a month grid: it can't carry each day's orders and counter-items. Cards: 1 column, 2 from 768px, 4 from 1280px,
+ * 5 from 1600px.
  */
 export function WeekPlanner({ week, nav, dict }: WeekPlannerProps) {
   const d = dict.calendar
@@ -63,7 +64,7 @@ export function WeekPlanner({ week, nav, dict }: WeekPlannerProps) {
       {empty ? (
         <EmptyWeek firstDay={firstDay} onCopy={openCopy} dict={d} />
       ) : (
-        <ol className="grid items-stretch gap-3 md:grid-cols-2 xl:grid-cols-7 xl:gap-2">
+        <ol className="grid items-stretch gap-3 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
           {week.days.map((day) => (
             <DayCard key={day.date} day={day} dict={dict} />
           ))}

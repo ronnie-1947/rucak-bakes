@@ -9,7 +9,7 @@ import { todayIn } from "@/lib/dates"
 import { getDictionary } from "@/lib/i18n"
 import { allergens } from "@/lib/menu/allergens"
 import { applySnapshot, archiveItems, duplicateItem, type MenuSnapshot, restoreItem, setItemsActive } from "@/lib/menu/changes"
-import { LIMITS, priceToPaise, QUANTITY, SLUG } from "@/lib/menu/form"
+import { LIMITS, NOTICE, priceToPaise, QUANTITY, SLUG } from "@/lib/menu/form"
 import { saveItem } from "@/lib/menu/save"
 import { priceUnits } from "@/lib/menu/units"
 import { getSettings } from "@/lib/settings/row"
@@ -114,6 +114,9 @@ const saveInput = z.object({
   about: text(LIMITS.about),
   ingredients: z.array(text(LIMITS.ingredient).min(1)).max(LIMITS.ingredients),
   allergens: z.array(z.enum(allergens)).max(allergens.length),
+  orderable: z.boolean(),
+  noticeDays: z.number().int().min(NOTICE.min).max(NOTICE.max),
+  bakeSeparately: z.boolean(),
   defaultQuantity: z.number().int().min(QUANTITY.min).max(QUANTITY.max),
   sizeNote: text(LIMITS.sizeNote),
   storageNote: text(LIMITS.storageNote),

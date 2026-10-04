@@ -15,7 +15,7 @@ const fades: Record<"sold" | "on", string> = {
   on: "",
 }
 
-/** One item in the customer preview: photo, name, the day's price, and Sold out when nothing's left. */
+/** One counter-item in the customer preview: photo, name, the day's price, and Sold out (faded) when the counter ran out. */
 export function PreviewRow({ name, image, pricePaise, soldOut, soldOutLabel }: PreviewRowProps) {
   return (
     <li className={`grid grid-cols-[2.25rem_minmax(0,1fr)_auto] items-center gap-2 border-t border-border py-2 ${fades[soldOut ? "sold" : "on"]}`}>

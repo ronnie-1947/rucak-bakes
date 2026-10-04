@@ -20,7 +20,6 @@ type ArchiveDialogProps = {
 export function ArchiveDialog({ targets, dict, pending, onClose, onConfirm }: ArchiveDialogProps) {
   const d = dict.dialogs
   const scheduled = targets.some((target) => target.upcoming.length > 0)
-  const anyOrdered = targets.some((target) => target.upcoming.some((day) => day.ordered > 0))
 
   return (
     <Dialog
@@ -45,7 +44,6 @@ export function ArchiveDialog({ targets, dict, pending, onClose, onConfirm }: Ar
           {scheduled ? ` ${d.archiveRemoves}` : null}
         </p>
         <ScheduleLines targets={targets} dict={d} />
-        {anyOrdered ? <p className="text-small-admin text-pretty text-muted">{d.keepsOrdered}</p> : null}
       </div>
     </Dialog>
   )

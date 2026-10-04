@@ -18,6 +18,8 @@ export const LIMITS = {
   storageNote: 120,
 }
 export const QUANTITY = { min: 0, max: 99 }
+/** Days of notice the form offers — the booking window (Settings.orderAheadDays, 7): longer could never be ordered. The DB allows 0–30. */
+export const NOTICE = { min: 0, max: 7 }
 /** 10MB, JPG or PNG — what the photo zone says it takes. */
 export const PHOTO_MAX_BYTES = 10 * 1024 * 1024
 export const PHOTO_TYPES = ["image/jpeg", "image/png"]
@@ -41,6 +43,13 @@ export type MenuItemValues = {
   about: string
   ingredients: string[]
   allergens: Allergen[]
+  /** Off → call only: on the menu with a Call button, never in a cart. */
+  orderable: boolean
+  /** Days of notice an online order needs (orders/deadline.ts). Kept while ordering is off. */
+  noticeDays: number
+  /** The day sheet lists each order of it on its own row, with the customer's note. */
+  bakeSeparately: boolean
+  /** The usual counter batch — pre-fills the quantity when it's added as a counter-item in the Calendar. */
   defaultQuantity: number
   sizeNote: string
   storageNote: string
@@ -58,6 +67,9 @@ export const BLANK: MenuItemValues = {
   about: "",
   ingredients: [],
   allergens: [],
+  orderable: true,
+  noticeDays: 1,
+  bakeSeparately: false,
   defaultQuantity: 10,
   sizeNote: "",
   storageNote: "",
@@ -119,6 +131,9 @@ export type ChangeKey =
   | "about"
   | "ingredients"
   | "allergens"
+  | "orderable"
+  | "noticeDays"
+  | "bakeSeparately"
   | "defaultQuantity"
   | "sizeNote"
   | "storageNote"
@@ -141,6 +156,9 @@ export function changedFields(current: MenuItemValues, saved: MenuItemValues): C
   if (current.about !== saved.about) out.push("about")
   if (current.ingredients.join("|") !== saved.ingredients.join("|")) out.push("ingredients")
   if ([...current.allergens].sort().join("|") !== [...saved.allergens].sort().join("|")) out.push("allergens")
+  if (current.orderable !== saved.orderable) out.push("orderable")
+  if (current.noticeDays !== saved.noticeDays) out.push("noticeDays")
+  if (current.bakeSeparately !== saved.bakeSeparately) out.push("bakeSeparately")
   if (current.defaultQuantity !== saved.defaultQuantity) out.push("defaultQuantity")
   if (current.sizeNote !== saved.sizeNote) out.push("sizeNote")
   if (current.storageNote !== saved.storageNote) out.push("storageNote")

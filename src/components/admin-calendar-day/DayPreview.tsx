@@ -1,8 +1,8 @@
+import { Icon } from "@/components/ui/icons/Icon"
 import { Tag, type TagTone } from "@/components/ui/Tag"
 import { formatClock } from "@/lib/calendar/cutoffs"
 import type { DayEditorData } from "@/lib/calendar/day"
 import { overridePaise } from "@/lib/calendar/form"
-import { addDays, formatLongDayLabel } from "@/lib/dates"
 import { fill } from "@/lib/template"
 import { PreviewRow } from "./PreviewRow"
 import type { AdminCopy } from "./types"
@@ -14,30 +14,28 @@ type DayPreviewProps = {
   dict: AdminCopy
 }
 
-type Availability = "closed" | "full" | "fast" | "available"
+type Look = "counter" | "ordersOnly" | "closed"
 
-const tones: Record<Availability, TagTone> = {
+const tones: Record<Look, TagTone> = {
+  counter: "green",
+  ordersOnly: "quiet",
   closed: "quiet",
-  full: "red",
-  fast: "warm",
-  available: "green",
 }
 
-/** "Selling fast" with three or fewer orders left before the day shows as fully booked. */
-const FAST_AT = 3
-
 /**
- * From 1600px: the day as a customer would see it, with the unsaved edits in — status, the day note, each
- * item at its price for the day (sold out when nothing's left), and when ordering closes.
+ * From 1600px: the day's Fresh today band as customers see it (§10R), unsaved edits included — "On the counter till 4pm"
+ * (the opening hours' closing time that weekday), "Orders only" or "Closed"; the day note; each counter-item at its price
+ * for the day, faded with Sold out when the counter ran out; then walk in or call.
  */
 export function DayPreview({ data, editor, dict }: DayPreviewProps) {
   const p = dict.calendarDay.preview
   const { plan } = editor
-  const left = plan.overbookLimit - data.liveOrders.length
-  const status: Availability = !plan.isOpen ? "closed" : left <= 0 ? "full" : left <= FAST_AT ? "fast" : "available"
   const items = data.items.filter((item) => plan.items[item.id]?.included)
+  const look: Look = !plan.isOpen ? "closed" : items.length > 0 ? "counter" : "ordersOnly"
+  const closes = data.counterCloses ? formatClock(data.counterCloses) : null
+  const status = look === "counter" ? (closes ? fill(p.status.counter, { time: closes }) : p.status.counterAllDay) : p.status[look]
   const note = plan.publicNote.trim()
-  const orderBy = fill(p.orderBy, { time: formatClock(plan.cutoff.time), day: formatLongDayLabel(addDays(data.date, -plan.cutoff.daysBefore)) })
+  const walkIn = data.phone ? p.walkIn : closes ? fill(p.walkInOnly, { time: closes }) : null
 
   return (
     <aside aria-labelledby="preview-title" className="sticky top-8 hidden min-w-0 flex-col gap-3 2xl:flex">
@@ -48,11 +46,11 @@ export function DayPreview({ data, editor, dict }: DayPreviewProps) {
         <div className="border-b border-border p-3 font-display font-semibold">{data.bakeryName}</div>
         <div className="flex flex-col gap-3 p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="font-display font-semibold tabular-nums">{fill(p.baking, { day: data.title })}</span>
-            <Tag tone={tones[status]}>{p.status[status]}</Tag>
+            <span className="font-display font-semibold">{p.fresh}</span>
+            <Tag tone={tones[look]}>{status}</Tag>
           </div>
           {note ? <p className="rounded-chip border border-o200 bg-o50 px-3 py-2 text-small-admin font-medium">{note}</p> : null}
-          {plan.isOpen ? (
+          {look === "counter" ? (
             <ul className="flex flex-col">
               {items.map((item) => (
                 <PreviewRow
@@ -60,15 +58,27 @@ export function DayPreview({ data, editor, dict }: DayPreviewProps) {
                   name={item.name}
                   image={item.image}
                   pricePaise={overridePaise(plan.items[item.id].override, item.basePricePaise) ?? item.basePricePaise}
-                  soldOut={plan.items[item.id].quantity <= (editor.ordered[item.id] ?? 0)}
+                  soldOut={plan.items[item.id].soldOut}
                   soldOutLabel={p.soldOut}
                 />
               ))}
             </ul>
           ) : (
-            <p className="rounded-chip bg-sunken p-4 text-center text-small-admin text-muted">{p.closed}</p>
+            <p className="rounded-chip bg-sunken p-4 text-center text-small-admin text-muted">{look === "closed" ? p.closed : p.empty}</p>
           )}
-          <span className="text-small-admin text-muted tabular-nums">{orderBy}</span>
+          {look === "closed" ? null : (
+            <>
+              {walkIn ? <span className="text-small-admin text-pretty text-muted">{walkIn}</span> : null}
+              {data.phone ? (
+                <span
+                  className="flex min-h-11 items-center justify-center gap-2 rounded-button border border-o700 text-small font-semibold text-o700 tabular-nums"
+                >
+                  <Icon name="phone" className="size-4" />
+                  {fill(p.call, { phone: data.phone })}
+                </span>
+              ) : null}
+            </>
+          )}
         </div>
       </div>
       <p className="text-small-admin text-muted">{p.hint}</p>

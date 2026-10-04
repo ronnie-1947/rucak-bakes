@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/Button"
-import { Icon } from "@/components/ui/icons/Icon"
 import { Stepper } from "@/components/ui/Stepper"
 import { Tag } from "@/components/ui/Tag"
 import { type InputFrame, inputShellClasses } from "@/components/ui/TextInput"
@@ -12,7 +11,6 @@ import type { DayCopy } from "./types"
 type ItemControlsProps = {
   item: EditorItem
   plan: ItemPlan
-  ordered: number
   onQuantity: (quantity: number) => void
   onOverride: (text: string) => void
   onSoldOut: () => void
@@ -28,11 +26,10 @@ const overrideFrames: Record<OverrideLook, InputFrame> = {
 }
 
 /**
- * An included item, opened: quantity (never below what's ordered — a red line says so and Save waits),
- * a price override for this day only, and Sold out, which sets the quantity to what's already ordered.
+ * A counter-item, opened: the quantity made (with the item's usual batch beside it), a price override for this day only,
+ * and Sold out — the counter ran out; Fresh today says so and the quantity stays. Undo puts it back.
  */
-export function ItemControls({ item, plan, ordered, onQuantity, onOverride, onSoldOut, dict }: ItemControlsProps) {
-  const conflict = plan.quantity < ordered
+export function ItemControls({ item, plan, onQuantity, onOverride, onSoldOut, dict }: ItemControlsProps) {
   const override = overridePaise(plan.override, item.basePricePaise)
   const look: OverrideLook = override === undefined ? "invalid" : override === null ? "none" : "active"
   const diff = typeof override === "number" ? override - item.basePricePaise : 0
@@ -54,11 +51,10 @@ export function ItemControls({ item, plan, ordered, onQuantity, onOverride, onSo
             onChange={onQuantity}
             decreaseLabel={dict.less}
             increaseLabel={dict.more}
-            describedBy={`${qtyId}-label ${qtyId}-ordered`}
-            invalid={conflict}
+            describedBy={`${qtyId}-label ${qtyId}-usual`}
           />
-          <span id={`${qtyId}-ordered`} className="text-small-admin text-muted tabular-nums">
-            {fill(dict.orderedLine, { ordered, count: plan.quantity })}
+          <span id={`${qtyId}-usual`} className="text-small-admin text-muted tabular-nums">
+            {fill(dict.usual, { count: item.defaultQuantity })}
           </span>
         </div>
 
@@ -95,19 +91,12 @@ export function ItemControls({ item, plan, ordered, onQuantity, onOverride, onSo
 
         <div className="flex min-w-0 flex-col gap-2">
           <span className="text-small-admin text-muted">{dict.quickAction}</span>
-          <Button variant="outline" className="self-start" onClick={onSoldOut}>
-            {dict.soldOut}
+          <Button variant={plan.soldOut ? "outlineLink" : "outline"} className="self-start" aria-pressed={plan.soldOut} onClick={onSoldOut}>
+            {plan.soldOut ? dict.undoSoldOut : dict.soldOut}
           </Button>
-          <span className="text-small-admin text-muted tabular-nums">{fill(dict.soldOutHelp, { count: ordered })}</span>
+          <span className="text-small-admin text-muted">{plan.soldOut ? dict.soldOutOnHelp : dict.soldOutHelp}</span>
         </div>
       </div>
-
-      {conflict ? (
-        <p role="alert" className="flex items-center gap-2 px-3 pb-3 text-small-admin font-semibold text-red tabular-nums">
-          <Icon name="alert" className="size-4 shrink-0" />
-          {fill(dict.conflict, { count: ordered })}
-        </p>
-      ) : null}
     </div>
   )
 }

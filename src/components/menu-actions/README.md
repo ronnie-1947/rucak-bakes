@@ -10,9 +10,9 @@ and the item form ([admin-menu-item](../admin-menu-item/README.md)), the same wa
 menu-actions/
   MenuActionsProvider.tsx  "use client" — runs the server actions, owns the dialogs and the undo state; the useMenuActions() context
   MenuActionsStatus.tsx    "use client" — the failure notice + UndoBar (ui), wherever a screen places them
-  DeactivateDialog.tsx     "use client" — names the upcoming days; "Also remove it from these days" (ticked)
-  ArchiveDialog.tsx        "use client" — soft archive confirm naming the days it comes off
-  ScheduleLines.tsx        a dialog's item list: name, then its upcoming days ("Sat 3 Oct (today) · 4 ordered")
+  DeactivateDialog.tsx     "use client" — names the upcoming counter days; "Also remove it from these days" (ticked)
+  ArchiveDialog.tsx        "use client" — soft archive confirm naming the days it comes off the counter
+  ScheduleLines.tsx        a dialog's item list: name, then its upcoming counter days ("Sat 3 Oct (today), Sun 4 Oct")
   types.ts                 MenuCopy
   README.md
 ```
@@ -50,7 +50,7 @@ ScheduleLines       { targets; dict: MenuCopy["dialogs"] }
 
 ## How it works
 
-- `request(kind, targets, onDone?)` — archive always confirms; deactivate confirms when any target is on an upcoming day;
+- `request(kind, targets, onDone?)` — archive always confirms; deactivate confirms when any target is a counter-item on an upcoming day;
   activate, restore and duplicate run straight away. `onDone` runs after the change lands (leave select mode, …).
 - Each server action returns a `MenuSnapshot` of what it overwrote; Undo sends it to `undoMenuChange`. A duplicate also
   returns the copy's id, and the strip offers "Open it".

@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { SelectBox } from "@/components/ui/SelectBox"
+import { Tag } from "@/components/ui/Tag"
 import { priceText } from "@/lib/menu/copy"
 import type { MenuItemRow } from "@/lib/menu/queries"
 import { fill } from "@/lib/template"
@@ -30,7 +31,7 @@ const dims: Record<"full" | "dim", string> = {
 }
 
 /**
- * One item in the grid: 4:3 cover, name, category, price, usage, and a footer with the Active switch
+ * One item in the grid: 4:3 cover, name (+ Call only), category, price, usage, and a footer with the Active switch
  * and the ⋯ menu (which opens upward). The card opens the item; in select mode it toggles the tick.
  */
 export function MenuCard({ item, dict, selectMode, checked, onToggle }: MenuCardProps) {
@@ -47,7 +48,10 @@ export function MenuCard({ item, dict, selectMode, checked, onToggle }: MenuCard
         <div className="flex min-w-0 items-start gap-2">
           {selectMode ? <SelectBox checked={checked} onChange={onToggle} label={fill(d.selectItem, { name: item.name })} cover /> : null}
           <div className="flex min-w-0 flex-col">
-            <span className="font-medium">{item.name}</span>
+            <span className="flex flex-wrap items-baseline gap-x-2">
+              <span className="font-medium">{item.name}</span>
+              {item.orderable ? null : <Tag tone="neutral" className="self-center">{d.callOnly}</Tag>}
+            </span>
             {item.categoryName ? <span className="text-small-admin text-muted">{item.categoryName}</span> : null}
             <span className="font-semibold text-o700 tabular-nums">{priceText(item, d, dict.priceUnits)}</span>
           </div>

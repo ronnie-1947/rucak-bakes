@@ -20,9 +20,9 @@ type ItemPickerProps = {
 const OTHER = "__other"
 
 /**
- * "Items on this day": Select all / Clear all, a search and category chips (both just narrow the list — they
- * don't change the plan), then the menu grouped by category. Every item the bakery sells is listed; ticked
- * ones are on sale that day.
+ * "Counter-items made this day" (§10R): Select all / Clear all, the intro, a search and category chips (both just narrow
+ * the list — they don't change the plan), then the menu grouped by category. Every item the bakery makes is listed;
+ * ticked ones are baked for the counter that day. None ticked: "No counter-items — this day is orders only".
  */
 export function ItemPicker({ data, editor, dict }: ItemPickerProps) {
   const d = dict.calendarDay.items
@@ -36,6 +36,7 @@ export function ItemPicker({ data, editor, dict }: ItemPickerProps) {
     .filter((category) => category.items.length > 0)
   const chips = [...data.categories, ...(data.items.some((item) => groupOf(item) === OTHER) ? [{ slug: OTHER, name: d.uncategorised }] : [])]
   const ids = visible.map((item) => item.id)
+  const none = !Object.values(editor.plan.items).some((item) => item.included)
 
   return (
     <section aria-labelledby="items-title" className="flex flex-col gap-3">
@@ -52,6 +53,7 @@ export function ItemPicker({ data, editor, dict }: ItemPickerProps) {
           </Button>
         </div>
       </div>
+      <p className="text-small-admin text-pretty text-muted">{d.intro}</p>
 
       <label className="relative block">
         <span className="sr-only">{d.searchLabel}</span>
@@ -73,6 +75,12 @@ export function ItemPicker({ data, editor, dict }: ItemPickerProps) {
       ) : null}
 
       <PlanStrip editor={editor} dict={dict} />
+
+      {none && data.items.length > 0 ? (
+        <p role="status" className="rounded-panel bg-sunken p-3 text-small-admin text-muted">
+          {d.none}
+        </p>
+      ) : null}
 
       {data.items.length === 0 ? (
         <EmptyState

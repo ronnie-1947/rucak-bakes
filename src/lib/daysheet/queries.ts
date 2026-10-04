@@ -1,6 +1,7 @@
 import { FulfilmentType, OrderStatus } from "@/generated/prisma/client"
 import { dayHref, inPlanningRange } from "@/lib/calendar/routes"
-import { addDays, formatDayLabel, formatDayTimeIn, formatLongDayLabel, formatTimeIn, type IsoDate, todayIn, toDbDate } from "@/lib/dates"
+import { formatClock } from "@/lib/calendar/cutoffs"
+import { addDays, formatDayLabel, formatLongDayLabel, formatTimeIn, type IsoDate, isoDateInZone, todayIn, toDbDate } from "@/lib/dates"
 import { mentionsAllergen } from "@/lib/daysheet/notes"
 import { parseSheetParams, type SheetParams, sheetHref } from "@/lib/daysheet/routes"
 import { prisma } from "@/lib/db"
@@ -11,15 +12,15 @@ import { formatForDisplay } from "@/lib/phone"
 import { getSettings } from "@/lib/settings/row"
 
 /**
- * Read model for the day sheet (/admin/daysheet): one fulfilment day's orders turned into what to bake and
- * who collects when. Bake totals count VERIFIED, READY and COMPLETED orders only; pending quantities are
- * counted beside them and never merged in. Cancelled and no-show orders are not on the sheet at all.
+ * Read model for the day sheet (/admin/daysheet, §10R): one fulfilment day turned into what to bake — For orders (totals
+ * per item, plus Made to order lines), then the day's counter-items — and who collects when. Order totals count VERIFIED,
+ * READY and COMPLETED orders only; pending quantities are counted beside them and never merged in. Cancelled and no-show
+ * orders are not on the sheet at all.
  */
 
+/** A For orders row — one menu item across the day's orders. Its tick is every verified line of it (`OrderItem.bakedAt`). */
 export type BakeRow = {
   menuItemId: string
-  /** The day's MenuDayItem — what the Baked tick writes. Null if the item has since left the day. */
-  tickId: string | null
   /** The item's current name — the bake list is about the recipe, not what the order snapshot called it. */
   name: string
   /** Units on verified orders — the bake total. */
@@ -32,6 +33,36 @@ export type BakeRow = {
   noted: boolean
   /** On a pending order that carries one. */
   pendingNoted: boolean
+  /** The orders it's on, as "Meera BK-4821" — pending ones only show with Include pending. */
+  who: { name: string; code: string; pending: boolean }[]
+  /** Every verified line of it is baked. */
+  baked: boolean
+}
+
+/** A Made to order row — one line of an item that bakes separately (`MenuItem.bakeSeparately`), with its order's note. */
+export type MadeRow = {
+  /** The OrderItem — what its tick writes. */
+  lineId: string
+  quantity: number
+  /** As ordered — the line's snapshot name. */
+  name: string
+  sizeNote: string | null
+  customer: string
+  code: string
+  note: string | null
+  allergen: boolean
+  pending: boolean
+  baked: boolean
+}
+
+/** A counter-item (§10R) — baked for the counter, never ordered online. Its tick is `MenuDayItem.bakedAt`. */
+export type CounterRow = {
+  tickId: string
+  name: string
+  /** Quantity made. */
+  quantity: number
+  unit: PriceUnit
+  sizeNote: string | null
   baked: boolean
 }
 
@@ -68,6 +99,7 @@ export type SheetNote = {
   orderId: string
   code: string
   name: string
+  /** "11:30am" */
   time: string | null
   delivery: boolean
   text: string
@@ -82,7 +114,7 @@ export type SheetNote = {
  */
 export type SheetVersion = { orders: string[]; ticks: string }
 
-/** Why there is no sheet to show. Null: there are live orders. */
+/** Why there is no sheet to show. Null: there are live orders, or counter-items on an open day within reach. */
 export type SheetState = "closed" | "beyond" | "empty" | null
 
 export type DaySheetData = {
@@ -115,17 +147,22 @@ export type DaySheetData = {
   pendingCount: number
   /** Units across verified orders. */
   itemCount: number
-  /** Earliest and latest chosen pickup time among verified pickups. */
+  /** Earliest and latest chosen pickup time among verified pickups — "7:30am". */
   firstTime: string | null
   lastTime: string | null
+  /** For orders, by category — items that bake separately are under `made` instead. */
   bake: BakeGroup[]
+  made: MadeRow[]
+  counter: CounterRow[]
+  /** Pieces across the counter-items. */
+  counterPieces: number
   /** Allergen notes first, then by time. */
   notes: SheetNote[]
   /** Every live order, by time — the screen drops pending ones unless asked. */
   orders: SheetOrder[]
   version: SheetVersion
   bakeryName: string
-  /** "Sat 3 Oct, 05:02" — when this was read; the printout says it. */
+  /** "Sat 3 Oct, 5:02am" — when this was read; the printout says it. */
   asOf: string
 }
 
@@ -137,6 +174,7 @@ function slotOf(delivery: boolean, time: string | null): PickupSlot {
   return time < "12:00" ? "morning" : "afternoon"
 }
 
+/** `bakedIds`: baked counter-items and baked order lines — any of them changing is another device's tick. */
 function versionOf(orders: { id: string; status: OrderStatus }[], bakedIds: string[]): SheetVersion {
   const collected = orders.filter((order) => order.status === OrderStatus.COMPLETED).map((order) => order.id)
   return {
@@ -145,17 +183,23 @@ function versionOf(orders: { id: string; status: OrderStatus }[], bakedIds: stri
   }
 }
 
-/** Just the version — what the open sheet polls. Two small queries. */
+/** Just the version — what the open sheet polls. Three small queries. */
 export async function loadSheetVersion(date: IsoDate): Promise<SheetVersion> {
   const day = toDbDate(date)
-  const [orders, baked] = await Promise.all([
-    prisma.order.findMany({ where: { fulfilmentDate: day, status: { in: [...LIVE_STATUSES] } }, select: { id: true, status: true } }),
+  const live = { fulfilmentDate: day, status: { in: [...LIVE_STATUSES] } }
+  const [orders, counter, lines] = await Promise.all([
+    prisma.order.findMany({ where: live, select: { id: true, status: true } }),
     prisma.menuDayItem.findMany({ where: { menuDay: { date: day }, bakedAt: { not: null } }, select: { id: true } }),
+    prisma.orderItem.findMany({ where: { order: live, bakedAt: { not: null } }, select: { id: true } }),
   ])
-  return versionOf(orders, baked.map((row) => row.id))
+  return versionOf(orders, [...counter, ...lines].map((row) => row.id))
 }
 
+/** "07:30" → "7:30am". */
+const clock = (time: string | null) => (time ? formatClock(time) : null)
+
 export async function loadDaySheet(searchParams: Record<string, string | string[] | undefined>): Promise<DaySheetData> {
+  const now = new Date()
   const settings = await getSettings()
   const tz = settings.timezone
   const today = todayIn(tz)
@@ -165,7 +209,17 @@ export async function loadDaySheet(searchParams: Record<string, string | string[
   const [day, orders, categories] = await Promise.all([
     prisma.menuDay.findUnique({
       where: { date: toDbDate(date) },
-      select: { isOpen: true, items: { select: { id: true, menuItemId: true, bakedAt: true } } },
+      select: {
+        isOpen: true,
+        items: {
+          select: {
+            id: true,
+            quantityAvailable: true,
+            bakedAt: true,
+            menuItem: { select: { name: true, category: true, priceUnit: true, sizeNote: true } },
+          },
+        },
+      },
     }),
     prisma.order.findMany({
       where: { fulfilmentDate: toDbDate(date), status: { in: [...LIVE_STATUSES] } },
@@ -182,7 +236,7 @@ export async function loadDaySheet(searchParams: Record<string, string | string[
         customerPhone: true,
         customerNote: true,
         totalPaise: true,
-        items: { select: { menuItemId: true, name: true, quantity: true }, orderBy: { lineTotalPaise: "desc" } },
+        items: { select: { id: true, menuItemId: true, name: true, quantity: true, bakedAt: true }, orderBy: { lineTotalPaise: "desc" } },
         customer: { select: { isTrusted: true } },
       },
     }),
@@ -192,17 +246,17 @@ export async function loadDaySheet(searchParams: Record<string, string | string[
   const itemIds = [...new Set(orders.flatMap((order) => order.items.map((line) => line.menuItemId)))]
   const catalogue = await prisma.menuItem.findMany({
     where: { id: { in: itemIds } },
-    select: { id: true, name: true, category: true, priceUnit: true, sizeNote: true },
+    select: { id: true, name: true, category: true, priceUnit: true, sizeNote: true, bakeSeparately: true },
   })
+  const separate = new Set(catalogue.filter((item) => item.bakeSeparately).map((item) => item.id))
+  const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? name
 
-  // Bake totals: verified and pending kept apart from the first line.
-  const dayItemOf = new Map((day?.items ?? []).map((row) => [row.menuItemId, row]))
+  // For orders: verified and pending kept apart from the first line. A row is baked when every verified line of it is.
   const rows = new Map<string, BakeRow>()
-  for (const item of catalogue) {
-    const dayItem = dayItemOf.get(item.id)
+  const unbaked = new Set<string>()
+  for (const item of catalogue.filter((entry) => !separate.has(entry.id))) {
     rows.set(item.id, {
       menuItemId: item.id,
-      tickId: dayItem?.id ?? null,
       name: item.name,
       verified: 0,
       pending: 0,
@@ -210,7 +264,8 @@ export async function loadDaySheet(searchParams: Record<string, string | string[
       sizeNote: item.sizeNote,
       noted: false,
       pendingNoted: false,
-      baked: Boolean(dayItem?.bakedAt),
+      who: [],
+      baked: false,
     })
   }
   for (const order of orders) {
@@ -220,12 +275,37 @@ export async function loadDaySheet(searchParams: Record<string, string | string[
       if (!row) continue
       if (verified) row.verified += line.quantity
       else row.pending += line.quantity
+      if (verified && !line.bakedAt) unbaked.add(row.menuItemId)
       if (order.customerNote && verified) row.noted = true
       if (order.customerNote && !verified) row.pendingNoted = true
+      if (!row.who.some((who) => who.code === order.code)) row.who.push({ name: firstName(order.customerName), code: order.code, pending: !verified })
     }
   }
+  for (const row of rows.values()) row.baked = row.verified > 0 && !unbaked.has(row.menuItemId)
+
+  // Made to order: each line of an item that bakes separately, with its order's note, in pickup order.
+  const sizeOf = new Map(catalogue.map((item) => [item.id, item.sizeNote]))
+  const made: MadeRow[] = [...orders]
+    .sort((a, b) => (a.pickupTime ?? "99:99").localeCompare(b.pickupTime ?? "99:99"))
+    .flatMap((order) =>
+      order.items
+        .filter((line) => separate.has(line.menuItemId))
+        .map((line) => ({
+          lineId: line.id,
+          quantity: line.quantity,
+          name: line.name,
+          sizeNote: sizeOf.get(line.menuItemId) ?? null,
+          customer: order.customerName,
+          code: order.code,
+          note: order.customerNote,
+          allergen: order.customerNote ? mentionsAllergen(order.customerNote) : false,
+          pending: !isVerified(order.status),
+          baked: Boolean(line.bakedAt),
+        })),
+    )
 
   const categoryOf = new Map(catalogue.map((item) => [item.id, item.category]))
+  const categoryRank = new Map(categories.map((category, index) => [category.slug, index]))
   const byTotal = (a: BakeRow, b: BakeRow) => b.verified - a.verified || b.pending - a.pending || a.name.localeCompare(b.name)
   const known = new Set(categories.map((category) => category.slug))
   const bake: BakeGroup[] = [
@@ -268,13 +348,25 @@ export async function loadDaySheet(searchParams: Record<string, string | string[
       orderId: order.id,
       code: order.code,
       name: order.name,
-      time: order.time,
+      time: clock(order.time),
       delivery: order.delivery,
       text: order.note ?? "",
       allergen: order.allergen,
       pending: order.pending,
     }))
     .sort((a, b) => Number(b.allergen) - Number(a.allergen))
+
+  const rankOf = (category: string | null) => categoryRank.get(category ?? "") ?? categories.length
+  const counter: CounterRow[] = [...(day?.items ?? [])]
+    .sort((a, b) => rankOf(a.menuItem.category) - rankOf(b.menuItem.category) || a.menuItem.name.localeCompare(b.menuItem.name))
+    .map((row) => ({
+      tickId: row.id,
+      name: row.menuItem.name,
+      quantity: row.quantityAvailable,
+      unit: asPriceUnit(row.menuItem.priceUnit),
+      sizeNote: row.menuItem.sizeNote,
+      baked: Boolean(row.bakedAt),
+    }))
 
   const verifiedOrders = orders.filter((order) => isVerified(order.status))
   const times = verifiedOrders
@@ -283,7 +375,10 @@ export async function loadDaySheet(searchParams: Record<string, string | string[
     .sort()
 
   const closed = Boolean(day && !day.isOpen)
-  const state: SheetState = orders.length > 0 ? null : closed ? "closed" : date > addDays(today, settings.orderAheadDays) ? "beyond" : "empty"
+  const beyond = date > addDays(today, settings.orderAheadDays)
+  // Counter-items alone make a sheet — on an open day within reach.
+  const state: SheetState =
+    orders.length > 0 || (counter.length > 0 && !closed && !beyond) ? null : closed ? "closed" : beyond ? "beyond" : "empty"
 
   const href = (next: Partial<SheetParams>) => sheetHref({ ...params, ...next }, today)
 
@@ -310,13 +405,19 @@ export async function loadDaySheet(searchParams: Record<string, string | string[
     verifiedCount: verifiedOrders.length,
     pendingCount: orders.length - verifiedOrders.length,
     itemCount: verifiedOrders.reduce((sum, order) => sum + order.items.reduce((units, line) => units + line.quantity, 0), 0),
-    firstTime: times[0] ?? null,
-    lastTime: times.at(-1) ?? null,
+    firstTime: clock(times[0] ?? null),
+    lastTime: clock(times.at(-1) ?? null),
     bake,
+    made,
+    counter,
+    counterPieces: counter.reduce((sum, row) => sum + row.quantity, 0),
     notes,
     orders: sheetOrders,
-    version: versionOf(orders, (day?.items ?? []).filter((row) => row.bakedAt).map((row) => row.id)),
+    version: versionOf(orders, [
+      ...(day?.items ?? []).filter((row) => row.bakedAt).map((row) => row.id),
+      ...orders.flatMap((order) => order.items.filter((line) => line.bakedAt).map((line) => line.id)),
+    ]),
     bakeryName: settings.bakeryName,
-    asOf: formatDayTimeIn(new Date(), tz),
+    asOf: `${formatDayLabel(isoDateInZone(now, tz))}, ${formatClock(formatTimeIn(now, tz))}`,
   }
 }

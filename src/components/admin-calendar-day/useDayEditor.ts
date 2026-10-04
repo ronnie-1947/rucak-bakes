@@ -4,27 +4,25 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import { saveMenuDay } from "@/app/actions/calendar"
 import { type CutoffChoice, cutoffKey } from "@/lib/calendar/cutoffs"
 import type { CopySource, DayEditorData } from "@/lib/calendar/day"
-import { changeCount, DAY_QUANTITY, type DayPlan, overridePaise, overrideProblems, quantityConflicts, withMaxOrders } from "@/lib/calendar/form"
+import { changeCount, DAY_QUANTITY, type DayPlan, overridePaise, overrideProblems, withMaxOrders } from "@/lib/calendar/form"
 import type { DayOrder } from "@/lib/calendar/week"
 
-/** Why the last save didn't land. `refreshed`: orders came in meanwhile and the ordered counts moved. */
-export type SaveProblem = "failed" | "refreshed" | "unavailable"
+/** Why the last save didn't land. */
+export type SaveProblem = "failed" | "unavailable"
 
-export type SaveState = "saved" | "conflicts" | "prices" | "unsaved" | "clean"
+export type SaveState = "saved" | "prices" | "unsaved" | "clean"
 
 const FLASH_MS = 1800
 
 /**
- * Everything the day editor holds: the plan being edited against the saved one, what's already ordered per
- * item, which rows are open, the search and category, and Save / Discard. A quantity below what's ordered is
- * a conflict that blocks Save with the reason named — never clamped. Closing a day with orders goes through
- * the confirm first; the save then tells the server it was confirmed.
+ * Everything the day editor holds: the plan being edited against the saved one — its settings and its counter-items
+ * (§10R) — which rows are open, the search and category, and Save / Discard. Counter-items never hold orders, so any of
+ * them can change freely. Closing a day with orders goes through the confirm first; the save then tells the server it
+ * was confirmed.
  */
 export function useDayEditor(data: DayEditorData) {
   const [plan, setPlan] = useState<DayPlan>(data.saved)
   const [saved, setSaved] = useState<DayPlan>(data.saved)
-  const [ordered, setOrdered] = useState(data.ordered)
-  const [seenOrdered, setSeenOrdered] = useState(data.ordered)
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set())
   const [query, setQuery] = useState("")
   const [category, setCategory] = useState<string | null>(null)
@@ -35,12 +33,6 @@ export function useDayEditor(data: DayEditorData) {
   const [pending, startTransition] = useTransition()
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Fresh counts from the server (after a save, or orders arriving and the page refreshing).
-  if (data.ordered !== seenOrdered) {
-    setSeenOrdered(data.ordered)
-    setOrdered(data.ordered)
-  }
-
   useEffect(() => {
     const timer = flashTimer
     return () => {
@@ -50,12 +42,11 @@ export function useDayEditor(data: DayEditorData) {
 
   const basePrices = useMemo(() => Object.fromEntries(data.items.map((item) => [item.id, item.basePricePaise])), [data.items])
   const changes = useMemo(() => changeCount(plan, saved, basePrices), [plan, saved, basePrices])
-  const conflicts = useMemo(() => quantityConflicts(plan, ordered), [plan, ordered])
   const priceIssues = useMemo(() => overrideProblems(plan, basePrices), [plan, basePrices])
   const dirty = changes > 0
 
-  const saveState: SaveState = flash ? "saved" : conflicts.length > 0 ? "conflicts" : priceIssues.length > 0 ? "prices" : dirty ? "unsaved" : "clean"
-  const canSave = !data.isPast && !pending && dirty && conflicts.length === 0 && priceIssues.length === 0
+  const saveState: SaveState = flash ? "saved" : priceIssues.length > 0 ? "prices" : dirty ? "unsaved" : "clean"
+  const canSave = !data.isPast && !pending && dirty && priceIssues.length === 0
 
   // Unsaved work survives an accidental tab close or reload as a browser prompt.
   useEffect(() => {
@@ -112,11 +103,10 @@ export function useDayEditor(data: DayEditorData) {
     })
   }, [])
 
-  /** Ticking opens the row's controls; an item with orders can't be unticked (its checkbox is disabled). */
+  /** Ticking makes it a counter-item and opens its controls. */
   const toggleItem = useCallback(
     (id: string) => {
       const included = !plan.items[id].included
-      if (!included && (ordered[id] ?? 0) > 0) return
       editItem(id, { included })
       setExpanded((current) => {
         const next = new Set(current)
@@ -125,48 +115,46 @@ export function useDayEditor(data: DayEditorData) {
         return next
       })
     },
-    [editItem, ordered, plan.items],
+    [editItem, plan.items],
   )
 
-  /** Select all / Clear all, over the rows the search and category leave visible. Ordered items stay ticked. */
+  /** Select all / Clear all, over the rows the search and category leave visible. */
   const setAll = useCallback(
     (ids: string[], included: boolean) => {
       edit((current) => {
         const items = { ...current.items }
-        for (const id of ids) if (included || (ordered[id] ?? 0) === 0) items[id] = { ...items[id], included }
+        for (const id of ids) items[id] = { ...items[id], included }
         return { ...current, items }
       })
       if (!included) setExpanded(new Set())
     },
-    [edit, ordered],
+    [edit],
   )
 
   const setQuantity = useCallback((id: string, quantity: number) => editItem(id, { quantity }), [editItem])
   /** Digits and one dot, as typed — checked as a price when saving. */
   const setOverride = useCallback((id: string, text: string) => editItem(id, { override: text.replace(/[^\d.]/g, "").slice(0, 9) }), [editItem])
-  const soldOut = useCallback((id: string) => editItem(id, { quantity: ordered[id] ?? 0 }), [editItem, ordered])
+  /** The counter ran out — or didn't after all. The quantity made stays as it was. */
+  const toggleSoldOut = useCallback((id: string) => editItem(id, { soldOut: !plan.items[id].soldOut }), [editItem, plan.items])
 
-  /**
-   * "Copy from another day": that day's items and quantities replace these; overrides clear. An item with
-   * orders stays on, with at least the amount ordered.
-   */
+  /** "Copy from another day": that day's counter-items and quantities replace these; overrides and sold-out marks clear. */
   const applySource = useCallback(
     (source: CopySource) => {
       const from = new Map(source.items.map((item) => [item.menuItemId, item.quantity]))
       edit((current) => {
         const items = { ...current.items }
         for (const id of Object.keys(items)) {
-          const done = ordered[id] ?? 0
           const quantity = from.get(id)
-          if (quantity !== undefined) items[id] = { included: true, quantity: Math.min(DAY_QUANTITY.max, Math.max(quantity, done)), override: "" }
-          else if (done > 0) items[id] = { ...items[id], included: true, quantity: Math.max(items[id].quantity, done), override: "" }
-          else items[id] = { ...items[id], included: false, override: "" }
+          items[id] =
+            quantity === undefined
+              ? { ...items[id], included: false, override: "", soldOut: false }
+              : { included: true, quantity: Math.min(DAY_QUANTITY.max, quantity), override: "", soldOut: false }
         }
         return { ...current, items }
       })
       setExpanded(new Set())
     },
-    [edit, ordered],
+    [edit],
   )
 
   // ── Save / discard ────────────────────────────────────────────────────────
@@ -197,6 +185,7 @@ export function useDayEditor(data: DayEditorData) {
               menuItemId,
               quantityAvailable: item.quantity,
               priceOverridePaise: overridePaise(item.override, basePrices[menuItemId] ?? 0) ?? null,
+              soldOut: item.soldOut,
             })),
           confirmClose: confirmed,
         })
@@ -209,10 +198,7 @@ export function useDayEditor(data: DayEditorData) {
           return
         }
         if (result.reason === "HAS_ORDERS") setClosing(result.orders)
-        else if (result.reason === "BELOW_ORDERED") {
-          setOrdered(result.ordered)
-          setProblem("refreshed")
-        } else if (result.reason === "UNAVAILABLE_ITEM") setProblem("unavailable")
+        else if (result.reason === "UNAVAILABLE_ITEM") setProblem("unavailable")
         else setProblem("failed")
       })
     },
@@ -229,7 +215,6 @@ export function useDayEditor(data: DayEditorData) {
   return {
     plan,
     saved,
-    ordered,
     expanded,
     toggleExpanded,
     query,
@@ -246,10 +231,9 @@ export function useDayEditor(data: DayEditorData) {
     setAll,
     setQuantity,
     setOverride,
-    soldOut,
+    toggleSoldOut,
     applySource,
     changes,
-    conflicts,
     priceIssues,
     dirty,
     saveState,

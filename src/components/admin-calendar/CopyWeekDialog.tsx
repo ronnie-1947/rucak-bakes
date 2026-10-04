@@ -21,23 +21,22 @@ type CopyWeekDialogProps = {
 
 /**
  * "Copy last week?" — says, day by day, what will change and what is skipped (past, has orders, nothing
- * planned) before anything is written. Quantities copy by default; price overrides only when ticked.
+ * planned) before anything is written. Counter-item quantities copy by default; price overrides and sold-out marks never.
  */
 export function CopyWeekDialog({ week, dict, onClose, onDone }: CopyWeekDialogProps) {
   const c = dict.copy
   const [quantities, setQuantities] = useState(true)
-  const [prices, setPrices] = useState(false)
   const [failed, setFailed] = useState(false)
   const [pending, startTransition] = useTransition()
 
   const changes = week.copy.flatMap((row) => (row.change ? [{ date: row.date, label: row.label, text: changeText(row.change, dict) }] : []))
   const skips = week.copy.flatMap((row) => (row.skip ? [{ date: row.date, label: row.label, text: skipText(row.skip, dict) }] : []))
-  const replacing = week.copy.filter((row) => row.change?.kind === "replace").length
+  const replacing = week.copy.filter((row) => (row.change?.before.items ?? 0) > 0).length
   const hasOrders = week.copy.some((row) => row.skip?.kind === "orders")
 
   const intro = [
     fill(c.intro, { range: week.previousRangeLabel }),
-    replacing === 0 ? c.introNone : replacing === 1 ? c.introReplaceOne : fill(c.introReplace, { count: replacing }),
+    replacing === 0 ? "" : replacing === 1 ? c.introReplaceOne : fill(c.introReplace, { count: replacing }),
     hasOrders ? c.introOrders : "",
   ]
     .filter(Boolean)
@@ -46,7 +45,7 @@ export function CopyWeekDialog({ week, dict, onClose, onDone }: CopyWeekDialogPr
   const copy = () => {
     setFailed(false)
     startTransition(async () => {
-      const result = await copyLastWeek({ monday: week.monday, quantities, prices })
+      const result = await copyLastWeek({ monday: week.monday, quantities })
       if (!result.ok) {
         setFailed(true)
         return
@@ -75,10 +74,7 @@ export function CopyWeekDialog({ week, dict, onClose, onDone }: CopyWeekDialogPr
     >
       <div className="flex flex-col gap-4">
         <p className="text-pretty tabular-nums">{intro}</p>
-        <div className="flex flex-col">
-          <Checkbox label={c.quantities} hint={c.quantitiesHint} checked={quantities} onChange={(event) => setQuantities(event.target.checked)} />
-          <Checkbox label={c.prices} hint={c.pricesHint} checked={prices} onChange={(event) => setPrices(event.target.checked)} />
-        </div>
+        <Checkbox label={c.quantities} hint={c.quantitiesHint} checked={quantities} onChange={(event) => setQuantities(event.target.checked)} />
         <CopyRowList title={c.willChange} rows={changes} />
         <CopyRowList title={c.skipped} rows={skips} empty={c.noSkips} muted />
         <p className="text-small-admin text-muted">{c.inactiveNote}</p>

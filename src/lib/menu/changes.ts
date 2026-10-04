@@ -3,8 +3,8 @@ import { serializable, type Tx } from "@/lib/db"
 
 /**
  * Writes behind the menu library. Nothing here deletes a menu item — items archive (non-negotiable 7).
- * The one row that can go is a MenuDayItem with nothing ordered on it: taking an inactive item off an
- * upcoming day's plan. A day that already has orders for the item keeps it, so those orders still bake.
+ * The one row that can go is a MenuDayItem: taking an inactive item off an upcoming day's counter. Orders don't
+ * hang off those rows (§10R) — an order for the item stays and still bakes from its own lines.
  *
  * Every change returns a snapshot of what it overwrote, which is exactly what Undo puts back.
  */
@@ -22,13 +22,13 @@ async function snapshotItems(tx: Tx, ids: string[]): Promise<MenuSnapshot["items
   return rows.map((row) => ({ id: row.id, isActive: row.isActive, archivedAt: row.archivedAt?.toISOString() ?? null }))
 }
 
-/** Takes the items off every upcoming day where nothing has been ordered yet. Returns the rows removed. */
+/** Takes the items off the counter on every upcoming day. Returns the rows removed. */
 async function removeFromUpcomingDays(tx: Tx, ids: string[], today: IsoDate): Promise<MenuSnapshot["days"]> {
   const rows = await tx.menuDayItem.findMany({
-    where: { menuItemId: { in: ids }, quantityOrdered: 0, menuDay: { date: { gte: toDbDate(today) } } },
+    where: { menuItemId: { in: ids }, menuDay: { date: { gte: toDbDate(today) } } },
     select: { id: true, menuDayId: true, menuItemId: true, quantityAvailable: true, priceOverridePaise: true },
   })
-  await tx.menuDayItem.deleteMany({ where: { id: { in: rows.map((row) => row.id) }, quantityOrdered: 0 } })
+  await tx.menuDayItem.deleteMany({ where: { id: { in: rows.map((row) => row.id) } } })
   return rows.map((row) => ({
     menuDayId: row.menuDayId,
     menuItemId: row.menuItemId,
@@ -52,7 +52,7 @@ export async function setItemsActive(ids: string[], active: boolean, removeFromD
   })
 }
 
-/** Archive: hidden from customers and the Calendar, off every upcoming day without orders. */
+/** Archive: hidden from customers and the Calendar, off the counter on every upcoming day. */
 export async function archiveItems(ids: string[], today: IsoDate): Promise<MenuChange> {
   return serializable(async (tx) => {
     const items = await snapshotItems(tx, ids)
@@ -99,7 +99,13 @@ export async function duplicateItem(id: string, name: (original: string) => stri
         ingredients: original.ingredients,
         allergens: original.allergens,
         images: original.images,
+        imageAlts: original.imageAlts,
+        orderable: original.orderable,
+        noticeDays: original.noticeDays,
+        bakeSeparately: original.bakeSeparately,
         defaultQuantity: original.defaultQuantity,
+        sizeNote: original.sizeNote,
+        storageNote: original.storageNote,
         isActive: false,
       },
       select: { id: true },

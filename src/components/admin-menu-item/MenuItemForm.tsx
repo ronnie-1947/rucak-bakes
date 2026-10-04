@@ -19,6 +19,7 @@ import { ItemFormHeader } from "./ItemFormHeader"
 import { ItemFormMenu } from "./ItemFormMenu"
 import { ItemPerformance } from "./ItemPerformance"
 import { ItemPreview } from "./ItemPreview"
+import { OrderingSection } from "./OrderingSection"
 import { LeaveDialog } from "./LeaveDialog"
 import { PhotosSection } from "./PhotosSection"
 import { SaveBar } from "./SaveBar"
@@ -60,7 +61,9 @@ export function MenuItemForm({ page, justCreated, dict }: MenuItemFormProps) {
   const [leaving, setLeaving] = useState(false)
 
   const layout: Layout = page.performance ? "withPerformance" : "plain"
-  const target: ItemTarget | null = page.id ? { id: page.id, name: form.saved.name, upcoming: page.upcoming } : null
+  // The dialogs name the days it's on the counter; orders for it stay whatever happens.
+  const counterDays = page.upcoming.filter((day) => day.made !== null)
+  const target: ItemTarget | null = page.id ? { id: page.id, name: form.saved.name, upcoming: counterDays } : null
   const leave = () => router.push("/admin/menu")
   const showBar = form.dirty || form.saveState === "saved" || form.saveState === "created" || form.saveFailed
   const created = justCreated && form.saveState === "created" ? fill(d.created, { name: form.saved.name }) : null
@@ -90,11 +93,12 @@ export function MenuItemForm({ page, justCreated, dict }: MenuItemFormProps) {
               form={form}
               categories={page.categories}
               savedSlug={page.id ? form.saved.slug : null}
-              upcomingCount={page.upcoming.length}
+              upcomingCount={counterDays.length}
               dict={dict}
             />
             <PhotosSection form={form} dict={d} />
             <DetailsSection form={form} ingredientSuggestions={page.ingredientSuggestions} dict={dict} />
+            <OrderingSection form={form} rules={page.rules} dict={d} />
             <FulfilmentSection form={form} dict={d} />
             {target && !page.archivedLabel ? <ArchiveCard target={target} dict={d.archiveCard} /> : null}
           </div>

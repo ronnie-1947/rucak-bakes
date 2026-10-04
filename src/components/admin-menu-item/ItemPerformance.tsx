@@ -9,9 +9,18 @@ type ItemPerformanceProps = {
   dict: ItemCopy["performance"]
 }
 
-/** From 1600px, a third column: how the item did over the last 30 days, and where it's planned next. */
+/** "24 made · 4 ordered", "4 ordered", "24 made". */
+function dayLine(day: UpcomingDay, dict: ItemCopy["performance"]): string {
+  const made = day.made === null ? null : fill(dict.made, { count: day.made })
+  const ordered = day.ordered > 0 ? fill(dict.ordered, { count: day.ordered }) : null
+  return [made, ordered].filter(Boolean).join(" · ")
+}
+
+/**
+ * From 1600px, a third column: the last 30 days — orders for it, and its days on the counter — then what's coming up:
+ * each date from today with orders for it or with it on the counter.
+ */
 export function ItemPerformance({ performance, upcoming, dict }: ItemPerformanceProps) {
-  const average = performance.daysOnMenu > 0 ? (performance.unitsOrdered / performance.daysOnMenu).toFixed(1) : dict.none
   const soldOut =
     performance.soldOutDays === 0
       ? dict.none
@@ -19,9 +28,9 @@ export function ItemPerformance({ performance, upcoming, dict }: ItemPerformance
         ? dict.soldOutDaysOne
         : fill(dict.soldOutDays, { count: performance.soldOutDays })
   const rows = [
-    { label: dict.daysOnMenu, value: String(performance.daysOnMenu) },
+    { label: dict.orders, value: String(performance.orders) },
     { label: dict.unitsOrdered, value: String(performance.unitsOrdered) },
-    { label: dict.average, value: average },
+    { label: dict.counterDays, value: String(performance.counterDays) },
     { label: dict.soldOut, value: soldOut },
   ]
 
@@ -46,7 +55,7 @@ export function ItemPerformance({ performance, upcoming, dict }: ItemPerformance
           {upcoming.map((day) => (
             <li key={day.date} className="flex flex-col border-t border-border py-2">
               <span className="font-semibold">{day.isToday ? fill(dict.today, { day: day.dayLabel }) : day.dayLabel}</span>
-              <span className="text-small-admin text-muted">{fill(dict.upcomingDay, { available: day.available, ordered: day.ordered })}</span>
+              <span className="text-small-admin text-muted">{dayLine(day, dict)}</span>
             </li>
           ))}
         </ul>

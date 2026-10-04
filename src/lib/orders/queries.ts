@@ -98,9 +98,13 @@ async function verifiedCounts(menuDayIds: string[]): Promise<Map<string, number>
 export async function loadOrderQueue(filters: OrderFilters): Promise<OrderQueue> {
   const settings = await getSettings()
   const today = todayIn(settings.timezone)
-  const dates = selectedDates(filters.dates, today)
+  const scope = selectedDates(filters.dates, today)
+  const onDates: Prisma.OrderWhereInput[] = [
+    ...(scope.from ? [{ fulfilmentDate: { gte: toDbDate(scope.from) } }] : []),
+    ...(scope.dates.length > 0 ? [{ fulfilmentDate: { in: scope.dates.map(toDbDate) } }] : []),
+  ]
 
-  const where: Prisma.OrderWhereInput = { fulfilmentDate: { in: dates.map(toDbDate) } }
+  const where: Prisma.OrderWhereInput = { AND: [{ OR: onDates }] }
   if (filters.status !== "ALL") where.status = filters.status
   if (filters.show.includes("call")) where.status = OrderStatus.PENDING
   const customer: Prisma.CustomerWhereInput = {}
@@ -137,7 +141,12 @@ export async function loadOrderQueue(filters: OrderFilters): Promise<OrderQueue>
       },
     }),
     prisma.menuDay.findMany({
-      where: { date: { in: [...new Set([...dates, today, addDays(today, 1)])].map(toDbDate) } },
+      where: {
+        OR: [
+          ...(scope.from ? [{ date: { gte: toDbDate(scope.from) } }] : []),
+          { date: { in: [...new Set([...scope.dates, today, addDays(today, 1)])].map(toDbDate) } },
+        ],
+      },
       select: { id: true, date: true, maxOrders: true },
     }),
   ])
@@ -151,6 +160,8 @@ export async function loadOrderQueue(filters: OrderFilters): Promise<OrderQueue>
 
   const now = Date.now()
   const rank = (order: (typeof orders)[number]) => (order.status === OrderStatus.PENDING ? 0 : 1)
+  // One group per date that has orders, in date order — Upcoming has no fixed list of dates.
+  const dates = [...new Set(orders.map((order) => fromDbDate(order.fulfilmentDate)))].sort()
   const groups: OrderGroupData[] = dates
     .map((date) => {
       const rows = orders

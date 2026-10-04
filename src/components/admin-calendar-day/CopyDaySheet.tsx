@@ -18,8 +18,8 @@ type CopyDaySheetProps = {
 }
 
 /**
- * "Copy from another day": pick a nearby day's setup, then confirm what replacing does. It only changes the
- * form — nothing is saved until Save day.
+ * "Copy counter-items from another day": pick a nearby day's counter-items, then confirm what replacing does. It only
+ * changes the form — nothing is saved until Save day. The day's orders aren't touched.
  */
 export function CopyDaySheet({ data, editor, dict, onClose }: CopyDaySheetProps) {
   const c = dict.calendarDay.copy

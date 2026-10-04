@@ -75,7 +75,7 @@ export async function applyToAllDays(input: z.input<typeof applyInput>): Promise
   return result
 }
 
-const copyInput = z.object({ monday, quantities: z.boolean(), prices: z.boolean() })
+const copyInput = z.object({ monday, quantities: z.boolean() })
 
 export type CopyWeekResult = Awaited<ReturnType<typeof copyWeek>> | Invalid
 
@@ -86,7 +86,7 @@ export async function copyLastWeek(input: z.input<typeof copyInput>): Promise<Co
   if (!parsed.success) return invalid
   const { settings, today } = await context()
   if (!inPlanningRange(parsed.data.monday, today)) return invalid
-  const result = await copyWeek(parsed.data.monday, { quantities: parsed.data.quantities, prices: parsed.data.prices }, settings, today)
+  const result = await copyWeek(parsed.data.monday, { quantities: parsed.data.quantities }, settings, today)
   if (result.copied > 0) refresh()
   return result
 }
@@ -107,6 +107,7 @@ const saveInput = z.object({
         menuItemId: id,
         quantityAvailable: z.number().int().min(DAY_QUANTITY.min).max(DAY_QUANTITY.max),
         priceOverridePaise: z.number().int().min(1).max(10_000_000).nullable(),
+        soldOut: z.boolean(),
       }),
     )
     .max(500)

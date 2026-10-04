@@ -33,6 +33,9 @@ export function MenuTable({ dict, selectMode, children }: MenuTableProps) {
             <th scope="col" className={`w-28 ${head}`}>
               {t.category}
             </th>
+            <th scope="col" className={`w-20 ${head}`}>
+              {t.notice}
+            </th>
             <th scope="col" className={`w-28 text-right ${head}`}>
               {t.price}
             </th>

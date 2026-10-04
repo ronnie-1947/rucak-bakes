@@ -2,7 +2,7 @@ import { OrderDetail } from "@/components/admin-order-detail/OrderDetail"
 import { OrderActionsProvider } from "@/components/order-actions/OrderActionsProvider"
 import { ButtonLink } from "@/components/ui/ButtonLink"
 import { EmptyState } from "@/components/ui/EmptyState"
-import { CLEARED, filtersHref, type OrderFilters } from "@/lib/orders/filters"
+import { CLEARED, filtersHref, isDefault, type OrderFilters } from "@/lib/orders/filters"
 import type { OrderDetailData, OrderQueue } from "@/lib/orders/queries"
 import { OrderBoard } from "./OrderBoard"
 import { OrdersFilterBar } from "./OrdersFilterBar"
@@ -30,7 +30,7 @@ const boardSpans: Record<"split" | "single", string> = {
 }
 
 /**
- * /admin/orders — the queue. Default view: today and tomorrow, pending first. Phones get cards, the
+ * /admin/orders — the queue. Default view: Upcoming — today onward, grouped by date, pending first. Phones get cards, the
  * kitchen tablet two columns of cards, laptops a table, and from 1600px an order can open in a split
  * pane beside the table.
  */
@@ -54,7 +54,9 @@ export function AdminOrders({ dict, queue, filters, pane }: AdminOrdersProps) {
         <div className={`flex min-w-0 flex-col gap-4 ${boardSpans[split]}`}>
           <UnnotifiedBanner orders={queue.unnotified} dict={dict.orders} />
           {boardGroups.length === 0 ? (
-            onlyToday ? (
+            isDefault(filters) ? (
+              <EmptyState message={dict.orders.emptyUpcoming} />
+            ) : onlyToday ? (
               <EmptyState
                 message={dict.orders.emptyToday}
                 action={

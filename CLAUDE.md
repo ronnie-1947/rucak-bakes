@@ -13,7 +13,7 @@ Guidance for Claude Code when working in **sabiha-bakery**.
 | `pnpm start` | `next start` |
 | `pnpm lint` | `eslint` |
 | `pnpm telegram:test` | `tsx scripts/telegram-test.ts` — sends a test + sample order (`--dry-run` prints it) |
-| `pnpm orders:sample` | `tsx scripts/sample-orders.ts` — 14 local sample orders through the real pipeline (needs the seed; re-runnable) |
+| `pnpm orders:sample` | `tsx scripts/sample-orders.ts` — 19 local menu orders (today … +5) through the real pipeline (needs the seed; re-runnable) |
 | `postinstall` | `prisma generate` |
 
 Dev server runs on http://localhost:3000. Package manager: pnpm.
@@ -101,15 +101,15 @@ src/
     admin-orders/       the orders queue;  admin-order-detail/  one order (page + 2xl pane)
     order-actions/      status changes + their confirm dialogs;  order-tag-list/  an order's fact tags
     admin-menu/         the menu library (/admin/menu): list / grid / table, Active switch, archive, undo
-    admin-menu-item/    the item form (/admin/menu/new, /admin/menu/[id]): photos, details, live preview
+    admin-menu-item/    the item form (/admin/menu/new, /admin/menu/[id]): photos, details, ordering (online / notice / bake separately), live preview
     menu-actions/       activate / deactivate / archive / restore / duplicate + confirms and the undo strip
-    admin-calendar/     the week planner (/admin/calendar): day cards with live controls, Copy last week, Apply to all days
-    admin-calendar-day/ the day editor (/admin/calendar/[date]): items, quantities, overrides, settings, customer preview
+    admin-calendar/     the week planner (/admin/calendar): day cards — orders, live controls, counter-items — Copy last week, Apply to all days
+    admin-calendar-day/ the day editor (/admin/calendar/[date]): the day's orders, counter-items (quantity made, override, sold out), settings, Fresh today preview
     close-day-dialog/   the confirm naming a day's orders before it closes (both calendar screens)
     admin-customers/    the customers list (/admin/customers): phone/name search, Show chips, cards / table, 2xl pane
     admin-customer-detail/ one customer (page + 2xl pane): contact, trust / block, counts, history, patterns, note
     customer-actions/   trust / block / unblock + the confirm and undo strip;  customer-flags/  Trusted / Blocked / New tags
-    admin-daysheet/     the day sheet (/admin/daysheet): bake totals, notes, pickups, Baked / Collected ticks, A4 print layout
+    admin-daysheet/     the day sheet (/admin/daysheet): notes, For orders + Made to order, counter-items, pickups, Baked / Collected ticks, A4 print
     admin-settings/     settings (/admin/settings): five sections, save bars + leave guard, live switches, Telegram connect, staff access
     store-shell/        every customer screen's frame: banner, sticky header (home row on /, Back · title · cart elsewhere), View cart bar / pill,
                         CartProvider + switch-day dialog, PageTitleProvider
@@ -135,6 +135,7 @@ src/
     orders/             status.ts (state machine), lifecycle.ts (transitions), place.ts (createOrder tx),
                         notify.ts, queries.ts (admin read models), filters.ts (queue URL state),
                         checkout.ts (checkout schema, refusals, form rules — client-safe), rate-limit.ts (7.3: by phone, by IP)
+                        deadline.ts (the order-ahead deadline rule, client-safe), booking.ts (newMenuDay, the booking window)
     menu/               queries.ts (library read model), filters.ts (URL state), changes.ts (writes + undo snapshots),
                         item.ts (form read model), form.ts (form values + rules, client-safe), save.ts (form writes),
                         copy.ts, units.ts, allergens.ts, about.ts (the About text's marks → blocks, client-safe)
@@ -142,7 +143,7 @@ src/
                         form.ts (DayPlan + rules, client-safe), cutoffs.ts, copy-plan.ts (planWeekCopy), routes.ts
     customers/          queries.ts (list + trigram search), detail.ts (record read model), changes.ts (flags, rename, note),
                         filters.ts (URL state, client-safe), limits.ts
-    daysheet/           queries.ts (read model + poll version), ticks.ts (setBaked, setCollected), routes.ts (URL state),
+    daysheet/           queries.ts (read model + poll version), ticks.ts (setItemBaked, setLineBaked, setCounterBaked, setCollected), routes.ts (URL state),
                         tick.ts (tick keys), notes.ts (allergen words) — client-safe except queries/ticks
     settings/           row.ts (getSettings() / findSettings() — the singleton row, cached per request), queries.ts (screen read model),
                         writes.ts, telegram.ts (connect code, state, recordDelivery), form.ts (values + rules, client-safe),

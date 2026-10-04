@@ -6,9 +6,11 @@ import { addDays, dateRange, type IsoDate, isIsoDate } from "@/lib/dates"
  * back button, and being sent to a colleague. Client-safe: the filter chips are plain links built here.
  *
  *   ?date=today,tomorrow&status=PENDING&show=trusted,before&q=meera&order=<id>
+ *
+ * The default is Upcoming — today onward, with no end (§10R: every order is booked ahead).
  */
 
-export const datePresets = ["today", "tomorrow", "week"] as const
+export const datePresets = ["upcoming", "today", "tomorrow", "week"] as const
 export type DatePreset = (typeof datePresets)[number]
 export type DateChoice = DatePreset | IsoDate
 
@@ -29,7 +31,7 @@ export type OrderFilters = {
   select: boolean
 }
 
-export const DEFAULT_DATES: DateChoice[] = ["today", "tomorrow"]
+export const DEFAULT_DATES: DateChoice[] = ["upcoming"]
 
 type Params = Record<string, string | string[] | undefined>
 
@@ -70,22 +72,33 @@ export function filtersHref(filters: OrderFilters, path = "/admin/orders"): stri
   return query ? `${path}?${query}` : path
 }
 
-/** Toggle one entry of a list, never leaving the date list empty. */
-export function toggle<T>(values: T[], value: T, keepOne = false): T[] {
-  const next = values.includes(value) ? values.filter((v) => v !== value) : [...values, value]
-  return keepOne && next.length === 0 ? values : next
+/** Toggle one entry of a list. */
+export function toggle<T>(values: T[], value: T): T[] {
+  return values.includes(value) ? values.filter((v) => v !== value) : [...values, value]
+}
+
+/**
+ * The date chips after tapping one. Upcoming stands alone (it holds every other preset); Today, Tomorrow and This week
+ * combine, and turning the last of them off goes back to Upcoming. A custom date is dropped either way.
+ */
+export function pickDate(dates: DateChoice[], preset: DatePreset): DateChoice[] {
+  if (preset === "upcoming") return ["upcoming"]
+  const picked = dates.filter((date): date is DatePreset => date !== "upcoming" && (datePresets as readonly string[]).includes(date))
+  const next = toggle(picked, preset)
+  return next.length > 0 ? next : ["upcoming"]
 }
 
 export const CLEARED: Omit<OrderFilters, "order" | "select"> = { dates: DEFAULT_DATES, status: "ALL", show: [], q: "" }
 
-/** The calendar dates a filter selects, given today in the bakery's timezone. */
-export function selectedDates(dates: DateChoice[], today: IsoDate): IsoDate[] {
+/** What a filter selects, given today in the bakery's timezone: `from` (Upcoming — today onward, open-ended) and/or set dates. */
+export function selectedDates(dates: DateChoice[], today: IsoDate): { from: IsoDate | null; dates: IsoDate[] } {
   const out = new Set<IsoDate>()
   for (const choice of dates) {
+    if (choice === "upcoming") continue
     if (choice === "today") out.add(today)
     else if (choice === "tomorrow") out.add(addDays(today, 1))
     else if (choice === "week") dateRange(today, addDays(today, 6)).forEach((d) => out.add(d))
     else out.add(choice)
   }
-  return [...out].sort()
+  return { from: dates.includes("upcoming") ? today : null, dates: [...out].sort() }
 }

@@ -8,15 +8,22 @@ import { priceToPaise } from "@/lib/menu/form"
 
 export const LIMITS = { publicNote: 140, closureNote: 60 }
 export const MAX_ORDERS = { min: 1, max: 200 }
+/** A week card's Max orders stepper — the day editor keeps the full MAX_ORDERS. */
+export const CARD_MAX_ORDERS = { min: 1, max: 30 }
 /** overbookLimit ≥ maxOrders is a database CHECK (md_capacity_valid). */
 export const OVERBOOK_MAX = 300
-export const DAY_QUANTITY = { min: 0, max: 999 }
+/** A counter-item's quantity made (§10R). */
+export const DAY_QUANTITY = { min: 0, max: 99 }
 
+/** One menu item as a counter-item of the day — ticked when it's baked for the counter. */
 export type ItemPlan = {
   included: boolean
+  /** Quantity made. */
   quantity: number
   /** Rupees as typed — "" means the item's base price. */
   override: string
+  /** The counter ran out — `MenuDayItem.soldOutAt`. Fresh today shows it as sold out; the quantity stays. */
+  soldOut: boolean
 }
 
 export type DayPlan = {
@@ -27,7 +34,7 @@ export type DayPlan = {
   publicNote: string
   /** Why it's closed — staff-facing, shown on the week card. Only kept while the day is closed. */
   closureNote: string
-  /** Every item the editor lists, keyed by menu item id — ticked or not. */
+  /** Every item the editor lists, keyed by menu item id — ticked (a counter-item) or not. */
   items: Record<string, ItemPlan>
 }
 
@@ -44,7 +51,7 @@ export function overridePaise(override: string, basePricePaise: number): number 
   return paise === basePricePaise ? null : paise
 }
 
-/** How many things differ from the saved plan — each setting, and each item's tick, quantity or price. */
+/** How many things differ from the saved plan — each setting, and each item's tick, quantity, price or sold-out mark. */
 export function changeCount(current: DayPlan, saved: DayPlan, basePrices: Record<string, number>): number {
   let count = 0
   if (current.isOpen !== saved.isOpen) count++
@@ -63,15 +70,9 @@ export function changeCount(current: DayPlan, saved: DayPlan, basePrices: Record
     if (item.quantity !== before.quantity) count++
     const base = basePrices[id] ?? 0
     if (overridePaise(item.override, base) !== overridePaise(before.override, base)) count++
+    if (item.soldOut !== before.soldOut) count++
   }
   return count
-}
-
-/** Items set below what's already ordered for the day. Never clamped — the editor names each one and won't save. */
-export function quantityConflicts(plan: DayPlan, ordered: Record<string, number>): string[] {
-  return Object.entries(plan.items)
-    .filter(([id, item]) => (ordered[id] ?? 0) > 0 && (!item.included || item.quantity < (ordered[id] ?? 0)))
-    .map(([id]) => id)
 }
 
 /** Items whose typed override isn't a price. */

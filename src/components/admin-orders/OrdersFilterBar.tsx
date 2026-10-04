@@ -8,6 +8,7 @@ import {
   filtersHref,
   isDefault,
   type OrderFilters,
+  pickDate,
   showToggles,
   statusChoices,
   toggle,
@@ -35,7 +36,6 @@ export function OrdersFilterBar({ dict, filters, paneOpen }: OrdersFilterBarProp
   const base = { ...filters, order: null }
   const rowClass = "flex min-w-0 items-center gap-2 overflow-x-auto -mx-4 px-4 md:mx-0 md:flex-wrap md:overflow-visible md:px-0"
   const labelClass = "w-14 shrink-0 text-micro font-semibold text-muted uppercase"
-  const presetDates = filters.dates.filter((date) => (datePresets as readonly string[]).includes(date))
 
   return (
     <div className={`z-20 border-y border-border bg-background shadow-raised ${sticking[paneOpen ? "open" : "closed"]}`}>
@@ -47,7 +47,7 @@ export function OrdersFilterBar({ dict, filters, paneOpen }: OrdersFilterBarProp
           {datePresets.map((preset) => (
             <ChipLink
               key={preset}
-              href={filtersHref({ ...base, dates: toggle(presetDates, preset, true) })}
+              href={filtersHref({ ...base, dates: pickDate(filters.dates, preset) })}
               selected={filters.dates.includes(preset)}
             >
               {dict.filters.dates[preset]}

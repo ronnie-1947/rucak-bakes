@@ -16,7 +16,11 @@ export function relativeDay(date: IsoDate, today: IsoDate, words: DayWords): str
 export type NoticeWords = { sameDay: string; byTomorrow: string; daysAhead: string; callOnly: string; oneDay: string; days: string }
 
 /** A menu card's notice chip: "Same day", "Order by tomorrow", "Order 3 days ahead" — "Made to order" when it's call only. */
-export function noticeChip(noticeDays: number, orderable: boolean, words: NoticeWords): string {
+export function noticeChip(
+  noticeDays: number,
+  orderable: boolean,
+  words: Pick<NoticeWords, "sameDay" | "byTomorrow" | "daysAhead" | "callOnly">,
+): string {
   if (!orderable) return words.callOnly
   if (noticeDays === 0) return words.sameDay
   if (noticeDays === 1) return words.byTomorrow
@@ -24,6 +28,6 @@ export function noticeChip(noticeDays: number, orderable: boolean, words: Notice
 }
 
 /** "1 day’s notice", "3 days’ notice" — inside a sentence. */
-export function noticeLength(noticeDays: number, words: NoticeWords): string {
+export function noticeLength(noticeDays: number, words: Pick<NoticeWords, "oneDay" | "days">): string {
   return noticeDays === 1 ? words.oneDay : fill(words.days, { count: noticeDays })
 }

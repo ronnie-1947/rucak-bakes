@@ -1,7 +1,7 @@
 # admin-orders
 
 The orders queue at `/admin/orders` ([page](<../../app/admin/(shell)/orders/page.tsx>)) — imported from `Admin-orders.dc.html`.
-Default view: today and tomorrow, pending first. Filters live in the URL ([src/lib/orders/filters.ts](../../lib/orders/filters.ts)),
+Default view: **Upcoming** — today onward, grouped by date, pending first (§10R: every order is booked ahead). Filters live in the URL ([src/lib/orders/filters.ts](../../lib/orders/filters.ts)),
 so every chip is a plain link and a filtered view survives refresh and back.
 
 ## Files in this folder
@@ -85,8 +85,10 @@ BulkBar          { dict; selectedCount; verifiable; cancellable; pending; onVeri
 
 - **Data** — `loadOrderQueue(filters)` returns plain, pre-formatted data (times in the bakery's timezone). "New" = pending and
   under 15 minutes old. Within a day: pending first, then pickup time, then placed time.
-- **Filters** — `?date=today,tomorrow|week|YYYY-MM-DD`, `?status=`, `?show=trusted,before,call`, `?q=`, `?order=` (pane),
-  `?select=1`. Defaults are omitted, so `/admin/orders` is the default view.
+- **Filters** — `?date=upcoming|today,tomorrow|week|YYYY-MM-DD`, `?status=`, `?show=trusted,before,call`, `?q=`, `?order=` (pane),
+  `?select=1`. Defaults are omitted, so `/admin/orders` is the default view. Date chips Upcoming · Today · Tomorrow · This week
+  (`pickDate`): Upcoming stands alone and is open-ended (`fulfilmentDate >= today`); the other three combine, and turning the last
+  off goes back to Upcoming. Groups are the dates that have orders. Empty default view: "No orders from today on yet…".
 - **Status changes** — `StatusMenu` and the bulk bar call `useOrderActions().request()`; the provider confirms and runs
   `transitionOrders`. Bulk Verify all only sends the selected pending orders; Cancel all only pending/verified.
 - **Cards and table** are both rendered and swapped by CSS at `lg`, so there is no resize logic. The card's overlay link opens the
