@@ -24,7 +24,11 @@ export function StoreHeader({ bakeryName, place, dict }: StoreHeaderProps) {
   const [entry] = useState(pathname)
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-background shadow-raised print:hidden">
-      {pathname === "/" ? <HomeBar bakeryName={bakeryName} place={place} dict={dict} /> : <PageBar canGoBack={pathname !== entry} dict={dict} />}
+      {pathname === "/" ? (
+        <HomeBar bakeryName={bakeryName} place={place} dict={dict} />
+      ) : (
+        <PageBar canGoBack={pathname !== entry} showCart={pathname !== "/cart"} dict={dict} />
+      )}
     </header>
   )
 }

@@ -11,6 +11,8 @@ import type { StoreCopy } from "./copy"
 type PageBarProps = {
   /** An earlier page of this visit is behind this one in the history — Back steps to it instead of opening the menu. */
   canGoBack: boolean
+  /** Off on /cart — the page is the cart. A 44px space keeps the title centred. */
+  showCart: boolean
   dict: StoreCopy["shell"]
 }
 
@@ -22,10 +24,11 @@ const titles: Record<"shown" | "hidden", string> = {
 /**
  * Every other customer screen's header row: Back, the page's name once its own heading has scrolled away
  * (hooks/usePageTitle), and the cart. Back is a link to the menu, so it works before hydration and after a
- * direct visit; within a visit it goes back instead, which keeps the menu's scroll position.
+ * direct visit; within a visit it goes back instead, which keeps the menu's scroll position. A page with steps of
+ * its own (the cart) can take Back over with usePageBack.
  */
-export function PageBar({ canGoBack, dict }: PageBarProps) {
-  const title = usePageTitleState()
+export function PageBar({ canGoBack, showCart, dict }: PageBarProps) {
+  const { title, back } = usePageTitleState()
   const router = useRouter()
   return (
     <Container className="flex items-center gap-2 py-2">
@@ -33,6 +36,11 @@ export function PageBar({ canGoBack, dict }: PageBarProps) {
         href="/"
         aria-label={dict.back}
         onClick={(event) => {
+          if (back) {
+            event.preventDefault()
+            back()
+            return
+          }
           if (!canGoBack) return
           event.preventDefault()
           router.back()
@@ -48,7 +56,7 @@ export function PageBar({ canGoBack, dict }: PageBarProps) {
       >
         {title?.text}
       </span>
-      <CartButton dict={dict} />
+      {showCart ? <CartButton dict={dict} /> : <span aria-hidden className="size-11 shrink-0" />}
     </Container>
   )
 }

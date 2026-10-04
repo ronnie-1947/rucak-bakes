@@ -1,7 +1,7 @@
 # store-shell
 
 The frame around every customer screen — rendered once by the `(store)` route group's layout
-([layout.tsx](<../../app/(store)/layout.tsx>)), so the landing page (`/`), the item page (`/menu/[slug]`) and later `/cart` share it. It
+([layout.tsx](<../../app/(store)/layout.tsx>)), so the landing page (`/`), the item page (`/menu/[slug]`) and the cart (`/cart`) share it. It
 holds the pause / announcement strip, the sticky header with the cart, the page's one `Container`, the View cart bar, the cart itself
 (`CartProvider`) and the header's page title (`PageTitleProvider`). Imported from `Bakery Order Landing.dc.html` (header, bar and pill)
 and `Menu-slug.dc.html` (the Back · title · cart header). Read model:
@@ -13,12 +13,12 @@ and `Menu-slug.dc.html` (the Back · title · cart header). Read model:
 store-shell/
   StoreShell.tsx        entry (server) — CartProvider + PageTitleProvider around banner, header, <main> Container, CartBar
   CartProvider.tsx      "use client" — the cart over localStorage (useSyncExternalStore), stale-cart drop, the switch-day dialog (context: hooks/useCart)
-  PageTitleProvider.tsx "use client" — holds the sub-page header's title, set by the page below (context: hooks/usePageTitle)
+  PageTitleProvider.tsx "use client" — holds the sub-page header's title and the page's own Back, set by the page below (context: hooks/usePageTitle)
   SwitchDayDialog.tsx   "use client" — "Switch to Saturday?" before a cart for another day is cleared
   StoreBannerStrip.tsx  the line above the header: pause reason (red) or announcement (warm)
   StoreHeader.tsx       "use client" — the sticky <header>: HomeBar on /, PageBar elsewhere; remembers the visit's first page
   HomeBar.tsx           "use client" — name (home link), "Pickup at …", CartButton; condenses once scrolled
-  PageBar.tsx           "use client" — Back, the page's title (faded in once its h1 scrolls away), CartButton
+  PageBar.tsx           "use client" — Back (or the page's own, usePageBack), the page's title (faded in once its h1 scrolls away), CartButton (not on /cart)
   CartButton.tsx        "use client" — 44px cart square with the unit-count badge
   CartBar.tsx           "use client" — View cart: bottom bar on phones, floating pill from 768px; hidden when empty, on /cart and on /menu/*
   copy.ts               StoreCopy / CartCopy types, itemsText, cartLabel
@@ -50,7 +50,7 @@ StoreShell data=StoreShellData dict=dict.store
 | `@/lib/cart/cart` | pure cart model: `withQuantity`, `conflictsWith`, `isStale`, `cartCount`, `cartSubtotal`, `quantityOf`, `AddTarget` |
 | `@/lib/cart/store` | the external store: `subscribeCart`, `getCart`, `getServerCart`, `writeCart` |
 | `@/hooks/useCart` | `CartContext`, `CartApi` |
-| `@/hooks/usePageTitle` | `PageTitleContext`, `usePageTitleState` (the page side calls `usePageTitle`) |
+| `@/hooks/usePageTitle` | `PageTitleContext`, `usePageTitleState` (the page side calls `usePageTitle`, and `usePageBack` to take Back over) |
 | `@/hooks/useScrolled` | HomeBar condensing |
 | `@/components/ui/*` | `Container`, `Button`, `ButtonLink` (`shape="pill"`), `Dialog`, `Icon` (`cart`, `chevronLeft`) |
 | `@/lib/money` · `@/lib/template` | `formatPaise`, `fill` |
@@ -69,7 +69,7 @@ SwitchDayDialog  { request: { from; to; count } | null; today; onConfirm; onClos
 StoreBannerStrip { banner: StoreBanner; dict: StoreCopy["shell"] }
 StoreHeader      { bakeryName; place: string | null; dict: StoreCopy["shell"] }
 HomeBar          { bakeryName; place: string | null; dict: StoreCopy["shell"] }
-PageBar          { canGoBack: boolean; dict: StoreCopy["shell"] }
+PageBar          { canGoBack: boolean; showCart: boolean; dict: StoreCopy["shell"] }
 CartButton       { dict: StoreCopy["shell"] }
 CartBar          { dict: StoreCopy["shell"] }
 ```
@@ -86,6 +86,7 @@ CartBar          { dict: StoreCopy["shell"] }
   been touched in 24 hours.
 - **One day per cart** — `setQuantity` for a day other than the cart's opens `SwitchDayDialog` ("Switch to tomorrow? Your cart has
   3 items for today…"); only Clear cart and add replaces it. Keep my cart, Escape or the scrim leave everything as it was.
+- **`replace(cart)`** swaps the whole cart without the dialog — only the cart page uses it, to apply the live menu or move day.
 - **Prices** are what the customer was shown (`priceSnapshot`), re-taken on every add. Display only — the order pipeline prices the
   order on the server.
 - **Banner** — `storeBanner()` gives pause precedence over the announcement, as the settings preview does. Paused is `role="alert"`.
@@ -98,6 +99,8 @@ CartBar          { dict: StoreCopy["shell"] }
     It's `aria-hidden`: the h1 is the heading. **Back** is a link to `/`, so it works before hydration and after a direct visit; once
     the visit has moved past its first page (`StoreHeader` keeps that path), it calls `router.back()` instead, which returns to the
     menu at the same scroll position. It never steps back off the site.
+    A page with steps of its own takes Back over with `usePageBack(handler)` — the cart's details step returns to the cart that way. On
+    `/cart` the cart button gives way to a 44px space, so the title stays centred.
 - **CartBar** renders nothing while the cart is empty, on `/cart`, or on an item page (`/menu/*` — its own bottom bar has Add to cart
   and then View cart, and two fixed bars would stack). When shown it puts a spacer in the flow (`h-32` / `md:h-24`) so
   the page's last lines clear it. Phones: fixed bottom bar, count + total over a 48px button, `pb-safe-lg` clears the home indicator.

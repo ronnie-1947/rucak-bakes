@@ -16,6 +16,8 @@ export type CartApi = {
    * "Switch to Saturday?" first and only goes ahead on yes.
    */
   setQuantity: (target: AddTarget, qty: number) => void
+  /** Swap the whole cart without asking — the cart page applying the live menu, or moving to another day. */
+  replace: (cart: Cart | null) => void
   clear: () => void
 }
 

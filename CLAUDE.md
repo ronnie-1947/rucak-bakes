@@ -83,17 +83,17 @@ src/
   generated/prisma/     generated client — gitignored
   app/
     layout.tsx          the one root layout
-    (store)/            customer screens: layout.tsx (StoreShell), page.tsx (the landing page, /), menu/[slug]/ (the item page)
+    (store)/            customer screens: layout.tsx (StoreShell), page.tsx (the landing page, /), menu/[slug]/ (the item page), cart/
     globals.css         @theme tokens
     favicon.ico
-    actions/            server actions
+    actions/            server actions — checkout.ts is the customer's (checkCart, createOrder; no sign-in), the rest are staff
     admin/login/        staff sign-in (outside the admin shell)
     admin/(shell)/      every signed-in screen: layout.tsx (requireStaff + AdminShell), orders/, menu/, more/ …
     api/auth/[...nextauth]/route.ts
     sections/           landing bands (colocated, never a route) — landing/: hero, day-strip, how-it-works, menu-grid, visit-us
   components/
     ui/                 Button (+ ButtonLink; variant, size, shape), Checkbox, Chip(Link) (tone, size), Container, Dialog, EmptyState, ItemsLine, ItemThumb, LazyOnView,
-                        LinkSelect (?sort=), Meter, Notice, Rich, SearchBox (?q=), SelectBox (bulk tick), Spinner, StatusBadge, Switch,
+                        LinkSelect (?sort=), Meter, Notice, Rich, SearchBox (?q=), SelectBox (bulk tick), Spinner (tone), StatusBadge, Switch,
                         Tag (tone, size), UndoBar; form: Field, TextInput (+ inputShellClasses), SelectField, Stepper (size)
       icons/
     admin-login/        the /admin/login screen
@@ -116,10 +116,11 @@ src/
     item-card/          a customer item card (photo, chip, price, Add → stepper) and offer.ts — what Add does or why it can't
     item-detail/        the item page (/menu/[slug]): gallery, pickup-day chips + availability + Add to cart (phone bar), about / details /
                         ingredients / allergens, related; availability.ts — what each day offers
+    cart/               the cart (/cart): cart → details → order sent in one route — live-menu check, move day, Place order, refusals, confirmed
   content/
     en.json
   hooks/                useOrderActions, useMenuActions, useCustomerActions, useDaySheet (action contexts), useSettingsLeave (unsaved-changes guard),
-                        useDismiss (popover close), useCart (the customer cart's context), usePageTitle (the store header's title), useScrolled
+                        useDismiss (popover close), useCart (the customer cart's context), usePageTitle (the store header's title + usePageBack), useScrolled
   lib/
     content.ts          localePath / localeAlternates / htmlLang
     i18n.ts             locales, defaultLocale, getDictionary
@@ -132,7 +133,8 @@ src/
     template.ts         fill() for {placeholders} in dict strings
     admin-routes.ts     ADMIN_HOME, admin sections, safeAdminPath (post-login redirects)
     orders/             status.ts (state machine), lifecycle.ts (transitions), place.ts (createOrder tx),
-                        notify.ts, queries.ts (admin read models), filters.ts (queue URL state)
+                        notify.ts, queries.ts (admin read models), filters.ts (queue URL state),
+                        checkout.ts (checkout schema, refusals, form rules — client-safe), rate-limit.ts (7.3: by phone, by IP)
     menu/               queries.ts (library read model), filters.ts (URL state), changes.ts (writes + undo snapshots),
                         item.ts (form read model), form.ts (form values + rules, client-safe), save.ts (form writes),
                         copy.ts, units.ts, allergens.ts, about.ts (the About text's marks → blocks, client-safe)
@@ -148,8 +150,10 @@ src/
     storefront/         customer read models: shell.ts (banner, today), landing.ts (today/tomorrow StoreDays, catalogue, visit),
                         item.ts (an item, its days in the order-ahead window, related), catalogue.ts (card columns, menu order),
                         status.ts (dayStatus — placeOrder's day rules), types.ts (StoreDay, ItemDay, DayStatus, client-safe),
-                        words.ts (relativeDay, client-safe), routes.ts (itemHref, ?day=, client-safe)
-    cart/               cart.ts (localStorage['bakery.cart'] model, pure), store.ts (external store for useSyncExternalStore)
+                        words.ts (relativeDay, client-safe), routes.ts (itemHref, ?day=, client-safe),
+                        cart.ts (the cart page's days + fulfilment, checkLines — the cart's lines vs a day's live menu)
+    cart/               cart.ts (localStorage['bakery.cart'] model, pure), store.ts (external store for useSyncExternalStore),
+                        check.ts (reconcile — the live-menu check applied, pure), customer.ts (localStorage['bakery.customer'])
 public/
 ```
 

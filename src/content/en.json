@@ -1493,6 +1493,165 @@
       "PEANUTS": "Peanuts",
       "SOY": "Soy",
       "SESAME": "Sesame"
+    },
+    "cart": {
+      "metaTitle": "Your order · {bakery}",
+      "titles": {
+        "cart": "Your order",
+        "details": "Your details",
+        "done": "Order sent"
+      },
+      "clear": "Clear",
+      "clearAsk": "Remove all {items}?",
+      "clearKeep": "Keep",
+      "clearDo": "Clear order",
+      "loading": "Opening your cart…",
+      "empty": "Your cart is empty",
+      "browse": "Browse the menu",
+      "labels": {
+        "today": "Today",
+        "tomorrow": "Tomorrow"
+      },
+      "dayLabel": {
+        "PICKUP": "Pickup day",
+        "DELIVERY": "Delivery day"
+      },
+      "dayTitle": "{label}, {date}",
+      "orderBy": "Order by {time} {when}",
+      "ordersLeft": "{left} of {capacity} orders left",
+      "changeDay": "Change day",
+      "each": "{price} each",
+      "notes": {
+        "price": "Price updated",
+        "fewer": "Only {count} left",
+        "soldOut": "Sold out"
+      },
+      "remove": "Remove",
+      "removeLabel": "Remove {name}",
+      "addMore": "Add more items",
+      "note": "Anything we should know? (optional)",
+      "notePlaceholder": "e.g. no walnuts, please",
+      "itemsRow": "Items",
+      "subtotal": "Subtotal",
+      "deliveryFee": "Delivery",
+      "total": "Total",
+      "payLater": {
+        "PICKUP": "Pay at pickup — nothing is charged now.",
+        "DELIVERY": "Pay on delivery — nothing is charged now."
+      },
+      "continue": "Continue",
+      "updated": "{count} items in your cart changed since you added them",
+      "updatedOne": "1 item in your cart changed since you added it",
+      "removed": "Not on the menu {day}, so taken out: {names}",
+      "soldOutBlock": "Remove the sold-out items to continue.",
+      "move": "Move to {day}",
+      "moving": "Moving your cart…",
+      "sheet": {
+        "title": {
+          "PICKUP": "Change pickup day",
+          "DELIVERY": "Change delivery day"
+        },
+        "warning": "Each day has its own bake — anything not on the new day’s menu comes out of your cart.",
+        "current": "Current day",
+        "left": "{left} of {capacity} left",
+        "status": {
+          "full": "Fully booked",
+          "cutoff": "Ordering closed",
+          "closed": "Closed",
+          "paused": "Paused",
+          "unplanned": "Menu soon"
+        },
+        "keep": "Keep {day}",
+        "close": "Close"
+      },
+      "details": {
+        "summary": "{items} · {total} · {day}",
+        "edit": "Edit",
+        "welcome": "Welcome back",
+        "name": "Name",
+        "nameError": "Enter your name",
+        "phone": "Phone",
+        "phonePrefix": "+91",
+        "phoneHint": "We’ll call this number to confirm your order",
+        "phoneError": "Enter a 10-digit mobile number",
+        "how": "How would you like it?",
+        "PICKUP": "Pickup",
+        "DELIVERY": "Delivery",
+        "hours": "{from}–{to}",
+        "radius": "Within {km} km",
+        "fee": "{fee} delivery",
+        "address": "Delivery address",
+        "addressError": "Add an address so we can deliver",
+        "expectStrong": "We’ll call you within 2 hours to confirm.",
+        "expectRest": "Your order isn’t final until then.",
+        "place": "Place order · {total}",
+        "placing": "Placing your order",
+        "placePlain": "Place order",
+        "chooseDay": "Choose a new day to place your order"
+      },
+      "problems": {
+        "kept": "Your items and details are kept.",
+        "full": "{day} is now fully booked",
+        "fullBody": "The last slot went while you were ordering.",
+        "cutoff": "Orders for {day} closed at {time} {when}",
+        "closed": "We aren’t baking {day}",
+        "unplanned": "The menu for {day} isn’t up yet",
+        "noOtherDay": "No other day is taking orders right now.",
+        "itemGone": "{name} has sold out",
+        "itemFew": "Only {count} {name} left",
+        "itemUnknown": "One of your items",
+        "itemBody": "It went while you were ordering.",
+        "itemRemove": "Remove it and continue",
+        "itemLower": "Change to {count}",
+        "paused": "Ordering is paused",
+        "pausedBody": "Please check back soon — your cart is kept.",
+        "fulfilment": "That option isn’t available right now",
+        "fulfilmentBody": "Choose another way to get your order, or call us.",
+        "rateLimited": "Too many orders from this number",
+        "rateLimitedBody": "Call us instead and we’ll sort it out.",
+        "rateLimitedLater": "Please try again in an hour.",
+        "invalid": "Something in your details didn’t go through",
+        "invalidBody": "Check them and try again.",
+        "network": "Couldn’t send your order",
+        "networkBody": "Check your connection and try again — your order won’t be placed twice.",
+        "call": "Call {phone}"
+      },
+      "done": {
+        "number": "Your order number",
+        "callBack": "We’ll call {phone} within 2 hours to confirm.",
+        "day": "Day",
+        "time": "Time",
+        "PICKUP": "Pickup",
+        "DELIVERY": "Delivery",
+        "line": "{qty} × {name}",
+        "total": {
+          "PICKUP": "Total, pay at pickup",
+          "DELIVERY": "Total, pay on delivery"
+        },
+        "note": "Note",
+        "next": "What happens next",
+        "confirm": {
+          "title": "We call to confirm",
+          "body": "Within 2 hours"
+        },
+        "bake": {
+          "title": "We bake it",
+          "body": "Fresh for your day"
+        },
+        "collect": {
+          "PICKUP": {
+            "title": "You collect and pay",
+            "body": "Pay when you pick it up"
+          },
+          "DELIVERY": {
+            "title": "We deliver, you pay",
+            "body": "Pay when it arrives"
+          }
+        },
+        "backToMenu": "Back to menu",
+        "callBakery": "Call the bakery",
+        "screenshot": "Screenshot this or note your order number."
+      }
     }
   },
   "landing": {

@@ -39,6 +39,7 @@ export function CartProvider({ today, dict, children }: CartProviderProps) {
         if (qty > 0 && conflictsWith(current, target.date)) setPending({ target, qty })
         else writeCart(withQuantity(current, target, qty, Date.now()))
       },
+      replace: writeCart,
       clear: () => writeCart(null),
     }),
     [cart],
