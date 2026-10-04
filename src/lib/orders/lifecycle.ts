@@ -4,9 +4,11 @@ import { OrderError, serializable, type Tx } from "@/lib/db"
 import { canTransition, VERIFIED_STATUSES } from "@/lib/orders/status"
 
 /**
- * Every write that changes an order's status. Each runs in one serializable() transaction and takes
- * the day's row lock FIRST — the same order createOrder takes its locks in (day, then items), so a
- * cancel releasing quantities can never deadlock against a customer placing an order.
+ * Every write that changes an order's status. Each runs in one serializable() transaction; the ones that
+ * change what counts against the day's limits (verify, cancel, no-show) take the day's row lock first —
+ * the lock placeOrder holds while it counts.
+ *
+ * Orders don't draw down a day's items (§10R): nothing here touches MenuDayItem.quantityOrdered.
  */
 
 /** Without this lock two staff tapping Verify at once both read 9 and the bakery bakes eleven orders. */
@@ -16,18 +18,6 @@ export async function lockMenuDay(tx: Tx, menuDayId: string) {
 
 function assertTransition(from: OrderStatus, to: OrderStatus) {
   if (!canTransition(from, to)) throw new OrderError("INVALID_TRANSITION", { from, to })
-}
-
-/** Puts every line of the order back on sale for its day. Caller holds the day lock. */
-async function releaseQuantities(tx: Tx, orderId: string, menuDayId: string) {
-  const lines = await tx.orderItem.findMany({ where: { orderId }, select: { menuItemId: true, quantity: true } })
-  for (const line of lines) {
-    // updateMany: the item may since have been taken off the day, and then there is nothing to release.
-    await tx.menuDayItem.updateMany({
-      where: { menuDayId, menuItemId: line.menuItemId, quantityOrdered: { gte: line.quantity } },
-      data: { quantityOrdered: { decrement: line.quantity } },
-    })
-  }
 }
 
 async function loadOrder(tx: Tx, orderId: string) {
@@ -57,13 +47,12 @@ export async function verifyOrder(orderId: string, staffId: string, force = fals
   })
 }
 
-/** PENDING | VERIFIED → CANCELLED. Releases the order's quantities so the slots resell. */
+/** PENDING | VERIFIED → CANCELLED. The order stops counting against the day, so its slot resells. */
 export async function cancelOrder(orderId: string, staffId: string, note: string | null) {
   return serializable(async (tx) => {
     const order = await loadOrder(tx, orderId)
     assertTransition(order.status, OrderStatus.CANCELLED)
     await lockMenuDay(tx, order.menuDayId)
-    await releaseQuantities(tx, orderId, order.menuDayId)
     await tx.order.update({
       where: { id: orderId },
       data: { status: OrderStatus.CANCELLED, cancelledAt: new Date(), cancelledById: staffId, cancellationNote: note },
@@ -72,7 +61,7 @@ export async function cancelOrder(orderId: string, staffId: string, note: string
 }
 
 /**
- * READY → NO_SHOW. Counts against the customer and releases quantities. The schema has one "closed
+ * READY → NO_SHOW. Counts against the customer, and the order stops counting against the day. The schema has one "closed
  * unfulfilled" trail, so `cancelledAt` / `cancelledById` / `cancellationNote` record when, by whom and
  * why — `status` says which of the two it was.
  */
@@ -81,7 +70,6 @@ export async function markNoShow(orderId: string, staffId: string, note: string 
     const order = await loadOrder(tx, orderId)
     assertTransition(order.status, OrderStatus.NO_SHOW)
     await lockMenuDay(tx, order.menuDayId)
-    await releaseQuantities(tx, orderId, order.menuDayId)
     await tx.order.update({
       where: { id: orderId },
       data: { status: OrderStatus.NO_SHOW, cancelledAt: new Date(), cancelledById: staffId, cancellationNote: note },

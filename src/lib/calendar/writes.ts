@@ -3,6 +3,7 @@ import type { CutoffChoice } from "@/lib/calendar/cutoffs"
 import type { DayOrder } from "@/lib/calendar/week"
 import { addDays, computeCutoffAt, dateRange, fromDbDate, type IsoDate, toDbDate } from "@/lib/dates"
 import { serializable, type Tx } from "@/lib/db"
+import { type DayDefaults, newMenuDay } from "@/lib/orders/booking"
 import { LIVE_STATUSES, VERIFIED_STATUSES } from "@/lib/orders/status"
 
 /**
@@ -12,14 +13,8 @@ import { LIVE_STATUSES, VERIFIED_STATUSES } from "@/lib/orders/status"
  * nothing is ordered on it.
  */
 
-/** What the writes need from Settings: the defaults a new day starts from, and the bakery's clock. */
-export type PlanSettings = {
-  timezone: string
-  defaultCutoffTime: string
-  defaultCutoffDays: number
-  defaultMaxOrders: number
-  defaultOverbook: number
-}
+/** What the writes need from Settings: the defaults a new day starts from (opening hours included), and the bakery's clock. */
+export type PlanSettings = DayDefaults
 
 export type DayRefusal =
   | { ok: false; reason: "PAST" }
@@ -32,20 +27,9 @@ export type DayRefusal =
 
 type LockedDay = { id: string; isOpen: boolean; maxOrders: number; overbookLimit: number }
 
-function newDay(date: IsoDate, settings: PlanSettings) {
-  return {
-    date: toDbDate(date),
-    cutoffAt: computeCutoffAt(date, settings.defaultCutoffTime, settings.defaultCutoffDays, settings.timezone),
-    cutoffTime: settings.defaultCutoffTime,
-    cutoffDaysBefore: settings.defaultCutoffDays,
-    maxOrders: settings.defaultMaxOrders,
-    overbookLimit: Math.max(settings.defaultOverbook, settings.defaultMaxOrders),
-  }
-}
-
-/** Creates the day from the defaults when it was never planned, then locks it. */
+/** Creates the day from the defaults when it was never planned — exactly as placeOrder would — then locks it. */
 async function lockOrCreateDay(tx: Tx, date: IsoDate, settings: PlanSettings): Promise<LockedDay> {
-  await tx.menuDay.createMany({ data: [newDay(date, settings)], skipDuplicates: true })
+  await tx.menuDay.createMany({ data: [newMenuDay(date, settings)], skipDuplicates: true })
   const [day] = await tx.$queryRaw<LockedDay[]>`
     SELECT id, "isOpen", "maxOrders", "overbookLimit" FROM menu_days WHERE date = ${toDbDate(date)} FOR UPDATE`
   return day

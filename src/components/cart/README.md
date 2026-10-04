@@ -1,7 +1,8 @@
 # cart
 
-The cart (`/cart`): **cart → your details → order sent**, three states in one route with no navigation between them (runbook 6.3).
-Imported from `Cart.dc.html`. Route: [src/app/(store)/cart/page.tsx](<../../app/(store)/cart/page.tsx>), inside the store shell. Read model:
+The cart (`/cart`): **cart → your details → order sent**, three states in one route with no navigation between them (runbook 6.3,
+reworked by §10R — every order is an order-ahead order, judged by the one deadline rule in `src/lib/orders/deadline.ts`).
+Imported from `Cart.dc.html` (revised 4 Oct). Route: [src/app/(store)/cart/page.tsx](<../../app/(store)/cart/page.tsx>), inside the store shell. Read model:
 [src/lib/storefront/cart.ts](../../lib/storefront/cart.ts); actions: [src/app/actions/checkout.ts](../../app/actions/checkout.ts) (`checkCart`,
 `createOrder`); cart model: [src/lib/cart/](../../lib/cart/); checkout rules and results: [src/lib/orders/checkout.ts](../../lib/orders/checkout.ts).
 
@@ -17,10 +18,12 @@ cart/
   Confirmed.tsx        state 3 — order code, phone back, what was ordered (server-priced), what happens next
   StepLayout.tsx       one column, then 3 : 2 with the sticky side card from 1024px
   ActionBar.tsx        the step's action pinned to the bottom under 1024px, with its spacer
-  CartLineRow.tsx      one line: photo, name (links to the item on the cart's day), price each + change tag, Remove, stepper, total
-  DayCard.tsx          the o500 card — Pickup day / Delivery day, "Saturday, 10 Oct", order-by and orders left, Change day
-  DaySheet.tsx         "use client" — Change day (Dialog: sheet on phones, dialog from 640px)
-  DayChoice.tsx        one day in that list — current / open / off
+  CartLineRow.tsx      one line: photo, name (links to the item on the cart's day), "₹1,200 each · Order 2 days ahead" + Price updated,
+                       Remove, stepper 1–99, total; the too-soon flag under it
+  TooSoonFlag.tsx      "Needs 3 days’ notice — too soon for Saturday" + Remove / Move to Tuesday (or Choose another day)
+  DayCard.tsx          the o500 card — Pickup day / Delivery day, "Saturday, 10 Oct", "Order by Thursday 6pm · 3 orders left that day", Change day
+  DaySheet.tsx         "use client" — Change day (Dialog: sheet on phones, dialog from 640px): the window's days for every line
+  DayChoice.tsx        one day in that list — current / open / off, the reason or deadline under it, a worded side note
   CartSummary.tsx      Items, Delivery, Subtotal or Total, "Pay at pickup — nothing is charged now."
   NoteField.tsx        "Anything we should know?" — allergies go here
   SummaryRow.tsx       "3 items · ₹660 · Saturday, 10 Oct" + Edit
@@ -29,10 +32,11 @@ cart/
   Expectation.tsx      "We’ll call you within 2 hours to confirm. Your order isn’t final until then."
   PlaceButton.tsx      Place order · ₹X, spinner while it sends
   ProblemAlert.tsx     the red block — title, body, one action
-  OrderProblem.tsx     Place order's refusals (item gone, fulfilment off, rate limited, invalid, network) → ProblemAlert; `Problem`
+  OrderProblem.tsx     Place order's refusals (too soon, item can't be ordered, fulfilment off, rate limited, invalid, network)
+                       → ProblemAlert; `Problem`
   ConfirmedRow.tsx     one fact of the placed order
   NextStep.tsx         one of "What happens next"
-  copy.ts              CartPageCopy, day titles / meta / problems, pickup hours, itemsText
+  copy.ts              CartPageCopy, day titles / meta / problems, "Order by …" from a deadline, orders left, pickup hours, itemsText
   README.md
 ```
 
@@ -42,11 +46,11 @@ cart/
 Cart data dict.store
 └─ CartFlow data copy
    ├─ (before the browser has read the cart)  Spinner, "Opening your cart…"
-   ├─ empty:     CartHeading · Notice (what a move took out) · EmptyState → Browse the menu
+   ├─ empty:     CartHeading · Notice (what the check took out) · EmptyState → Browse the menu
    ├─ cart:      CartHeading + Clear
    │             CartStep
-   │             ├─ ClearConfirm · Notice "2 items … changed" · ProblemAlert (day can't take it → Move to …) · OrderProblem
-   │             ├─ DayCard (phones/tablets) · ul > CartLineRow × n · Add more items · NoteField · CartSummary
+   │             ├─ ClearConfirm · Notice (taken out: no longer on the menu) · ProblemAlert (day can't take it → Move to …) · OrderProblem
+   │             ├─ DayCard (phones/tablets) · ul > CartLineRow (+ TooSoonFlag) × n · Add more items · NoteField · CartSummary
    │             ├─ StepLayout side (lg): DayCard · CartSummary · Continue
    │             └─ ActionBar (<lg): Subtotal · Continue
    ├─ details:   CartHeading
@@ -65,9 +69,10 @@ Cart data dict.store
 | `@/app/actions/checkout` | `checkCart` (lines vs the live menu), `createOrder` (7.1–7.3) |
 | `@/hooks/useCart` | the cart: `setQuantity`, `replace`, `clear`, `count`, `subtotalPaise` |
 | `@/hooks/usePageTitle` | `usePageTitle` (CartHeading), `usePageBack` (details → cart on the header's Back) |
-| `@/lib/cart/*` | `reconcile` + `CartCheck` / `LineNote` (check.ts), `readCustomer` / `saveCustomer` (customer.ts), `getCart` (store.ts) |
+| `@/lib/cart/*` | `reconcile`, `viewCartDay`, `sheetDays` + `CartCheck` / `LineNote` / `CartDayStatus` (check.ts), `readCustomer` / `saveCustomer` (customer.ts), `getCart` (store.ts) |
+| `@/lib/orders/deadline` | `BookingWindow`, `FEW_ORDERS_LEFT`, `ordersLeft` — the deadline rule (check.ts applies it) |
 | `@/lib/orders/checkout` | `detailsProblems`, `CheckoutRefusal`, `PlacedSummary`, field limits |
-| `@/lib/storefront/*` | `CartPageData` / `CartDay` (cart.ts), `DayStatus`, `relativeDay`, `itemHref` |
+| `@/lib/storefront/*` | `CartPageData` (cart.ts), `relativeDay` / `noticeChip` / `noticeLength` (words.ts), `itemHref` |
 | `@/lib/settings/hours` · `@/lib/calendar/cutoffs` | `weekdayKey` for pickup hours, `formatClock` |
 | `@/components/ui/*` | `Button` (`underline`, `quiet`), `ButtonLink`, `Dialog`, `EmptyState`, `Field`, `TextInput` (`inputClasses`, `inputShellClasses`), `Icon` (`close`, `flame`, `bag`), `ItemThumb`, `Notice`, `Spinner` (`tone="inverse"`), `Stepper`, `Tag` |
 
@@ -80,39 +85,45 @@ Tokens: `bg-o500`, `bg-o50`, `text-o700`, `bg-red-soft`, `text-red`, `bg-green-s
 ```ts
 Cart        { data: CartPageData; dict: Dict["store"] }
 CartFlow    { data: CartPageData; copy: CartPageCopy }
-CartStep    { cart; notes; lineMax; onLine; alerts; dayCard; summary; note; onNote; blocked: string | null; onContinue; subtotal; copy }
+CartStep    { cart; lineInfo: (line) => { note; notice; flag }; onLine; alerts; dayCard; summary; note; onNote; blocked: string | null; onContinue; subtotal; copy }
 DetailsStep { summaryText; editLabel; onEdit; alerts; form; dayCard; summary; expectation; action; busy }
 Confirmed   { order: PlacedSummary; today; pickup: CartPageData["pickup"]; phone: string | null; copy }
-DaySheet    { open; onClose; current; days: CartDay[]; today; type; busy; onPick; copy }
+DaySheet    { open; onClose; current; rows: SheetDay[]; booking: BookingWindow; type; onPick; copy }
 DetailsForm { values: DetailsValues; onChange; errors: DetailsField[]; welcome; options; copy }
 ```
 
-`CartPageCopy` is `{ cart: dict.store.cart, days, shell, item: { decrease, increase } }` — only what the client flow renders.
+`CartPageCopy` is `{ cart: dict.store.cart, days, notice, shell, item: { decrease, increase } }` — only what the client flow renders.
 
 ## Dictionary contract
 
 `store.cart` in `src/content/en.json`: `titles`, Clear (`clear*`), `empty` / `browse` / `loading`, the day card (`labels`, `dayLabel`,
-`dayTitle`, `orderBy`, `ordersLeft`, `changeDay`), lines (`each`, `notes`, `remove*`, `addMore`), `note*`, money (`itemsRow`, `subtotal`,
-`deliveryFee`, `total`, `payLater`), `continue`, `updated*`, `removed`, `soldOutBlock`, `move` / `moving`, `sheet.*`, `details.*`,
-`problems.*` (7.2's customer copy), `done.*`. Also `store.days`, `store.shell.items*`, `store.item.decrease` / `increase`.
+`dayTitle`, `orderBy` / `orderByToday`, `ordersLeft*`, `tooSoonAll`, `changeDay`), lines (`each`, `notes`, `flag`, `chooseDay`, `remove*`,
+`addMore`), `note*`, money (`itemsRow`, `subtotal`, `deliveryFee`, `total`, `payLater`), `continue`, `removed`, `move` / `moving`, `sheet.*`,
+`details.*`, `problems.*` (7.2's customer copy + `tooSoon*`), `done.*`. Also `store.days`, `store.notice` (the notice chip and "3 days’
+notice", shared with the menu cards), `store.shell.items*`, `store.item.decrease` / `increase`.
 
 ## How it works
 
 - **Hydration.** The cart is in localStorage, so the server renders a spinner and the browser renders the real state — never a flash of
   "Your cart is empty". The saved customer (`bakery.customer`) is read in a lazy `useState`; the form isn't on screen at hydration.
-- **Revalidate on mount.** `checkCart(date, ids)` returns each line as the day's menu has it; `reconcile` removes lines no longer on it,
-  lowers quantities above what's left ("Only 2 left"), refreshes prices ("Price updated"), and keeps sold-out lines flagged so the customer
-  removes them knowingly (Continue waits). One warm notice counts what changed and names what was taken out. Offline, the cart stays and
-  Place order checks again.
-- **The day.** The card shows "Order by 6pm today · 9 of 15 orders left" (overbookLimit − live orders, as on `/`), or why the day can't take
-  the order — then a red alert offers **Move to <next open day>**. Change day lists every planned day of the order-ahead window. Moving
-  runs `checkCart` for the new day and carries over what that day bakes (deviation: the design cleared the cart; the sheet says what happens).
+- **Revalidate on mount.** `checkCart(ids)` returns each line as the menu has it (orderable, price, notice) and the booking window
+  (`BookingWindow`: today … today + orderAheadDays, planned or from the defaults, with orders taken). `reconcile` removes lines that can't be
+  ordered online any more (one warm notice names them), refreshes prices ("Price updated"), names, photos and notices. There is no stock: no
+  quantity caps, no sold-out lines. A line arriving from another tab triggers another check. Offline, the cart stays and Place order checks again.
+- **The day** (`viewCartDay`). The card shows "Order by Thursday 6pm · 3 orders left that day" — the earliest deadline over the lines that
+  fit, orders left only when ≤ 3 — or "Too soon for every item". When the day itself can't take an order (paused, closed, past its own
+  cutoff, fully booked) a red alert offers **Move to <the earliest date for every line>** and Place order waits. A line whose notice makes the
+  date too soon gets the flag under it — Remove, or Move to <earliest> (none → Choose another day opens the sheet); Continue still works and
+  the server refuses with TOO_SOON. **Change day** (`sheetDays`) lists tomorrow to the end of the window: each date's deadline for every line,
+  or why it can't be picked (closed › fully booked › ordering closed › too soon for <the longest-notice line>); "3 orders left" when nearly
+  full. Moving keeps every line and is instant; a background check refreshes the window.
 - **Place order.** The form's rules (`detailsProblems`) run first and focus the first bad field. One idempotency key per attempt (made on
   the first tap after Continue): a refusal drops it (nothing was created), a network failure keeps it, so a retry can never order twice.
   Success saves the customer, clears the cart and shows state 3 from the server's own summary.
-- **Refusals** (7.2): DAY_FULL / CUTOFF_PASSED / DAY_CLOSED turn the day card and alert red and offer Move; ORDERING_PAUSED shows the
-  owner's reason verbatim; ITEM_UNAVAILABLE names the item and offers "Change to n" or "Remove it and continue"; RATE_LIMITED offers the
-  bakery's number; FULFILMENT_UNAVAILABLE refreshes the options. Items and details are always kept.
+- **Refusals** (7.2): DAY_FULL / CUTOFF_PASSED / DAY_CLOSED turn the day card and alert red and offer Move (until the next check brings the
+  fresh window); TOO_SOON says "Too soon for Saturday — Custom birthday cake needs 3 days’ notice — the earliest is Tuesday 13 Oct." with
+  Move to Tuesday, once, inline; ORDERING_PAUSED shows the owner's reason verbatim; ITEM_UNAVAILABLE takes the line out and names it;
+  RATE_LIMITED offers the bakery's number; FULFILMENT_UNAVAILABLE refreshes the options. Items and details are always kept.
 - **Back.** On the details step the header's Back returns to the cart (`usePageBack`); otherwise it leaves as on any store page. The
   header's cart button is hidden here.
 
@@ -133,11 +144,12 @@ Test at `xxxs` (320px) and `3xl` (1920px+) any time you touch this component.
 | Goal | File |
 |---|---|
 | Copy | `src/content/en.json` → `store.cart` |
-| What the live check changes | `reconcile` in [src/lib/cart/check.ts](../../lib/cart/check.ts) |
+| What the live check changes, how the day and Change day are judged | `reconcile`, `viewCartDay`, `sheetDays` in [src/lib/cart/check.ts](../../lib/cart/check.ts) |
+| The deadline rule itself | [src/lib/orders/deadline.ts](../../lib/orders/deadline.ts) — shared with placeOrder and every other screen |
 | Form rules, limits, refusal shapes | [src/lib/orders/checkout.ts](../../lib/orders/checkout.ts) |
 | Rate limits | [src/lib/orders/rate-limit.ts](../../lib/orders/rate-limit.ts) |
 | What the server does with an order | `createOrder` in [src/app/actions/checkout.ts](../../app/actions/checkout.ts) → `placeOrder` |
-| Which days Change day lists | `loadCartPage` in [src/lib/storefront/cart.ts](../../lib/storefront/cart.ts) |
+| Which days Change day lists | `loadBookingWindow` in [src/lib/orders/booking.ts](../../lib/orders/booking.ts) |
 
 ## Do not
 

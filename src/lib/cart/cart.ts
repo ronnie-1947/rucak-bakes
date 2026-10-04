@@ -13,7 +13,7 @@ export const CART_KEY = "bakery.cart"
 /** A cart untouched for this long is dropped. */
 const MAX_AGE_MS = 24 * 60 * 60 * 1000
 
-/** Per line — far above any day's quantity; it only stops a corrupted entry from rendering nonsense. */
+/** Per line — the cart's and the item page's stepper go up to this; it also stops a corrupted entry from rendering nonsense. */
 export const MAX_LINE_QTY = 99
 
 const lineSchema = z.object({
@@ -23,6 +23,8 @@ const lineSchema = z.object({
   priceSnapshot: z.number().int().nonnegative(),
   qty: z.number().int().min(1).max(MAX_LINE_QTY),
   imageId: z.string().nullable(),
+  /** The item's notice when it was added, refreshed by the live check — the deadline rule needs it. Older carts lack it. */
+  noticeDays: z.number().int().min(0).max(30).optional(),
 })
 
 const cartSchema = z.object({
@@ -34,7 +36,7 @@ const cartSchema = z.object({
 export type CartLine = z.infer<typeof lineSchema>
 export type Cart = z.infer<typeof cartSchema>
 
-/** What an Add button puts in the cart. `max` is what the day has left of the item. */
+/** What an Add button puts in the cart. `max` caps the quantity (MAX_LINE_QTY unless the screen says less). */
 export type AddTarget = {
   menuItemId: string
   slug: string
@@ -43,6 +45,7 @@ export type AddTarget = {
   imageId: string | null
   date: IsoDate
   max: number
+  noticeDays?: number
 }
 
 /** A stored value, or null when it is missing, unreadable or the wrong shape. */
@@ -94,6 +97,7 @@ export function withQuantity(cart: Cart | null, target: AddTarget, qty: number, 
     priceSnapshot: target.pricePaise,
     qty: clamped,
     imageId: target.imageId,
+    ...(target.noticeDays === undefined ? {} : { noticeDays: target.noticeDays }),
   }
   const exists = base.some((existing) => existing.menuItemId === target.menuItemId)
   const items = exists

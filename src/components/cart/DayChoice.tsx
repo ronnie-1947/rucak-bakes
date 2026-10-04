@@ -1,13 +1,15 @@
 type Look = "current" | "open" | "off"
+type SideTone = "accent" | "green" | "red" | "muted"
 
 type DayChoiceProps = {
   /** "Tomorrow, 5 Oct". */
   title: string
-  /** "Order by 6pm today" — null when the day has no cutoff to show. */
-  sub: string | null
-  /** "Current day", "7 of 15 left", "Fully booked". */
+  /** "Order by Thursday 6pm", or why it can't be picked — "Too soon for Custom birthday cake". */
+  sub: string
+  /** "Current day", "3 orders left", "Open", "Fully booked". */
   side: string
-  /** current: the cart's day · open: takes orders · off: can't (disabled). */
+  sideTone: SideTone
+  /** current: the cart's day · open: takes every line · off: can't (disabled). */
   look: Look
   onPick: () => void
 }
@@ -15,7 +17,7 @@ type DayChoiceProps = {
 const frames: Record<Look, string> = {
   current: "border-o500 bg-o50",
   open: "border-border bg-background hover:bg-sunken",
-  off: "cursor-not-allowed border-border bg-background",
+  off: "cursor-not-allowed border-border bg-sunken",
 }
 
 const titles: Record<Look, string> = {
@@ -24,14 +26,15 @@ const titles: Record<Look, string> = {
   off: "text-muted",
 }
 
-const sides: Record<Look, string> = {
-  current: "text-o700",
-  open: "text-green",
-  off: "text-red",
+const sides: Record<SideTone, string> = {
+  accent: "text-o700",
+  green: "text-green",
+  red: "text-red",
+  muted: "text-muted",
 }
 
 /** One day in the Change day list. The side note is always words, never colour alone. */
-export function DayChoice({ title, sub, side, look, onPick }: DayChoiceProps) {
+export function DayChoice({ title, sub, side, sideTone, look, onPick }: DayChoiceProps) {
   return (
     <button
       type="button"
@@ -42,9 +45,9 @@ export function DayChoice({ title, sub, side, look, onPick }: DayChoiceProps) {
     >
       <span className="flex min-w-0 flex-col">
         <span className={`font-semibold ${titles[look]}`}>{title}</span>
-        {sub ? <span className="text-small text-muted">{sub}</span> : null}
+        <span className="text-small text-pretty text-muted">{sub}</span>
       </span>
-      <span className={`shrink-0 text-small font-semibold tabular-nums ${sides[look]}`}>{side}</span>
+      <span className={`shrink-0 text-small font-semibold tabular-nums ${sides[sideTone]}`}>{side}</span>
     </button>
   )
 }

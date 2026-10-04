@@ -47,7 +47,10 @@ export type PlacedSummary = {
 
 export type CheckoutRefusal =
   | { reason: "DAY_FULL" | "DAY_CLOSED" | "CUTOFF_PASSED"; date: IsoDate }
-  | { reason: "ITEM_UNAVAILABLE"; menuItemId: string; name: string | null; remaining: number }
+  /** The line with the longest notice, and the first date that takes every line (null: none in the window). */
+  | { reason: "TOO_SOON"; date: IsoDate; name: string | null; notice: number; earliest: IsoDate | null }
+  /** Archived, switched off, or call only — it can't be ordered online. */
+  | { reason: "ITEM_UNAVAILABLE"; menuItemId: string; name: string | null }
   | { reason: "ORDERING_PAUSED"; message: string | null }
   | { reason: "FULFILMENT_UNAVAILABLE" }
   | { reason: "RATE_LIMITED" }

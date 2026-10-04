@@ -3,26 +3,24 @@ import { Button } from "@/components/ui/Button"
 import { ButtonLink } from "@/components/ui/ButtonLink"
 import { Icon } from "@/components/ui/icons/Icon"
 import type { Cart, CartLine } from "@/lib/cart/cart"
-import type { LineNote } from "@/lib/cart/check"
 import { ActionBar } from "./ActionBar"
-import { CartLineRow } from "./CartLineRow"
+import { CartLineRow, type CartLineRowProps } from "./CartLineRow"
 import type { CartPageCopy } from "./copy"
 import { NoteField } from "./NoteField"
 import { StepLayout } from "./StepLayout"
 
 type CartStepProps = {
   cart: Cart
-  notes: Record<string, LineNote>
-  /** What the day has left of each line. */
-  lineMax: (menuItemId: string) => number
+  /** What a line shows besides itself: what changed, its notice, the too-soon flag. */
+  lineInfo: (line: CartLine) => Pick<CartLineRowProps, "note" | "notice" | "flag">
   onLine: (line: CartLine, qty: number) => void
-  /** Above the lines: the clear question, what the live menu changed, why the day can't take the order. */
+  /** Above the lines: the clear question, what the live check took out, why the day can't take the order. */
   alerts: ReactNode
   dayCard: ReactNode
   summary: ReactNode
   note: string
   onNote: (note: string) => void
-  /** Null when Continue can go; else why not ("Remove the sold-out items…"), or "" when an alert above says it. */
+  /** Null when Continue can go; "" when it can't and an alert above says why. */
   blocked: string | null
   onContinue: () => void
   /** For the phone bar — "₹660". */
@@ -33,8 +31,7 @@ type CartStepProps = {
 /** State 1 — the cart: day, lines, Add more items, the note, the money; Continue in the bar or the side card. */
 export function CartStep({
   cart,
-  notes,
-  lineMax,
+  lineInfo,
   onLine,
   alerts,
   dayCard,
@@ -67,8 +64,7 @@ export function CartStep({
                   key={line.menuItemId}
                   line={line}
                   date={cart.fulfilmentDate}
-                  note={notes[line.menuItemId]}
-                  max={lineMax(line.menuItemId)}
+                  {...lineInfo(line)}
                   onQuantity={(qty) => onLine(line, qty)}
                   copy={copy}
                 />

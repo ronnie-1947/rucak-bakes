@@ -11,14 +11,15 @@ import { Spinner } from "@/components/ui/Spinner"
 import { useCart } from "@/hooks/useCart"
 import { usePageBack } from "@/hooks/usePageTitle"
 import { type CartLine, MAX_LINE_QTY } from "@/lib/cart/cart"
-import { type CartCheck, type LineNote, reconcile } from "@/lib/cart/check"
+import { type CartDayStatus, type CartCheck, type LineNote, lineNotice, reconcile, sheetDays, viewCartDay } from "@/lib/cart/check"
 import { readCustomer, saveCustomer } from "@/lib/cart/customer"
 import { getCart } from "@/lib/cart/store"
-import type { IsoDate } from "@/lib/dates"
+import { formatLongDayLabel, type IsoDate } from "@/lib/dates"
 import { formatPaise } from "@/lib/money"
 import { type CheckoutRefusal, type DetailsField, type DetailsValues, detailsProblems, type PlacedSummary } from "@/lib/orders/checkout"
+import type { BookingWindow } from "@/lib/orders/deadline"
 import type { CartPageData } from "@/lib/storefront/cart"
-import type { DayStatus } from "@/lib/storefront/types"
+import { noticeChip, noticeLength } from "@/lib/storefront/words"
 import { fill } from "@/lib/template"
 import { CartHeading } from "./CartHeading"
 import { CartStep } from "./CartStep"
@@ -42,13 +43,13 @@ type CartFlowProps = {
 
 type Step = "cart" | "details" | "done"
 
-/** The live menu's answer for the cart's day, applied. */
-type Checked = { date: IsoDate; status: DayStatus; notes: Record<string, LineNote>; removed: string[]; max: Record<string, number> }
+/** The live check's answer, applied: what changed on the lines, what was taken out, and the booking window as it now stands. */
+type Checked = { notes: Record<string, LineNote>; removed: string[]; window: BookingWindow }
 
 const TITLE_ID = "cart-title"
 
-/** The day a refusal says the cart's day is now in. */
-const REFUSED: Record<"DAY_FULL" | "DAY_CLOSED" | "CUTOFF_PASSED", DayStatus> = {
+/** The day a refusal says the cart's day is now in — until the next check brings the fresh window. */
+const REFUSED: Record<"DAY_FULL" | "DAY_CLOSED" | "CUTOFF_PASSED", CartDayStatus> = {
   DAY_FULL: "full",
   DAY_CLOSED: "closed",
   CUTOFF_PASSED: "cutoff",
@@ -56,16 +57,13 @@ const REFUSED: Record<"DAY_FULL" | "DAY_CLOSED" | "CUTOFF_PASSED", DayStatus> = 
 
 const neverChanges = () => () => {}
 
-function checkedFrom(result: CartCheck, outcome: ReturnType<typeof reconcile>): Checked {
-  return { date: result.date, status: result.status, notes: outcome.notes, removed: outcome.removed, max: outcome.max }
-}
-
 /**
  * /cart — cart → your details → order sent, three states in one route with no navigation between them
- * (dev-docs/implementation.md 6.3). On mount the cart is checked against the live menu: lines off it go, prices
- * and quantities left are refreshed, and one notice says what changed. Place order sends one idempotency key per
- * attempt (a resend after a dropped connection can't order twice); a refusal keeps the cart and the details and
- * names the way forward. The header's Back steps from details to the cart.
+ * (dev-docs/implementation.md 6.3, reworked by §10R). On mount the cart is checked against the menu: lines that can't be
+ * ordered online any more go, prices and notices are refreshed, and the cart's day is judged with the deadline rule —
+ * lines whose notice makes it too soon are flagged with Move to <the earliest date for every line>. Place order sends one
+ * idempotency key per attempt (a resend after a dropped connection can't order twice); a refusal keeps the cart and the
+ * details and names the way forward. The header's Back steps from details to the cart.
  */
 export function CartFlow({ data, copy }: CartFlowProps) {
   const c = copy.cart
@@ -79,7 +77,7 @@ export function CartFlow({ data, copy }: CartFlowProps) {
   )
   const [step, setStep] = useState<Step>("cart")
   const [checked, setChecked] = useState<Checked | null>(null)
-  const [moving, setMoving] = useState(false)
+  const [refusedDay, setRefusedDay] = useState<{ date: IsoDate; status: CartDayStatus } | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [clearAsk, setClearAsk] = useState(false)
   const [note, setNote] = useState("")
@@ -97,25 +95,48 @@ export function CartFlow({ data, copy }: CartFlowProps) {
   const [placed, setPlaced] = useState<PlacedSummary | null>(null)
   const [pending, startTransition] = useTransition()
   const attempt = useRef<string | null>(null)
-  const checkedFor = useRef<string | null>(null)
+  const checkedIds = useRef(new Set<string>())
 
-  // Revalidate on mount (and when another tab moves the cart to a new day).
-  useEffect(() => {
-    if (!cart || checkedFor.current === cart.fulfilmentDate) return
-    const date = cart.fulfilmentDate
-    checkedFor.current = date
-    checkCart({ date, ids: cart.items.map((line) => line.menuItemId) })
-      .then((result) => {
-        const current = getCart()
-        if (!result || !current || current.fulfilmentDate !== date) return
-        const outcome = reconcile(current, result, Date.now())
-        if (outcome.cart !== current) replace(outcome.cart)
-        setChecked(checkedFrom(result, outcome))
-      })
+  /** Asks the server about the cart's lines and the window, and applies the answer. Offline, the cart stays as it is. */
+  const recheck = useCallback(() => {
+    const ids = getCart()?.items.map((line) => line.menuItemId) ?? []
+    if (ids.length === 0) return
+    ids.forEach((id) => checkedIds.current.add(id))
+    checkCart({ ids })
+      .then((result) => applyCheck(result))
       .catch(() => {
-        // Offline, or the server is down: the cart stays as it is, and Place order checks everything again.
+        // Place order checks everything again.
       })
-  }, [cart, replace])
+
+    function applyCheck(result: CartCheck | null) {
+      const current = getCart()
+      if (!result || !current) return
+      const outcome = reconcile(current, result, Date.now())
+      if (outcome.cart !== current) replace(outcome.cart)
+      setChecked({ notes: outcome.notes, removed: outcome.removed, window: result.window })
+      setRefusedDay(null)
+    }
+  }, [replace])
+
+  /** Every line comes along — any orderable item can be ordered for any date its notice allows. */
+  const moveTo = useCallback(
+    (target: IsoDate) => {
+      const current = getCart()
+      if (current) replace({ ...current, fulfilmentDate: target, updatedAt: Date.now() })
+      setRefusedDay(null)
+      setProblem(null)
+      setSheetOpen(false)
+      attempt.current = null
+      // The window may have moved on since the page loaded — refresh it for the new day.
+      recheck()
+    },
+    [replace, recheck],
+  )
+
+  // Revalidate on mount, and when a line arrives that hasn't been checked (another tab added it).
+  useEffect(() => {
+    if (cart && cart.items.some((line) => !checkedIds.current.has(line.menuItemId))) recheck()
+  }, [cart, recheck])
 
   const goTo = useCallback((next: Step) => {
     setStep(next)
@@ -128,6 +149,10 @@ export function CartFlow({ data, copy }: CartFlowProps) {
   }, [])
   const toCart = useCallback(() => goTo("cart"), [goTo])
   usePageBack(step === "details" && cart && !pending ? toCart : null)
+
+  // The window as the last check saw it, else as the page was rendered. Never `window` — that's the browser's.
+  const booking = checked?.window ?? data.window
+  const today = booking.today
 
   if (!hydrated) {
     return (
@@ -142,16 +167,13 @@ export function CartFlow({ data, copy }: CartFlowProps) {
     return (
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
         <CartHeading id={TITLE_ID} title={c.titles.done} />
-        <Confirmed order={placed} today={data.today} pickup={data.pickup} phone={data.phone} copy={copy} />
+        <Confirmed order={placed} today={today} pickup={data.pickup} phone={data.phone} copy={copy} />
       </div>
     )
   }
 
   const date = cart?.fulfilmentDate ?? null
-  const fresh = checked && checked.date === date ? checked : null
-  const removedText = checked?.removed.length
-    ? fill(c.removed, { day: dayName(checked.date, data.today, copy), names: checked.removed.join(", ") })
-    : null
+  const removedText = checked?.removed.length ? fill(c.removed, { names: checked.removed.join(", ") }) : null
 
   if (!cart || !date) {
     return (
@@ -170,18 +192,14 @@ export function CartFlow({ data, copy }: CartFlowProps) {
     )
   }
 
-  const today = data.today
-  const day = data.days.find((entry) => entry.date === date) ?? null
-  const status: DayStatus = fresh?.status ?? day?.status ?? "unplanned"
-  const notes = fresh?.notes ?? {}
-  const lineMax = (id: string) => fresh?.max[id] ?? MAX_LINE_QTY
-  const soldOut = cart.items.some((line) => notes[line.menuItemId] === "soldOut")
-  const changed = cart.items.filter((line) => notes[line.menuItemId]).length + (fresh?.removed.length ?? 0)
-  const next = data.days.find((entry) => entry.status === "open" && entry.date !== date) ?? null
+  const view = viewCartDay(cart, booking)
+  const status: CartDayStatus = refusedDay?.date === date ? refusedDay.status : view.status
+  const notes = checked?.notes ?? {}
+  const rows = sheetDays(cart, booking)
   const type: Fulfilment = details.type
   const feePaise = type === "DELIVERY" ? data.delivery.feePaise : 0
   const title = dayTitle(date, today, copy)
-  const problemTitle = dayProblem(status, date, day, today, copy)
+  const problemTitle = dayProblem(status, date, view, booking, copy)
 
   const changeLine = (line: CartLine, qty: number) => {
     setQuantity(
@@ -192,61 +210,37 @@ export function CartFlow({ data, copy }: CartFlowProps) {
         pricePaise: line.priceSnapshot,
         imageId: line.imageId,
         date,
-        max: Math.max(lineMax(line.menuItemId), line.qty),
+        max: MAX_LINE_QTY,
+        noticeDays: line.noticeDays,
       },
       qty,
     )
-    if (problem?.kind === "item" && problem.menuItemId === line.menuItemId) setProblem(null)
+    if (qty === 0 && problem?.kind === "tooSoon") setProblem(null)
     if (qty === 0 && cart.items.length === 1) goTo("cart")
   }
-
-  const moveTo = (target: IsoDate) => {
-    if (moving) return
-    setMoving(true)
-    checkCart({ date: target, ids: cart.items.map((line) => line.menuItemId) })
-      .then((result) => {
-        const current = getCart()
-        if (!result || !current) return
-        const outcome = reconcile(current, result, Date.now())
-        checkedFor.current = target
-        replace(outcome.cart)
-        setChecked(checkedFrom(result, outcome))
-        setProblem(null)
-        setSheetOpen(false)
-        attempt.current = null
-        if (!outcome.cart) goTo("cart")
-        router.refresh()
-      })
-      .catch(() => setProblem({ kind: "network" }))
-      .finally(() => setMoving(false))
-  }
-
-  const markDay = (dayStatus: DayStatus) =>
-    setChecked((prev) => (prev && prev.date === date ? { ...prev, status: dayStatus } : { date, status: dayStatus, notes: {}, removed: [], max: {} }))
 
   const refused = (refusal: CheckoutRefusal) => {
     switch (refusal.reason) {
       case "DAY_FULL":
       case "DAY_CLOSED":
       case "CUTOFF_PASSED":
-        markDay(REFUSED[refusal.reason])
-        router.refresh()
+        setRefusedDay({ date, status: REFUSED[refusal.reason] })
+        recheck()
+        return
+      case "TOO_SOON":
+        setProblem({ kind: "tooSoon", date: refusal.date, name: refusal.name, notice: refusal.notice, earliest: refusal.earliest })
+        recheck()
         return
       case "ORDERING_PAUSED":
         setPausedReason(refusal.message)
-        markDay("paused")
+        setRefusedDay({ date, status: "paused" })
         return
       case "ITEM_UNAVAILABLE": {
-        const { menuItemId, remaining } = refusal
-        setProblem({ kind: "item", menuItemId, name: refusal.name, remaining })
-        setChecked((prev) => {
-          const base = prev && prev.date === date ? prev : { date, status, notes: {}, removed: [], max: {} }
-          return {
-            ...base,
-            max: { ...base.max, [menuItemId]: remaining },
-            notes: { ...base.notes, [menuItemId]: remaining > 0 ? "fewer" : "soldOut" },
-          }
-        })
+        const line = cart.items.find((entry) => entry.menuItemId === refusal.menuItemId)
+        const name = refusal.name ?? line?.name ?? null
+        if (name) setChecked((prev) => ({ notes: prev?.notes ?? {}, window: booking, removed: [...(prev?.removed ?? []), name] }))
+        if (line) changeLine(line, 0)
+        setProblem({ kind: "item", name })
         return
       }
       case "INVALID":
@@ -306,14 +300,8 @@ export function CartFlow({ data, copy }: CartFlowProps) {
     })
   }
 
-  const fixItem = () => {
-    if (problem?.kind !== "item") return
-    const line = cart.items.find((entry) => entry.menuItemId === problem.menuItemId)
-    setProblem(null)
-    if (line) changeLine(line, problem.remaining)
-  }
-
   const p = c.problems
+  const next = view.earliest
   const dayBody =
     status === "paused"
       ? (pausedReason ?? p.pausedBody)
@@ -326,21 +314,36 @@ export function CartFlow({ data, copy }: CartFlowProps) {
       body={dayBody || undefined}
       action={
         status !== "paused" && next ? (
-          <Button size="lg" className="w-full font-semibold" disabled={moving} onClick={() => moveTo(next.date)}>
-            {moving ? c.moving : fill(c.move, { day: dayTitle(next.date, today, copy) })}
+          <Button size="lg" className="w-full font-semibold" onClick={() => moveTo(next)}>
+            {fill(c.move, { day: dayTitle(next, today, copy) })}
           </Button>
         ) : null
       }
     />
   ) : null
-  const problemAlert = problem ? <OrderProblem problem={problem} phone={data.phone} onFixItem={fixItem} copy={copy} /> : null
+  const problemAlert = problem ? (
+    <OrderProblem problem={problem} phone={data.phone} today={today} onMove={moveTo} onChooseDay={() => setSheetOpen(true)} copy={copy} />
+  ) : null
+
+  const tooSoon = new Set(view.tooSoon.map((line) => line.menuItemId))
+  const lineInfo = (line: CartLine) => ({
+    note: notes[line.menuItemId],
+    notice: line.noticeDays === undefined ? null : noticeChip(line.noticeDays, true, copy.notice),
+    flag: tooSoon.has(line.menuItemId)
+      ? {
+          text: fill(c.flag, { notice: noticeLength(lineNotice(line), copy.notice), day: dayName(date, today, copy) }),
+          moveLabel: next ? fill(c.move, { day: dayName(next, today, copy) }) : c.chooseDay,
+          onMove: () => (next ? moveTo(next) : setSheetOpen(true)),
+        }
+      : null,
+  })
 
   const dayCard = (change: boolean) => (
     <DayCard
       label={c.dayLabel[type]}
       title={title}
-      meta={dayMeta(status, date, day, today, copy)}
-      change={change && data.days.length > 1 ? { label: c.changeDay, onClick: () => setSheetOpen(true), disabled: moving } : undefined}
+      meta={dayMeta(status, date, view, booking, copy)}
+      change={change && rows.length > 1 ? { label: c.changeDay, onClick: () => setSheetOpen(true) } : undefined}
     />
   )
   const items = { label: c.itemsRow, value: String(count) }
@@ -349,10 +352,9 @@ export function CartFlow({ data, copy }: CartFlowProps) {
       open={sheetOpen}
       onClose={() => setSheetOpen(false)}
       current={date}
-      days={data.days}
-      today={today}
+      rows={rows}
+      booking={booking}
       type={type}
-      busy={moving}
       onPick={moveTo}
       copy={copy}
     />
@@ -404,7 +406,7 @@ export function CartFlow({ data, copy }: CartFlowProps) {
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 lg:max-w-5xl">
         <CartHeading id={TITLE_ID} title={c.titles.details} />
         <DetailsStep
-          summaryText={fill(c.details.summary, { items: itemsText(count, copy), total: formatPaise(subtotalPaise), day: title })}
+          summaryText={fill(c.details.summary, { items: itemsText(count, copy), total: formatPaise(subtotalPaise), day: formatLongDayLabel(date) })}
           editLabel={c.details.edit}
           onEdit={toCart}
           alerts={
@@ -445,7 +447,7 @@ export function CartFlow({ data, copy }: CartFlowProps) {
     )
   }
 
-  const blocked = status !== "open" ? "" : soldOut ? c.soldOutBlock : null
+  const blocked = status !== "open" ? "" : null
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 lg:max-w-5xl">
       <CartHeading
@@ -459,8 +461,7 @@ export function CartFlow({ data, copy }: CartFlowProps) {
       />
       <CartStep
         cart={cart}
-        notes={notes}
-        lineMax={lineMax}
+        lineInfo={lineInfo}
         onLine={changeLine}
         alerts={
           <>
@@ -472,16 +473,12 @@ export function CartFlow({ data, copy }: CartFlowProps) {
                 onKeep={() => setClearAsk(false)}
                 onClear={() => {
                   setClearAsk(false)
-                  setChecked(null)
+                  setChecked((prev) => (prev ? { ...prev, notes: {}, removed: [] } : null))
                   clear()
                 }}
               />
             ) : null}
-            {changed > 0 ? (
-              <Notice tone="warm" title={changed === 1 ? c.updatedOne : fill(c.updated, { count: changed })}>
-                {removedText}
-              </Notice>
-            ) : null}
+            {removedText ? <Notice tone="warm">{removedText}</Notice> : null}
             {dayAlert}
             {problemAlert}
           </>

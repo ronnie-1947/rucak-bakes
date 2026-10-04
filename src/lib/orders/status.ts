@@ -31,9 +31,6 @@ export const VERIFIED_STATUSES: readonly OrderStatus[] = [OrderStatus.VERIFIED, 
 /** Count against MenuDay.overbookLimit at submit time — everything still alive. */
 export const LIVE_STATUSES: readonly OrderStatus[] = [OrderStatus.PENDING, ...VERIFIED_STATUSES]
 
-/** Ends that release the order's quantities back onto the day. */
-export const RELEASING_STATUSES: readonly OrderStatus[] = [OrderStatus.CANCELLED, OrderStatus.NO_SHOW]
-
 export function isTerminal(status: OrderStatus): boolean {
   return TRANSITIONS[status].length === 0
 }

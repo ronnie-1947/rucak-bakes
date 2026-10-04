@@ -4,6 +4,7 @@ import type { CutoffChoice } from "@/lib/calendar/cutoffs"
 import { dayHref, weekBounds, weekHref } from "@/lib/calendar/routes"
 import { addDays, dateRange, formatDayLabel, formatDayNumber, formatShortDate, formatWeekday, fromDbDate, type IsoDate, todayIn, toDbDate, weekStart } from "@/lib/dates"
 import { prisma } from "@/lib/db"
+import { openByDefault } from "@/lib/orders/booking"
 import { LIVE_STATUSES, VERIFIED_STATUSES } from "@/lib/orders/status"
 import { getSettings } from "@/lib/settings/row"
 
@@ -20,7 +21,7 @@ export type WeekDay = {
   isToday: boolean
   /** Before today — read-only. */
   isPast: boolean
-  /** A MenuDay row exists. An unplanned day shows as open, with the bakery's defaults and no items. */
+  /** A MenuDay row exists. An unplanned day shows the bakery's defaults — open unless the opening hours close its weekday. */
   planned: boolean
   isOpen: boolean
   closureNote: string | null
@@ -112,7 +113,7 @@ export async function loadWeek(monday: IsoDate): Promise<WeekPlan> {
       isToday: date === today,
       isPast: date < today,
       planned: Boolean(day),
-      isOpen: day?.isOpen ?? true,
+      isOpen: day?.isOpen ?? openByDefault(date, settings.openingHours),
       closureNote: day?.closureNote ?? null,
       cutoff: day ? { time: day.cutoffTime, daysBefore: day.cutoffDaysBefore } : { time: settings.defaultCutoffTime, daysBefore: settings.defaultCutoffDays },
       maxOrders: day?.maxOrders ?? settings.defaultMaxOrders,

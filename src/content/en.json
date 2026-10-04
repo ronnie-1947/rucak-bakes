@@ -127,11 +127,11 @@
         "cancelOk": "Cancel order",
         "cancelOkMany": "Cancel orders",
         "cancelReasons": ["Customer asked", "Couldn’t reach customer", "Item sold out", "Duplicate order"],
-        "cancelConsequence": "The customer isn’t told automatically — call them. Their items go back on sale.",
+        "cancelConsequence": "The customer isn’t told automatically — call them. The day can take another order in its place.",
         "noShowTitle": "Mark as no-show?",
         "noShowOk": "Mark no-show",
         "noShowReasons": ["Didn’t turn up", "Came too late", "Other"],
-        "noShowConsequence": "This counts against the customer, and the items go back on sale.",
+        "noShowConsequence": "This counts against the customer.",
         "overTitle": "Verify over capacity?",
         "overLine": "This would be order {wouldBe} of {max} for {day}.",
         "overOk": "Verify anyway",
@@ -1415,6 +1415,14 @@
       "today": "today",
       "tomorrow": "tomorrow"
     },
+    "notice": {
+      "sameDay": "Same day",
+      "byTomorrow": "Order by tomorrow",
+      "daysAhead": "Order {count} days ahead",
+      "callOnly": "Made to order",
+      "oneDay": "1 day’s notice",
+      "days": "{count} days’ notice"
+    },
     "item": {
       "add": "Add",
       "addLabel": "Add {name}",
@@ -1517,15 +1525,18 @@
         "DELIVERY": "Delivery day"
       },
       "dayTitle": "{label}, {date}",
-      "orderBy": "Order by {time} {when}",
-      "ordersLeft": "{left} of {capacity} orders left",
+      "orderBy": "Order by {weekday} {time}",
+      "orderByToday": "Order by {time} today",
+      "ordersLeft": "{count} orders left that day",
+      "ordersLeftOne": "1 order left that day",
+      "tooSoonAll": "Too soon for every item",
       "changeDay": "Change day",
       "each": "{price} each",
       "notes": {
-        "price": "Price updated",
-        "fewer": "Only {count} left",
-        "soldOut": "Sold out"
+        "price": "Price updated"
       },
+      "flag": "Needs {notice} — too soon for {day}",
+      "chooseDay": "Choose another day",
       "remove": "Remove",
       "removeLabel": "Remove {name}",
       "addMore": "Add more items",
@@ -1540,10 +1551,7 @@
         "DELIVERY": "Pay on delivery — nothing is charged now."
       },
       "continue": "Continue",
-      "updated": "{count} items in your cart changed since you added them",
-      "updatedOne": "1 item in your cart changed since you added it",
-      "removed": "Not on the menu {day}, so taken out: {names}",
-      "soldOutBlock": "Remove the sold-out items to continue.",
+      "removed": "No longer on our menu, so taken out of your cart: {names}",
       "move": "Move to {day}",
       "moving": "Moving your cart…",
       "sheet": {
@@ -1551,16 +1559,19 @@
           "PICKUP": "Change pickup day",
           "DELIVERY": "Change delivery day"
         },
-        "warning": "Each day has its own bake — anything not on the new day’s menu comes out of your cart.",
+        "warning": "Your items stay in the cart. Dates that don’t give every item enough notice can’t be picked.",
         "current": "Current day",
-        "left": "{left} of {capacity} left",
+        "open": "Open",
+        "left": "{count} orders left",
+        "leftOne": "1 order left",
         "status": {
           "full": "Fully booked",
           "cutoff": "Ordering closed",
           "closed": "Closed",
           "paused": "Paused",
-          "unplanned": "Menu soon"
+          "tooSoon": "Too soon"
         },
+        "tooSoonFor": "Too soon for {name}",
         "keep": "Keep {day}",
         "close": "Close"
       },
@@ -1595,14 +1606,13 @@
         "fullBody": "The last slot went while you were ordering.",
         "cutoff": "Orders for {day} closed at {time} {when}",
         "closed": "We aren’t baking {day}",
-        "unplanned": "The menu for {day} isn’t up yet",
         "noOtherDay": "No other day is taking orders right now.",
-        "itemGone": "{name} has sold out",
-        "itemFew": "Only {count} {name} left",
+        "itemGone": "{name} can’t be ordered online any more",
         "itemUnknown": "One of your items",
-        "itemBody": "It went while you were ordering.",
-        "itemRemove": "Remove it and continue",
-        "itemLower": "Change to {count}",
+        "itemBody": "We’ve taken it out of your cart — check your order and place it again.",
+        "tooSoon": "Too soon for {day}",
+        "tooSoonBody": "{name} needs {notice} — the earliest is {date}.",
+        "tooSoonNone": "{name} needs {notice}, and none of the days we’re taking orders for gives it that.",
         "paused": "Ordering is paused",
         "pausedBody": "Please check back soon — your cart is kept.",
         "fulfilment": "That option isn’t available right now",

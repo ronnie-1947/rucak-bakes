@@ -1,13 +1,18 @@
 import { Button, buttonClasses } from "@/components/ui/Button"
 import { Icon } from "@/components/ui/icons/Icon"
+import { formatLongDayLabel, type IsoDate } from "@/lib/dates"
 import { formatForDisplay } from "@/lib/phone"
+import { noticeLength } from "@/lib/storefront/words"
 import { fill } from "@/lib/template"
-import type { CartPageCopy } from "./copy"
+import { type CartPageCopy, capitalise, dayName } from "./copy"
 import { ProblemAlert } from "./ProblemAlert"
 
 /** Why Place order didn't go through, when it isn't the day itself (the day card and its alert say that). */
 export type Problem =
-  | { kind: "item"; menuItemId: string; name: string | null; remaining: number }
+  /** It can't be ordered online any more — already taken out of the cart. */
+  | { kind: "item"; name: string | null }
+  /** The longest-notice line, and the first date that takes every line. */
+  | { kind: "tooSoon"; date: IsoDate; name: string | null; notice: number; earliest: IsoDate | null }
   | { kind: "fulfilment" }
   | { kind: "rateLimited" }
   | { kind: "invalid" }
@@ -17,13 +22,16 @@ type OrderProblemProps = {
   problem: Problem
   /** The bakery's E.164 number — offered when calling is the way out. */
   phone: string | null
-  /** Lower the item to what's left, or take it out. */
-  onFixItem: () => void
+  today: IsoDate
+  /** Move the cart to that date (too soon). */
+  onMove: (date: IsoDate) => void
+  /** No date takes every line: open Change day. */
+  onChooseDay: () => void
   copy: CartPageCopy
 }
 
 /** dev-docs/implementation.md 7.2 — each refusal named in the customer's words, with its one way forward. */
-export function OrderProblem({ problem, phone, onFixItem, copy }: OrderProblemProps) {
+export function OrderProblem({ problem, phone, today, onMove, onChooseDay, copy }: OrderProblemProps) {
   const p = copy.cart.problems
   const call = phone ? (
     <a href={`tel:${phone}`} className={buttonClasses("outlineLink", "lg", "w-full")}>
@@ -33,16 +41,23 @@ export function OrderProblem({ problem, phone, onFixItem, copy }: OrderProblemPr
   ) : null
 
   switch (problem.kind) {
-    case "item": {
+    case "item":
+      return <ProblemAlert title={fill(p.itemGone, { name: problem.name ?? p.itemUnknown })} body={`${p.itemBody} ${p.kept}`} />
+    case "tooSoon": {
       const name = problem.name ?? p.itemUnknown
-      const title = problem.remaining > 0 ? fill(p.itemFew, { count: problem.remaining, name }) : fill(p.itemGone, { name })
+      const notice = noticeLength(problem.notice, copy.notice)
+      const { earliest } = problem
       return (
         <ProblemAlert
-          title={title}
-          body={`${p.itemBody} ${p.kept}`}
+          title={fill(p.tooSoon, { day: capitalise(dayName(problem.date, today, copy)) })}
+          body={
+            earliest
+              ? fill(p.tooSoonBody, { name, notice, date: formatLongDayLabel(earliest) })
+              : fill(p.tooSoonNone, { name: capitalise(name), notice })
+          }
           action={
-            <Button variant="outlineAccent" size="lg" className="w-full" onClick={onFixItem}>
-              {problem.remaining > 0 ? fill(p.itemLower, { count: problem.remaining }) : p.itemRemove}
+            <Button size="lg" className="w-full font-semibold" onClick={() => (earliest ? onMove(earliest) : onChooseDay())}>
+              {earliest ? fill(copy.cart.move, { day: dayName(earliest, today, copy) }) : copy.cart.chooseDay}
             </Button>
           }
         />

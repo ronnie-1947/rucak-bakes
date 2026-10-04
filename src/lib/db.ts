@@ -56,6 +56,8 @@ export async function serializable<T>(fn: (tx: Tx) => Promise<T>, retries = 3): 
 export type OrderErrorCode =
   | "DAY_CLOSED"
   | "CUTOFF_PASSED"
+  /** The lines' notice puts the deadline before now, though the day's own cutoff hasn't passed (§10R). */
+  | "TOO_SOON"
   | "DAY_FULL"
   | "ITEM_UNAVAILABLE"
   | "ORDERING_PAUSED"
@@ -66,7 +68,7 @@ export type OrderErrorCode =
 /**
  * A business-rule refusal, carrying a machine-readable code. Thrown inside a transaction so it
  * rolls back; caught at the server-action boundary and mapped to what the customer or staff sees.
- * `details` carries what that mapping needs — the item that ran out, the owner's pause reason.
+ * `details` carries what that mapping needs — the item that can't be ordered, the owner's pause reason.
  */
 export class OrderError extends Error {
   readonly code: OrderErrorCode

@@ -1,10 +1,10 @@
 import { formatClock } from "@/lib/calendar/cutoffs"
-import { addDays, formatShortDate, formatWeekday, type IsoDate, weekday } from "@/lib/dates"
+import type { CartDayStatus, CartDayView } from "@/lib/cart/check"
+import { addDays, formatShortDate, formatTimeIn, formatWeekday, type IsoDate, isoDateInZone, weekday } from "@/lib/dates"
 import type { Dict } from "@/lib/i18n"
+import { type BookingWindow, FEW_ORDERS_LEFT, ordersLeft } from "@/lib/orders/deadline"
 import type { OpeningHours } from "@/lib/settings/hours"
 import { weekdayKey } from "@/lib/settings/hours"
-import type { CartDay } from "@/lib/storefront/cart"
-import type { DayStatus } from "@/lib/storefront/types"
 import { relativeDay } from "@/lib/storefront/words"
 import { fill } from "@/lib/template"
 
@@ -13,6 +13,7 @@ import { fill } from "@/lib/template"
 export type CartPageCopy = {
   cart: Dict["store"]["cart"]
   days: Dict["store"]["days"]
+  notice: Dict["store"]["notice"]
   shell: Dict["store"]["shell"]
   item: Pick<Dict["store"]["item"], "decrease" | "increase">
 }
@@ -40,19 +41,21 @@ export function dayTitle(date: IsoDate, today: IsoDate, copy: CartPageCopy): str
   return fill(c.dayTitle, { label, date: formatShortDate(date) })
 }
 
-/** "Order by 6pm today". */
-export function orderBy(day: CartDay, today: IsoDate, copy: CartPageCopy): string | null {
-  if (!day.cutoff) return null
-  return fill(copy.cart.orderBy, { time: formatClock(day.cutoff.time), when: dayName(day.cutoff.date, today, copy) })
+/** "Order by 6pm today", "Order by Thursday 6pm" — a deadline (epoch ms), bakery-local. */
+export function orderBy(deadline: number, window: BookingWindow, copy: CartPageCopy): string {
+  const instant = new Date(deadline)
+  const time = formatClock(formatTimeIn(instant, window.timeZone))
+  const date = isoDateInZone(instant, window.timeZone)
+  return date === window.today ? fill(copy.cart.orderByToday, { time }) : fill(copy.cart.orderBy, { weekday: formatWeekday(date), time })
 }
 
 /**
- * Why a day can't take this order, as a heading — "Saturday is now fully booked", "Orders for today closed at
- * 6pm yesterday" — or null when it can. `day` is null when the day has no menu at all.
+ * Why the cart's day can't take the order, as a heading — "Saturday is now fully booked", "Orders for today closed at 6pm
+ * yesterday" — or null when it can.
  */
-export function dayProblem(status: DayStatus, date: IsoDate, day: CartDay | null, today: IsoDate, copy: CartPageCopy): string | null {
+export function dayProblem(status: CartDayStatus, date: IsoDate, view: CartDayView, window: BookingWindow, copy: CartPageCopy): string | null {
   const p = copy.cart.problems
-  const name = dayName(date, today, copy)
+  const name = dayName(date, window.today, copy)
   switch (status) {
     case "open":
       return null
@@ -62,20 +65,30 @@ export function dayProblem(status: DayStatus, date: IsoDate, day: CartDay | null
       return fill(p.full, { day: capitalise(name) })
     case "closed":
       return fill(p.closed, { day: name })
-    case "unplanned":
-      return fill(p.unplanned, { day: name })
-    case "cutoff":
-      return day?.cutoff
-        ? fill(p.cutoff, { day: name, time: formatClock(day.cutoff.time), when: dayName(day.cutoff.date, today, copy) })
-        : fill(p.closed, { day: name })
+    case "cutoff": {
+      if (!view.day) return fill(p.closed, { day: name })
+      const cutoff = new Date(view.day.cutoffAt)
+      return fill(p.cutoff, {
+        day: name,
+        time: formatClock(formatTimeIn(cutoff, window.timeZone)),
+        when: dayName(isoDateInZone(cutoff, window.timeZone), window.today, copy),
+      })
+    }
   }
 }
 
-/** The day card's last line: "Order by 6pm today · 9 of 15 orders left", or why it can't take the order. */
-export function dayMeta(status: DayStatus, date: IsoDate, day: CartDay | null, today: IsoDate, copy: CartPageCopy): string {
-  const problem = dayProblem(status, date, day, today, copy)
-  if (problem || !day) return problem ?? ""
-  return [orderBy(day, today, copy), fill(copy.cart.ordersLeft, { left: day.left, capacity: day.capacity })].filter(Boolean).join(" · ")
+/** "3 orders left that day" — only when the day is nearly full. */
+export function fewLeft(left: number, copy: CartPageCopy): string | null {
+  if (left > FEW_ORDERS_LEFT) return null
+  return left === 1 ? copy.cart.ordersLeftOne : fill(copy.cart.ordersLeft, { count: left })
+}
+
+/** The day card's last line: "Order by Thursday 6pm · 3 orders left that day", "Too soon for every item", or why the day can't take it. */
+export function dayMeta(status: CartDayStatus, date: IsoDate, view: CartDayView, window: BookingWindow, copy: CartPageCopy): string {
+  const problem = dayProblem(status, date, view, window, copy)
+  if (problem || !view.day) return problem ?? ""
+  const deadline = view.deadline === null ? copy.cart.tooSoonAll : orderBy(view.deadline, window, copy)
+  return [deadline, fewLeft(ordersLeft(view.day), copy)].filter(Boolean).join(" · ")
 }
 
 /** "7am–4pm" on that day's weekday, or null when the hours aren't set or the shop is shut that day. */

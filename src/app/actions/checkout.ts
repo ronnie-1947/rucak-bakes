@@ -3,7 +3,6 @@
 import { headers } from "next/headers"
 import { after } from "next/server"
 import { z } from "zod"
-import { isIsoDate } from "@/lib/dates"
 import { OrderError, prisma } from "@/lib/db"
 import type { CartCheck } from "@/lib/cart/check"
 import { checkoutSchema, type CheckoutInput, type CheckoutResult, mergeLines } from "@/lib/orders/checkout"
@@ -15,19 +14,21 @@ import { checkLines } from "@/lib/storefront/cart"
 
 /**
  * The customer's two server actions — no sign-in, so every input is parsed here and nothing the browser sends is
- * trusted beyond its shape: prices, names and quantities left all come from the database.
+ * trusted beyond its shape: prices, names and notices all come from the database.
  */
 
 const checkInput = z.object({
-  date: z.string().refine(isIsoDate),
   ids: z.array(z.string().min(1).max(40)).min(1).max(40),
 })
 
-/** The cart's lines against `date`'s live menu — the cart page runs this on mount and when moving day. Null for a malformed request. */
+/**
+ * The cart's lines against the menu, with the booking window — the cart page runs this on mount and when moving day.
+ * Null for a malformed request.
+ */
 export async function checkCart(input: z.input<typeof checkInput>): Promise<CartCheck | null> {
   const parsed = checkInput.safeParse(input)
   if (!parsed.success) return null
-  return checkLines(parsed.data.date, [...new Set(parsed.data.ids)])
+  return checkLines([...new Set(parsed.data.ids)])
 }
 
 /**
@@ -91,13 +92,21 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
       case "DAY_CLOSED":
       case "CUTOFF_PASSED":
         return { ok: false, reason: error.code, date: data.fulfilmentDate }
+      case "TOO_SOON":
+        return {
+          ok: false,
+          reason: "TOO_SOON",
+          date: data.fulfilmentDate,
+          name: typeof error.details.name === "string" ? error.details.name : null,
+          notice: Number(error.details.notice) || 0,
+          earliest: typeof error.details.earliest === "string" ? error.details.earliest : null,
+        }
       case "ITEM_UNAVAILABLE":
         return {
           ok: false,
           reason: "ITEM_UNAVAILABLE",
           menuItemId: String(error.details.menuItemId),
           name: typeof error.details.name === "string" ? error.details.name : null,
-          remaining: Number(error.details.remaining) || 0,
         }
       case "ORDERING_PAUSED":
         return {

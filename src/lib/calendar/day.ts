@@ -5,6 +5,7 @@ import { addDays, formatDayLabel, formatLongDayLabel, fromDbDate, type IsoDate, 
 import { prisma } from "@/lib/db"
 import { paiseToPrice } from "@/lib/menu/form"
 import { asPriceUnit, type PriceUnit } from "@/lib/menu/units"
+import { openByDefault } from "@/lib/orders/booking"
 import { LIVE_STATUSES, VERIFIED_STATUSES } from "@/lib/orders/status"
 import { getSettings } from "@/lib/settings/row"
 
@@ -105,7 +106,7 @@ export async function loadDayEditor(date: IsoDate): Promise<DayEditorData | null
   }))
 
   const saved: DayPlan = {
-    isOpen: day?.isOpen ?? true,
+    isOpen: day?.isOpen ?? openByDefault(date, settings.openingHours),
     cutoff: day ? { time: day.cutoffTime, daysBefore: day.cutoffDaysBefore } : { time: settings.defaultCutoffTime, daysBefore: settings.defaultCutoffDays },
     maxOrders: day?.maxOrders ?? settings.defaultMaxOrders,
     overbookLimit: day?.overbookLimit ?? settings.defaultOverbook,

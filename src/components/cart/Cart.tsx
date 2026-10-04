@@ -13,6 +13,7 @@ export function Cart({ data, dict }: CartProps) {
   const copy: CartPageCopy = {
     cart: dict.cart,
     days: dict.days,
+    notice: dict.notice,
     shell: dict.shell,
     item: { decrease: dict.item.decrease, increase: dict.item.increase },
   }
