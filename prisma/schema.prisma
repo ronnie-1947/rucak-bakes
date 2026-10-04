@@ -46,7 +46,10 @@ model MenuItem {
   imageAlts        String[]  @default([]) // alt text, parallel to images ("" = none)
   sizeNote         String? // "About 900 g", shown on the item page
   storageNote      String? // "Best on the day"
-  defaultQuantity  Int       @default(10)
+  defaultQuantity  Int       @default(10) // "Usual counter batch" — pre-fills a counter-item's quantity made
+  orderable        Boolean   @default(true) // off → call only: on the menu with a Call button, never ordered online
+  bakeSeparately   Boolean   @default(false) // the day sheet lists each order's line on its own row (Made to order)
+  noticeDays       Int       @default(1) // days' notice before pickup — lib/orders/deadline.ts; CHECK 0–30
   isActive         Boolean   @default(true)
   archivedAt       DateTime?
   createdAt        DateTime  @default(now())
@@ -93,16 +96,18 @@ model MenuDay {
   @@map("menu_days")
 }
 
+// A day's counter-items: what's baked that morning for the counter, never ordered online.
 model MenuDayItem {
   id                 String    @id @default(cuid())
   menuDayId          String
   menuDay            MenuDay   @relation(fields: [menuDayId], references: [id], onDelete: Cascade)
   menuItemId         String
   menuItem           MenuItem  @relation(fields: [menuItemId], references: [id])
-  quantityAvailable  Int
-  quantityOrdered    Int       @default(0)
+  quantityAvailable  Int // quantity made
+  quantityOrdered    Int       @default(0) // unused since 7R — orders no longer draw down a day's items
   priceOverridePaise Int?
   bakedAt            DateTime?
+  soldOutAt          DateTime? // the counter ran out — leaves the quantity alone, can be undone
 
   @@unique([menuDayId, menuItemId])
   @@index([menuItemId])
@@ -192,15 +197,16 @@ model Order {
 }
 
 model OrderItem {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   orderId        String
-  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order          Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
   menuItemId     String
-  menuItem       MenuItem @relation(fields: [menuItemId], references: [id])
+  menuItem       MenuItem  @relation(fields: [menuItemId], references: [id])
   name           String // SNAPSHOT
   unitPricePaise Int // SNAPSHOT
   quantity       Int
   lineTotalPaise Int
+  bakedAt        DateTime? // the day sheet's Baked tick for ordered lines (counter-items tick MenuDayItem.bakedAt)
 
   @@index([orderId])
   @@index([menuItemId])

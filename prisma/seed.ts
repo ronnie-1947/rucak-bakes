@@ -34,7 +34,13 @@ type SeedItem = {
   ingredients: string[]
   allergens: string[]
   defaultQuantity: number
-  /** Weekdays it's baked (0 = Sunday). Omitted = every day. */
+  /** Days' notice before pickup (schema default 1). */
+  noticeDays?: number
+  /** false = call only: on the menu with a Call button, never ordered online. */
+  orderable?: boolean
+  /** The day sheet's Made to order rows — one per order line, with the customer's note. */
+  bakeSeparately?: boolean
+  /** Weekdays it's a counter-item (0 = Sunday). Omitted = every day; [] = never. */
   days?: number[]
   /** A one-weekday price, to exercise MenuDayItem.priceOverridePaise. */
   override?: { day: number; pricePaise: number }
@@ -109,7 +115,25 @@ const ITEMS: SeedItem[] = [
     ingredients: ["Dark chocolate", "Cream", "Butter", "Sugar", "Eggs", "Wheat flour", "Cocoa"],
     allergens: ["GLUTEN", "DAIRY", "EGGS", "SOY"],
     defaultQuantity: 4,
+    noticeDays: 2,
+    bakeSeparately: true,
     days: [SAT, SUN],
+  },
+  {
+    slug: "custom-birthday-cake",
+    name: "Custom birthday cake",
+    shortDescription: "Your flavour, size and message — talk it through with us on the phone.",
+    about: "Sold by the kilo, from 1 kg. Call us with the date, flavour and the message for the top.",
+    category: "cakes",
+    basePricePaise: 150000,
+    priceUnit: "PER_KG",
+    ingredients: ["Wheat flour", "Butter", "Sugar", "Eggs", "Cream"],
+    allergens: ["GLUTEN", "DAIRY", "EGGS"],
+    defaultQuantity: 1,
+    noticeDays: 3,
+    orderable: false,
+    bakeSeparately: true,
+    days: [],
   },
   {
     slug: "chicken-puff",
