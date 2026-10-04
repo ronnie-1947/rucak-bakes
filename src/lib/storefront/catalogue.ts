@@ -13,6 +13,8 @@ export const storeItemSelect = {
   imageAlts: true,
   basePricePaise: true,
   priceUnit: true,
+  orderable: true,
+  noticeDays: true,
 } as const
 
 type StoreItemRow = {
@@ -23,9 +25,11 @@ type StoreItemRow = {
   imageAlts: string[]
   basePricePaise: number
   priceUnit: string
+  orderable: boolean
+  noticeDays: number
 }
 
-/** A row as a card: the cover and its alt text, priced for a day (override, else base). */
+/** A row as a card: the cover and its alt text, at its base price unless the counter prices it for the day. */
 export function toStoreItem(item: StoreItemRow, pricePaise: number = item.basePricePaise): StoreItem {
   return {
     id: item.id,
@@ -35,6 +39,8 @@ export function toStoreItem(item: StoreItemRow, pricePaise: number = item.basePr
     imageAlt: item.imageAlts[0] ?? "",
     pricePaise,
     priceUnit: asPriceUnit(item.priceUnit),
+    orderable: item.orderable,
+    noticeDays: item.noticeDays,
   }
 }
 

@@ -11,14 +11,7 @@ import { coverLoader, type Photo } from "./photos"
 type ItemGalleryProps = {
   photos: Photo[]
   name: string
-  /** No day in the window can take the order: 45% opacity and greyed, as on the menu cards. */
-  muted: boolean
   dict: { photos: string; photo: string; showPhoto: string }
-}
-
-const looks: Record<"muted" | "plain", string> = {
-  muted: "opacity-45 grayscale-40",
-  plain: "",
 }
 
 /**
@@ -26,7 +19,7 @@ const looks: Record<"muted" | "plain", string> = {
  * bottom corners rounded on phones; from 1024px a thumbnail rail beside it drives the carousel instead. The
  * first photo loads eagerly: it's the page's largest paint.
  */
-export function ItemGallery({ photos, name, muted, dict }: ItemGalleryProps) {
+export function ItemGallery({ photos, name, dict }: ItemGalleryProps) {
   const scroller = useRef<HTMLDivElement>(null)
   const [index, setIndex] = useState(0)
   const many = photos.length > 1
@@ -47,7 +40,7 @@ export function ItemGallery({ photos, name, muted, dict }: ItemGalleryProps) {
   }
 
   return (
-    <div className={`-mx-4 -mt-4 flex gap-3 md:mx-0 md:mt-0 ${looks[muted ? "muted" : "plain"]}`}>
+    <div className="-mx-4 -mt-4 flex gap-3 md:mx-0 md:mt-0">
       {many ? <GalleryRail photos={photos} index={index} onShow={show} label={dict.showPhoto} /> : null}
       <div className="relative min-w-0 flex-1 overflow-hidden rounded-b-sheet bg-sunken md:rounded-card">
         {photos.length > 0 ? (

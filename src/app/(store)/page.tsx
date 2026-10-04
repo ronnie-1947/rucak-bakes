@@ -1,7 +1,6 @@
-import { DayStrip } from "@/app/sections/landing/day-strip/DayStrip"
+import { FreshToday } from "@/app/sections/landing/fresh-today/FreshToday"
 import { Hero } from "@/app/sections/landing/hero/Hero"
-import { HowItWorks } from "@/app/sections/landing/how-it-works/HowItWorks"
-import { MenuGrid } from "@/app/sections/landing/menu-grid/MenuGrid"
+import { Menu } from "@/app/sections/landing/menu/Menu"
 import { VisitUs } from "@/app/sections/landing/visit-us/VisitUs"
 import { htmlLang } from "@/lib/content"
 import { getDictionary, type Locale } from "@/lib/i18n"
@@ -15,9 +14,8 @@ export default async function Home() {
   return (
     <div lang={htmlLang(locale)} className="contents">
       <Hero hero={data.hero} dict={dict.landing.hero} />
-      <DayStrip days={data.days} today={data.today} dict={dict.landing.dayStrip} store={dict.store} />
-      <HowItWorks dict={dict.landing.howItWorks} />
-      <MenuGrid catalogue={data.catalogue} days={data.days} today={data.today} dict={dict.landing.menuGrid} store={dict.store} />
+      <FreshToday fresh={data.fresh} today={data.today} phone={data.visit.phone} dict={dict.landing.freshToday} store={dict.store} />
+      <Menu catalogue={data.catalogue} categories={data.categories} phone={data.visit.phone} dict={dict.landing.menu} store={dict.store} />
       <VisitUs visit={data.visit} dict={dict.landing.visitUs} />
     </div>
   )

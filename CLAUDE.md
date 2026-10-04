@@ -90,9 +90,9 @@ src/
     admin/login/        staff sign-in (outside the admin shell)
     admin/(shell)/      every signed-in screen: layout.tsx (requireStaff + AdminShell), orders/, menu/, more/ …
     api/auth/[...nextauth]/route.ts
-    sections/           landing bands (colocated, never a route) — landing/: hero, day-strip, how-it-works, menu-grid, visit-us
+    sections/           landing bands (colocated, never a route) — landing/: hero, fresh-today, menu, visit-us
   components/
-    ui/                 Button (+ ButtonLink; variant, size, shape), Checkbox, Chip(Link) (tone, size), Container, Dialog, EmptyState, ItemsLine, ItemThumb, LazyOnView,
+    ui/                 Button (+ ButtonLink; variant, size, shape), CallLink (tel:), Checkbox, Chip(Link) (tone, size, shape), Container, Dialog, EmptyState, ItemsLine, ItemThumb, LazyOnView,
                         LinkSelect (?sort=), Meter, Notice, Rich, SearchBox (?q=), SelectBox (bulk tick), Spinner (tone), StatusBadge, Switch,
                         Tag (tone, size), UndoBar; form: Field, TextInput (+ inputShellClasses), SelectField, Stepper (size)
       icons/
@@ -113,9 +113,9 @@ src/
     admin-settings/     settings (/admin/settings): five sections, save bars + leave guard, live switches, Telegram connect, staff access
     store-shell/        every customer screen's frame: banner, sticky header (home row on /, Back · title · cart elsewhere), View cart bar / pill,
                         CartProvider + switch-day dialog, PageTitleProvider
-    item-card/          a customer item card (photo, chip, price, Add → stepper) and offer.ts — what Add does or why it can't
-    item-detail/        the item page (/menu/[slug]): gallery, pickup-day chips + availability + Add to cart (phone bar), about / details /
-                        ingredients / allergens, related; availability.ts — what each day offers
+    item-card/          a customer item card (photo, chip, price, green tag, Choose date / Call to order) and card.ts (priceParts, chip and action types)
+    item-detail/        the item page (/menu/[slug]): gallery, price + notice, counter block, pickup-date strip + legend + Add to cart (phone bar)
+                        or the Call block, about / details / ingredients / allergens, related; availability.ts — each date judged by the deadline rule
     cart/               the cart (/cart): cart → details → order sent in one route — live-menu check, move day, Place order, refusals, confirmed
   content/
     en.json
@@ -148,10 +148,10 @@ src/
     settings/           row.ts (getSettings() / findSettings() — the singleton row, cached per request), queries.ts (screen read model),
                         writes.ts, telegram.ts (connect code, state, recordDelivery), form.ts (values + rules, client-safe),
                         hours.ts (opening hours + hoursRuns, client-safe), sections.ts (?section=, client-safe)
-    storefront/         customer read models: shell.ts (banner, today), landing.ts (today/tomorrow StoreDays, catalogue, visit),
-                        item.ts (an item, its days in the order-ahead window, related), catalogue.ts (card columns, menu order),
-                        status.ts (dayStatus — placeOrder's day rules), types.ts (StoreDay, ItemDay, DayStatus, client-safe),
-                        words.ts (relativeDay, client-safe), routes.ts (itemHref, ?day=, client-safe),
+    storefront/         customer read models: shell.ts (banner, today), landing.ts (Fresh today, catalogue, categories, visit),
+                        item.ts (an item, the booking window, today's counter, related), catalogue.ts (card columns, menu order),
+                        counter.ts (today's counter-items, the counter's closing time), types.ts (StoreItem, FreshToday…, client-safe),
+                        words.ts (relativeDay, noticeChip, noticeLength, client-safe), routes.ts (itemHref, ?day=, client-safe),
                         cart.ts (the cart page's days + fulfilment, checkLines — the cart's lines vs a day's live menu)
     cart/               cart.ts (localStorage['bakery.cart'] model, pure), store.ts (external store for useSyncExternalStore),
                         check.ts (reconcile — the live-menu check applied, pure), customer.ts (localStorage['bakery.customer'])

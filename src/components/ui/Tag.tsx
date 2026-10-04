@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 
-export type TagTone = "warm" | "accent" | "green" | "red" | "neutral" | "quiet"
+export type TagTone = "warm" | "accent" | "green" | "red" | "neutral" | "quiet" | "plain"
 export type TagSize = "sm" | "pill" | "md"
 
 type TagProps = {
@@ -19,6 +19,8 @@ const tones: Record<TagTone, string> = {
   red: "border-red-soft bg-red-soft text-red",
   neutral: "border-border bg-sunken text-foreground",
   quiet: "border-border bg-sunken text-muted",
+  /** White with a border — a fact laid over a photo (a menu card's "Order by tomorrow"). */
+  plain: "border-border bg-background text-foreground",
 }
 
 /** `md` is regular weight and wraps — an ingredient can be longer than a 320px screen. Bold it with `className` (allergens). */

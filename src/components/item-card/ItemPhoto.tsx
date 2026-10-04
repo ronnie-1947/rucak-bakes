@@ -2,13 +2,13 @@ import Image from "next/image"
 import { Icon } from "@/components/ui/icons/Icon"
 import { Tag } from "@/components/ui/Tag"
 import { imageUrl } from "@/lib/cloudinary"
-import type { ItemChip } from "./offer"
+import type { ItemChip } from "./card"
 
 type ItemPhotoProps = {
   image: string | null
   alt: string
   chip: ItemChip | null
-  /** Not on today's or tomorrow's menu — greyed. */
+  /** A sold-out counter-item — greyed. */
   muted: boolean
 }
 

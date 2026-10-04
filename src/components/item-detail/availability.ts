@@ -1,55 +1,47 @@
-import type { AddTarget } from "@/lib/cart/cart"
+import { type AddTarget, MAX_LINE_QTY } from "@/lib/cart/cart"
 import { formatClock } from "@/lib/calendar/cutoffs"
-import { addDays, formatLongDayLabel, formatShortWeekday, type IsoDate } from "@/lib/dates"
+import { formatDayLabel, formatLongDayLabel, formatShortWeekday, formatTimeIn, formatWeekday, type IsoDate, isoDateInZone } from "@/lib/dates"
 import type { Dict } from "@/lib/i18n"
-import { formatPaise } from "@/lib/money"
-import type { ItemDay } from "@/lib/storefront/types"
-import { relativeDay } from "@/lib/storefront/words"
+import { type Availability, type BookingWindow, dayAvailability, deadlineFor, FEW_ORDERS_LEFT, ordersLeft } from "@/lib/orders/deadline"
+import { noticeLength, relativeDay } from "@/lib/storefront/words"
 import { fill } from "@/lib/template"
 
 /**
- * What each pickup day offers on the item page — worked out on the server from the same rules placeOrder
- * applies, then handed to the client panel as plain data, one entry per chip. Client-safe, pure.
+ * The item page's date strip (§10R): each date of the booking window judged for this item by the deadline rule
+ * (orders/deadline.ts) — the same functions placeOrder and the cart use — then handed to the client panel as plain data,
+ * one entry per chip. Client-safe, pure.
  */
 
 type StoreCopy = Dict["store"]
 
-/** `open` takes the order · `unavailable` has it on the menu but can't take the order · `off` doesn't have it on the menu. */
-export type DayLook = "open" | "unavailable" | "off"
+/** `open` takes the order · `soon` the item's notice (or the day's cutoff) has passed · `closed` · `full` fully booked. */
+export type DateLook = "open" | "soon" | "closed" | "full"
 
-/** Why a day with the item can't take the order, in placeOrder's order. */
-type Why = "paused" | "cutoff" | "full" | "soldOut"
-
-export type LineTone = "green" | "red" | "muted"
-
-export type DayOption = {
+export type DateOption = {
   date: IsoDate
-  /** The chip: "Today", "Tomorrow", "Thu". */
+  /** The chip: "Sat" over "10". */
+  weekday: string
+  day: string
+  look: DateLook
+  /** The chip's title and the second half of its name: "Open", "Only 2 orders left", "Fully booked", "Too soon — …". */
+  status: string
+  /** The chip's accessible name: "Sat 10 Oct, Open". */
   label: string
-  /** The chip's accessible name: "Thu, Thursday 8 Oct, sold out". */
-  ariaLabel: string
-  look: DayLook
-  /** Under the chips: "Available tomorrow · order by 6pm today · 9 of 10 left". */
+  /** Tapped while it can't be picked: "Fri 9 Oct · Fully booked". */
+  refusal: string | null
+  /** Picked: "Pickup Saturday 10 Oct · order by Friday 6pm". */
   line: string
-  /** The dot before the line. */
-  tone: LineTone
-  /** How much of the day's batch is already ordered — open days with some taken. */
-  meter: { value: number; max: number; label: string } | null
-  /** That day's price — an override changes it. */
-  price: string
-  /** What Add to cart puts in the cart; null when the day can't take the order. */
+  /** "Only 2 orders left that day" — three or fewer. */
+  fewLeft: string | null
+  /** What Add to cart puts in the cart; null when the date can't take the order. */
   target: AddTarget | null
-  /** Sold out or fully booked: the bakery's phone is offered instead of Add. */
-  call: boolean
-  /** "tomorrow" — "2 in your cart for tomorrow". */
+  /** "Saturday", "tomorrow" — "2 in your cart for Saturday". */
   when: string
 }
 
 /** The strings the client panel needs — not the whole dict. */
 export type OrderCopy = {
-  pickupDay: string
-  /** The line when no day has the item. */
-  none: string
+  chooseDate: string
   add: string
   addPlain: string
   viewCart: string
@@ -58,100 +50,93 @@ export type OrderCopy = {
   increase: string
 }
 
-type ItemIdentity = { id: string; slug: string; name: string; image: string | null }
+type ItemIdentity = { id: string; slug: string; name: string; image: string | null; pricePaise: number; noticeDays: number }
 
-function why(day: ItemDay): Why | null {
-  if (day.status === "paused") return "paused"
-  if (day.status === "cutoff") return "cutoff"
-  if (day.status === "full") return "full"
-  if (day.left <= 0) return "soldOut"
-  return null
+export type CutoffDefault = { time: string; daysBefore: number }
+
+const looks: Record<Availability, DateLook> = {
+  open: "open",
+  tooSoon: "soon",
+  past: "soon",
+  closed: "closed",
+  full: "full",
+  tooFar: "closed",
 }
 
-export function dayLook(day: ItemDay): DayLook {
-  if (!day.listed) return "off"
-  return why(day) ? "unavailable" : "open"
+/** "6pm the day before", "11am the same day", "6pm, 2 days before" — the default cutoff in words. */
+export function cutoffPhrase(cutoff: CutoffDefault, dict: StoreCopy["itemPage"]["cutoff"]): string {
+  const template = cutoff.daysBefore === 0 ? dict.sameDay : cutoff.daysBefore === 1 ? dict.dayBefore : dict.daysBefore
+  return fill(template, { time: formatClock(cutoff.time), count: cutoff.daysBefore })
 }
 
-const tones: Record<Why, LineTone> = {
-  paused: "muted",
-  cutoff: "muted",
-  full: "red",
-  soldOut: "red",
+/** "Too soon — needs 2 days’ notice"; with no notice of its own, "Too soon — orders close 6pm the day before". The legend says it too. */
+export function soonText(noticeDays: number, cutoff: CutoffDefault, dict: StoreCopy): string {
+  const s = dict.itemPage.dateStatus
+  return noticeDays === 0
+    ? fill(s.soonCutoff, { cutoff: cutoffPhrase(cutoff, dict.itemPage.cutoff) })
+    : fill(s.soon, { notice: noticeLength(noticeDays, dict.notice) })
 }
 
-/** "Today", "Tomorrow", else the short weekday — the next week never repeats one. */
-function chipLabel(date: IsoDate, today: IsoDate, dict: StoreCopy["itemPage"]): string {
-  if (date === today) return dict.labels.today
-  if (date === addDays(today, 1)) return dict.labels.tomorrow
-  return formatShortWeekday(date)
+/** "6pm today", "Friday 6pm" — a deadline (epoch ms), bakery-local. */
+function deadlineText(deadline: number, window: BookingWindow, dict: StoreCopy["itemPage"]): string {
+  const instant = new Date(deadline)
+  const time = formatClock(formatTimeIn(instant, window.timeZone))
+  const date = isoDateInZone(instant, window.timeZone)
+  return date === window.today ? fill(dict.byToday, { time }) : fill(dict.byDay, { weekday: formatWeekday(date), time })
 }
 
-/** "6pm" and "today" for "order by 6pm today" — empty when the day has no MenuDay (never for a listed day). */
-function cutoffWords(day: ItemDay, today: IsoDate, dict: StoreCopy): { time: string; when: string } {
-  return day.cutoff ? { time: formatClock(day.cutoff.time), when: relativeDay(day.cutoff.date, today, dict.days) } : { time: "", when: "" }
-}
-
-/** Each day from today through the last that has the item, as a chip with its line, price and Add target. */
-export function dayOptions(days: ItemDay[], item: ItemIdentity, today: IsoDate, dict: StoreCopy): DayOption[] {
+/** Every date of the booking window as a chip. None while ordering is paused — no date can take an order then. */
+export function dateOptions(window: BookingWindow, item: ItemIdentity, cutoff: CutoffDefault, dict: StoreCopy): DateOption[] {
+  if (window.paused) return []
   const d = dict.itemPage
-  // "— available Friday": the first other day that can take the order.
-  const nextFor = (day: ItemDay) => days.find((other) => other.date !== day.date && dayLook(other) === "open")
+  const s = d.dateStatus
+  const notices = [item.noticeDays]
+  const soon = soonText(item.noticeDays, cutoff, dict)
 
-  return days.map((day) => {
-    const label = chipLabel(day.date, today, d)
-    const date = formatLongDayLabel(day.date)
-    const name = relativeDay(day.date, today, dict.days)
-    const reason = day.listed ? why(day) : null
-    const look = dayLook(day)
-    const price = formatPaise(day.pricePaise)
-    const base = { date: day.date, label, price, when: name }
-
-    if (look === "off") {
-      return { ...base, ariaLabel: fill(d.dayStatus, { label, date, status: d.status.off }), look, line: d.line.none, tone: "muted", meter: null, target: null, call: false }
-    }
-    if (!reason) {
-      const taken = day.quantity - day.left
-      return {
-        ...base,
-        ariaLabel: fill(d.day, { label, date }),
-        look,
-        line: fill(d.line.open, { day: name, left: day.left, quantity: day.quantity, ...cutoffWords(day, today, dict) }),
-        tone: "green",
-        meter: taken > 0 ? { value: taken, max: day.quantity, label: fill(d.meter, { taken, quantity: day.quantity, day: name }) } : null,
-        target: { menuItemId: item.id, slug: item.slug, name: item.name, pricePaise: day.pricePaise, imageId: item.image, date: day.date, max: day.left },
-        call: false,
-      }
-    }
-    const line = reason === "cutoff" ? fill(d.line.cutoff, { day: name, ...cutoffWords(day, today, dict) }) : fill(d.line[reason], { day: name })
-    const next = nextFor(day)
+  return window.days.map((day) => {
+    const look = looks[dayAvailability(day, notices, window)]
+    const left = ordersLeft(day)
+    const few = look === "open" && left <= FEW_ORDERS_LEFT
+    const openStatus = !few ? s.open : left === 1 ? s.leftOne : fill(s.left, { count: left })
+    const status = look === "open" ? openStatus : look === "soon" ? soon : s[look]
+    const shortDate = formatDayLabel(day.date)
     return {
-      ...base,
-      ariaLabel: fill(d.dayStatus, { label, date, status: d.status[reason] }),
+      date: day.date,
+      weekday: formatShortWeekday(day.date),
+      day: String(Number(day.date.slice(8, 10))),
       look,
-      line: next ? fill(d.line.next, { line, day: relativeDay(next.date, today, dict.days) }) : line,
-      tone: tones[reason],
-      meter: null,
-      target: null,
-      call: reason === "soldOut" || reason === "full",
+      status,
+      label: fill(d.dateLabel, { date: shortDate, status }),
+      refusal: look === "open" ? null : fill(d.refusal, { date: shortDate, status }),
+      line: fill(d.pickup, { date: formatLongDayLabel(day.date), deadline: deadlineText(deadlineFor(day, notices, window.timeZone), window, d) }),
+      fewLeft: few ? (left === 1 ? d.fewLeftOne : fill(d.fewLeft, { count: left })) : null,
+      target:
+        look === "open"
+          ? {
+              menuItemId: item.id,
+              slug: item.slug,
+              name: item.name,
+              pricePaise: item.pricePaise,
+              imageId: item.image,
+              date: day.date,
+              max: MAX_LINE_QTY,
+              noticeDays: item.noticeDays,
+            }
+          : null,
+      when: relativeDay(day.date, window.today, dict.days),
     }
   })
 }
 
-/**
- * The day the page opens on: the one the link asked for (?day=) when it has the item, else the first that can
- * take the order, else the first that has it. Null when no day in the window has it.
- */
-export function initialDay(options: DayOption[], asked: string | undefined): IsoDate | null {
-  const listed = options.filter((option) => option.look !== "off")
-  return (listed.find((option) => option.date === asked) ?? listed.find((option) => option.look === "open") ?? listed[0])?.date ?? null
+/** The date the page opens on: the one the link asked for (?day=) when it's open, else the first open one, else none. */
+export function initialDate(options: DateOption[], asked: string | undefined): IsoDate | null {
+  return (options.find((option) => option.date === asked && option.look === "open") ?? options.find((option) => option.look === "open"))?.date ?? null
 }
 
 export function orderCopy(dict: StoreCopy): OrderCopy {
   const d = dict.itemPage
   return {
-    pickupDay: d.pickupDay,
-    none: d.line.none,
+    chooseDate: d.chooseDate,
     add: d.add,
     addPlain: d.addPlain,
     viewCart: d.viewCart,

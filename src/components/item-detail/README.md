@@ -1,34 +1,39 @@
 # item-detail
 
 The customer item page, `/menu/[slug]` — [src/app/(store)/menu/[slug]/page.tsx](<../../app/(store)/menu/[slug]/page.tsx>). Photos, name,
-price, the pickup days with what each one offers, Add to cart, then About / Details / Ingredients / Allergens and "You might also like".
-Imported from `Menu-slug.dc.html`. It renders inside the store shell ([store-shell](../store-shell/)), which brings the header (here
-its Back · title · cart row), the banner, the cart and the one `Container`. Read model:
-[src/lib/storefront/item.ts](../../lib/storefront/item.ts); what each day offers is decided on the server by
-[availability.ts](availability.ts), with the rules `placeOrder` applies at submit.
+price and notice, "On the counter today" when it is, the pickup-date strip and Add to cart (or a Call block), then About / Details /
+Ingredients / Allergens and "You might also like". Imported from `Menu-slug.dc.html` (revised for order ahead, §10R). It renders inside
+the store shell ([store-shell](../store-shell/)), which brings the header (here its Back · title · cart row), the banner, the cart and the
+one `Container`. Read model: [src/lib/storefront/item.ts](../../lib/storefront/item.ts); each date is judged by the deadline rule
+([src/lib/orders/deadline.ts](../../lib/orders/deadline.ts)) in [availability.ts](availability.ts) — the same functions `placeOrder` and
+the cart use.
 
 ## Files in this folder
 
 ```
 item-detail/
-  ItemDetail.tsx        entry (server) — the photo | panel split, the info grid, related, the phone bar's spacer
-  availability.ts       DayOption / DayLook / OrderCopy, dayOptions, initialDay, orderCopy — client-safe, pure
+  ItemDetail.tsx        entry (server) — the photo | panel split, the panel's mode (order / call), the info grid, related, the phone bar's spacer
+  availability.ts       DateOption / DateLook / OrderCopy, dateOptions, initialDate, soonText, cutoffPhrase, orderCopy — client-safe, pure
   TitleSync.tsx         "use client" — hands the item's name to the store header (hooks/usePageTitle); renders nothing
-  ItemGallery.tsx       "use client" — 4:3 snap carousel; dots below 1024px, the rail from 1024px; greyed when no day can take an order
+  ItemGallery.tsx       "use client" — 4:3 snap carousel; dots below 1024px, the rail from 1024px; never greyed
   GalleryRail.tsx       "use client" — square thumbnails beside the photo (1024px+), keeps the current one in view
   GalleryDots.tsx       the dot strip on a white pill (below 1024px)
   photos.ts             Photo, coverLoader / thumbLoader — next/image loaders onto Cloudinary
   ItemTitle.tsx         the h1 (id watched by the header) and the short description
-  OrderPanel.tsx        "use client" — the selected day: price, PickupDays, AvailabilityLine, OrderBar
-  PickupDays.tsx        "use client" — the day chips as a radio group
-  AvailabilityLine.tsx  dot + the day's line + the batch bar (ui/Meter)
-  OrderBar.tsx          "use client" — stepper + Add to cart / View cart, or Call, or Add disabled; fixed bar on phones
+  ItemPrice.tsx         price (+ "from" when call only), unit, the notice pill ("Needs 1 day’s notice", "Same day")
+  CounterBlock.tsx      green-soft "On the counter today — walk in till 4pm or call" + Call
+  CallBlock.tsx         sunken "We make this to order — …" / "No dates open right now — …" + a 48px Call
+  OrderPanel.tsx        "use client" — the picked date: DateStrip, the legend, the refusal line, AvailabilityLine, OrderBar
+  DateStrip.tsx         "use client" — the booking window's dates as a listbox of 56×64 chips
+  DateLegend.tsx        too soon / closed / fully booked swatches — always visible under the strip
+  AvailabilityLine.tsx  dot + "Pickup Saturday 10 Oct · order by Friday 6pm" + "Only 2 orders left that day"
+  OrderBar.tsx          "use client" — stepper + Add to cart / View cart; fixed bar on phones
   ItemAbout.tsx         the About text as paragraphs and lists (src/lib/menu/about.ts)
   AboutSpans.tsx        one line's bold / italic runs
   ItemIngredients.tsx   ingredient chips (ui/Tag md)
   ItemAllergens.tsx     allergen chips on a bordered card + the kitchen disclaimer — always shown
-  ItemDetails.tsx       Size / Storage rows
-  RelatedItems.tsx      "You might also like" — item-card's ItemCard without Add
+  ItemDetails.tsx       Size / Notice / Storage rows
+  RelatedItems.tsx      "You might also like" — item-card's ItemCard without a button
   README.md
 ```
 
@@ -38,22 +43,22 @@ item-detail/
 ItemDetail data=ItemPageData day=?day= dict=dict.store
 ├─ TitleSync text=name target="item-title"
 ├─ div grid  (1 col · md 2 cols · lg 3/5 + 2/5)
-│  ├─ ItemGallery photos muted
+│  ├─ ItemGallery photos
 │  │  ├─ GalleryRail                         lg+, when 2+ photos
 │  │  ├─ div[role=region carousel] → div[role=group slide] × n → next/image (coverLoader)
 │  │  └─ GalleryDots                         <lg, when 2+ photos
 │  └─ div md:sticky
-│     └─ OrderPanel heading=<ItemTitle/> options initial basePrice unit call
-│        ├─ ItemTitle                         h1#item-title, description   (server-rendered, passed in)
-│        ├─ p  price (selected day's, text-h1 o700) + unit
-│        ├─ PickupDays                        div[role=radiogroup] → button[role=radio] × days (ui/chipClasses)
-│        ├─ AvailabilityLine                  dot + line (aria-live) + Meter
-│        └─ OrderBar key=day                  Stepper lg + Button block "Add to cart · ₹480"
+│     ├─ ItemTitle · ItemPrice > Tag (ui)
+│     ├─ CounterBlock > CallLink (ui)        on today's counter, not sold out
+│     └─ OrderPanel legend=<DateLegend/>     an orderable item with an open date
+│        ├─ DateStrip                         div[role=listbox] → button[role=option] × 8
+│        ├─ DateLegend · p[role=status] refusal · AvailabilityLine
+│        └─ OrderBar key=date                 Stepper lg + Button block "Add to cart · ₹480"
 │                                             or Stepper (bound to the cart) + ButtonLink "View cart"
-│                                             or a tel: "Call +91 …"   or Button "Add to cart" disabled
+│        or CallBlock > CallLink (ui)         call only · no date open (paused included)
 ├─ div grid  About (md:order-1) · Ingredients (3) · Allergens (4) · Details (2)
-├─ RelatedItems → ItemCard × ≤4              (no offer → no Add)
-└─ div h-24 md:hidden                        room for the phone bar
+├─ RelatedItems → ItemCard × ≤4              (no button)
+└─ div h-24 md:hidden                        room for the phone bar (order mode only)
 ```
 
 ## Dependencies
@@ -61,35 +66,39 @@ ItemDetail data=ItemPageData day=?day= dict=dict.store
 | Import | Purpose |
 |---|---|
 | `@/lib/storefront/item` | `ItemPageData` |
-| `@/lib/storefront/types` | `ItemDay`, `StoreItem` |
-| `@/lib/storefront/words` | `relativeDay` |
+| `@/lib/orders/deadline` | `BookingWindow`, `dayAvailability`, `deadlineFor`, `ordersLeft`, `FEW_ORDERS_LEFT` |
+| `@/lib/storefront/words` | `relativeDay`, `noticeLength` |
 | `@/lib/menu/about` | `parseAbout`, `AboutSpan` |
 | `@/lib/menu/allergens` | `Allergen` |
-| `@/lib/cart/cart` | `AddTarget` |
+| `@/lib/cart/cart` | `AddTarget`, `MAX_LINE_QTY` |
 | `@/hooks/useCart` | `quantityOf`, `setQuantity` (inside the store-shell's CartProvider) |
 | `@/hooks/usePageTitle` | `usePageTitle` (inside the store-shell's PageTitleProvider) |
-| `@/components/item-card/ItemCard` | the related cards |
-| `@/components/ui/*` | `chipClasses` (`tone`, `size="customer"`), `Stepper` (`size="lg"`), `Button` (`size="block"`), `ButtonLink`, `Meter`, `Tag` (`size="md"`), `Icon` (`image`, `alert`, `phone`) |
-| `@/lib/calendar/cutoffs` · `@/lib/dates` | `formatClock`; `formatShortWeekday`, `formatLongDayLabel`, `addDays` |
+| `@/components/item-card/*` | `ItemCard` (related), `priceParts` |
+| `@/components/ui/*` | `CallLink`, `Stepper` (`size="lg"`), `Button` (`size="block"`), `ButtonLink`, `Tag`, `Icon` (`image`) |
+| `@/lib/calendar/cutoffs` · `@/lib/dates` | `formatClock`; `formatShortWeekday`, `formatDayLabel`, `formatLongDayLabel`, `formatWeekday`, `formatTimeIn`, `isoDateInZone` |
 | `@/lib/cloudinary` · `@/lib/money` · `@/lib/phone` · `@/lib/template` | `imageUrl`; `formatPaise`; `formatForDisplay`; `fill` |
 
-External: `next/image` (loaders, `fill`, `sizes`). Tokens: `rounded-card`, `rounded-b-sheet`, `rounded-button`, `rounded-pill`, `border-border`,
-`border-border-strong`, `bg-sunken`, `bg-o500` / `bg-o50` / `border-o200` (chips, dots), `bg-red-soft` / `text-red` / `border-red`, `bg-green`,
-`bg-muted`, `text-o700`, `text-muted`, `text-subtle`, `text-h1`, `text-h2`, `text-small`, `text-micro`, `shadow-raised`, `opacity-45`,
-`grayscale-40`, utilities `pb-safe`, `scrollbar-none`; breakpoints `xxs`, `md`, `lg`, `3xl`.
+External: `next/image` (loaders, `fill`, `sizes`). Tokens: `rounded-card`, `rounded-b-sheet`, `rounded-button`, `rounded-chip`, `rounded-pill`,
+`border-border`, `border-border-strong`, `bg-sunken`, `bg-o500` (picked date), `bg-o50` / `border-o200` (notice pill), `bg-red-soft` / `text-red`,
+`bg-green-soft` / `text-green` / `bg-green`, `text-o700`, `text-muted`, `text-subtle`, `text-h1`, `text-h2`, `text-small`, `text-small-admin`,
+`text-micro`, `shadow-raised`, utilities `pb-safe`, `scrollbar-none`; breakpoints `xxs`, `md`, `lg`, `3xl`.
 
 ## Props
 
 ```ts
 ItemDetail       { data: ItemPageData; day: string | undefined; dict: Dict["store"] }
-ItemGallery      { photos: Photo[]; name: string; muted: boolean; dict: { photos; photo; showPhoto } }
+ItemGallery      { photos: Photo[]; name: string; dict: { photos; photo; showPhoto } }
 GalleryRail      { photos: Photo[]; index: number; onShow: (index) => void; label: string }
 GalleryDots      { count: number; index: number }
 ItemTitle        { id: string; name: string; description: string }
-OrderPanel       { heading: ReactNode; options: DayOption[]; initial: IsoDate | null; basePrice; unit; name; call: { href; label } | null; dict: OrderCopy }
-PickupDays       { options: DayOption[]; selected: IsoDate | null; onSelect: (date) => void; label: string }
-AvailabilityLine { line: string; tone: LineTone; meter: DayOption["meter"] }
-OrderBar         { day: DayOption | null; reason: string; name: string; call: { href; label } | null; dict: OrderCopy }
+ItemPrice        { price: string; unit: string; notice: string | null }
+CounterBlock     { text: string; phone: string | null; callLabel: string; callAria: string }
+CallBlock        { text: string; phone: string | null; callLabel: string }
+OrderPanel       { options: DateOption[]; initial: IsoDate | null; legend: ReactNode; name: string; dict: OrderCopy }
+DateStrip        { options: DateOption[]; selected: IsoDate | null; onSelect; onRefuse: (text) => void; label: string }
+DateLegend       { soon: string; closed: string; full: string }
+AvailabilityLine { line: string; fewLeft: string | null }
+OrderBar         { day: DateOption | null; name: string; dict: OrderCopy }
 TitleSync        { text: string; target: string }
 ItemAbout        { text: string; title: string; className? }
 ItemIngredients  { ingredients: string[]; title: string; className? }
@@ -97,76 +106,82 @@ ItemAllergens    { allergens: Allergen[]; labels: Dict["store"]["allergens"]; di
 ItemDetails      { rows: { label; value }[]; title: string; className? }
 RelatedItems     { items: StoreItem[]; title: string; dict: Dict["store"]["item"] }
 
-DayOption        { date; label; ariaLabel; look: "open" | "unavailable" | "off"; line; tone: "green" | "red" | "muted";
-                   meter: { value; max; label } | null; price; target: AddTarget | null; call: boolean; when }
+DateOption       { date; weekday: "Sat"; day: "10"; look: "open" | "soon" | "closed" | "full"; status; label; refusal: string | null;
+                   line; fewLeft: string | null; target: AddTarget | null; when }
 ```
 
-The client components get `OrderCopy` (eight strings) and per-day data, never the whole dict.
+The client components get `OrderCopy` (seven strings) and per-date data, never the whole dict.
 
 ## Dictionary contract
 
 ```json
 "store": {
   "itemPage": {
-    "metaTitle", "photos", "photo", "showPhoto", "pickupDay", "labels": { "today", "tomorrow" },
-    "day": "{label}, {date}", "dayStatus": "{label}, {date}, {status}",
-    "status": { "soldOut", "full", "cutoff", "paused", "off" },
-    "line": { "open": "Available {day} · order by {time} {when} · {left} of {quantity} left",
-              "soldOut", "full", "cutoff", "paused", "next": "{line} — available {day}", "none" },
-    "meter", "add": "Add to cart · {total}", "addPlain", "viewCart", "inCart", "call": "Call {phone}",
-    "about", "ingredients", "allergens", "noAllergens", "disclaimer", "details", "size", "storage", "related"
+    "metaTitle", "photos", "photo", "showPhoto", "needs": "Needs {notice}", "chooseDate": "Choose a pickup date",
+    "dateLabel": "{date}, {status}", "dateStatus": { "open", "left", "leftOne", "soon": "Too soon — needs {notice}",
+    "soonCutoff": "Too soon — orders close {cutoff}", "closed", "full" },
+    "cutoff": { "sameDay", "dayBefore", "daysBefore" }, "refusal": "{date} · {status}",
+    "pickup": "Pickup {date} · order by {deadline}", "byToday": "{time} today", "byDay": "{weekday} {time}", "fewLeft", "fewLeftOne",
+    "counter": { "till", "tillNoPhone", "open", "openNoPhone" }, "counterCall", "callOnly", "noDates",
+    "add": "Add to cart · {total}", "addPlain", "viewCart", "inCart", "call": "Call {phone}",
+    "about", "ingredients", "allergens", "noAllergens", "disclaimer", "details", "size", "notice", "noticeSameDay", "noticeCallOnly",
+    "storage", "related"
   },
   "allergens": { "GLUTEN", "DAIRY", "EGGS", "NUTS", "PEANUTS", "SOY", "SESAME" }
 }
 ```
 
-Also reads `store.item` (`units`, `decrease`, `increase`, and the related cards' strings) and `store.days`.
+Also reads `store.notice` (the notice words), `store.item` (`units`, `from`, `decrease`, `increase`, the related cards) and `store.days`.
 
 ## How it works
 
-- **Rendered per request** — `loadItem` calls `connection()` (the store layout does too), so quantities left are never stale. The runbook
-  asked for `generateStaticParams` + a short `revalidate`; the layout makes every store route dynamic, and a cached "4 left" would
-  mislead. Inactive and archived items are a 404 — they can't be ordered. `loadItem` is wrapped in `cache()`, so `generateMetadata`
-  and the page share one read.
-- **The days** — today through the last day of the order-ahead window whose menu has the item (today and tomorrow always). Each day's
-  status comes from `dayStatus` (src/lib/storefront/status.ts), the same function the landing page uses: paused › closed › past cutoff
-  › full › open. `dayOptions` turns each into a chip:
-  - **open** (warm; selected = o500 fill, ink text) — on the menu, taking orders, some left. Line: "Available tomorrow · order by 6pm
-    today · 9 of 12 left", plus the bar once some are ordered.
-  - **unavailable** (red, struck through) — on the menu but sold out, fully booked, past its cutoff or paused. Line says which, and
-    "— available Tuesday" when another day can take it.
-  - **off** (disabled) — not on that day's menu (closed, unplanned, or the owner didn't put it on).
-- **Which day opens** — `?day=` when that day has the item (the landing cards add it, so the page opens on the tab or card you came
-  from), else the first that can take the order, else the first that has it, else none ("Not on the menu this week").
-- **Price** follows the selected day — the calendar can override it per day. Display only: the order pipeline prices the order.
-- **Add to cart** — pick a quantity (1…what's left), then "Add to cart · ₹480". Once the cart holds the item for that day, the stepper
-  edits the cart (0 takes it out) and the button becomes View cart, which takes focus; a status line tells screen readers "2 in your
-  cart for tomorrow". Adding for a day other than the cart's goes through CartProvider's "Switch to …?" dialog.
-- **Can't add** — sold out or fully booked: "Call +91 …" (a tel: link) when the bakery has a public phone, instead of the design's
-  "Notify me" (nothing exists to collect or send those alerts — owner's call, 4 Oct). Otherwise Add is disabled. On phones the line is
-  repeated in the bar, since the chips are out of sight.
+- **Rendered per request** — `loadItem` calls `connection()` (the store layout does too): orders taken and every deadline move with the
+  clock. Inactive and archived items are a 404 — they can't be ordered. `loadItem` is wrapped in `cache()`, so `generateMetadata` and
+  the page share one read.
+- **The dates** — the booking window, today … today + `orderAheadDays` (8 chips), from `loadBookingWindow` (unplanned dates take the
+  Settings defaults and the opening hours). `dateOptions` judges each with `dayAvailability(day, [noticeDays], window)`:
+  - **open** — white; picked: the o500 fill with ink. Title "Open", or "Only 2 orders left" when three or fewer remain.
+  - **too soon** — grey: the item's notice (or the day's own cutoff) has passed. Title "Too soon — needs 2 days’ notice"; an item with
+    no notice says when the default cutoff closes ("Too soon — orders close 6pm the day before").
+  - **closed** — grey, the number struck through. **fully booked** — red-soft.
+  
+  Tapping one that can't be picked keeps the current date and says why in red ("Fri 9 Oct · Fully booked", `role=status`). Arrow
+  keys, Home and End move through every date, picking the open ones. The legend is always visible.
+- **Which date opens** — `?day=` when that date is open, else the first open one.
+- **The line** — "Pickup Saturday 10 Oct · order by Friday 6pm" ("order by 6pm today" when the deadline is today) — the deadline rule
+  for this item — plus "Only 2 orders left that day" in the accent when three or fewer remain.
+- **Price** — always the base price: online orders are priced at it (placeOrder); per-day overrides are the counter's. Call only:
+  "from ₹1,500". The notice pill: "Needs 1 day’s notice" / "Needs n days’ notice" / "Same day"; none for a call-only item.
+- **Add to cart** — pick a quantity (1…99, the cart's cap), then "Add to cart · ₹480". Once the cart holds the item for that date, the
+  stepper edits the cart (0 takes it out) and the button becomes View cart, which takes focus; a status line tells screen readers "2 in
+  your cart for Saturday". Adding for a date other than the cart's goes through CartProvider's "Switch to …?" dialog. The cart line
+  keeps the item's notice, for the cart's own deadline check.
+- **Call instead** — a call-only item (`orderable` off): no pill, strip or bar — "We make this to order — call us to talk it through."
+  and a 48px Call. No date open (every one too soon, closed or booked, or ordering paused): "No dates open right now — call us and we’ll
+  see what we can do." and Call. Without a public phone, the line alone.
+- **On the counter today** — when today's counter has it and it isn't sold out: a green-soft line, "walk in till 4pm" from today's
+  opening hours, and a Call link when there's a phone.
+- **Details** — Size, **Notice** ("Needs 2 days’ notice", "Same day — order by 6pm the day before", "Made to order — call us"), Storage.
 - **Phone bar** — `OrderBar` is one element: `fixed` at the bottom under 768px (`pb-safe`, `shadow-raised`), static in the panel from
   768px. The shell's View cart bar stands down on `/menu/*` so two never stack; `ItemDetail` ends with a spacer for it.
 - **Header** — `TitleSync` gives the item's name to the store header, which fades it in (150ms, opacity + 4px rise) once the h1 has
   scrolled under it. Back returns to the previous page of the visit, or opens the menu after a direct visit.
 - **Gallery** — a horizontal snap scroller; the current photo is worked out from `scrollLeft`. Thumbnails and dots follow it; a
-  thumbnail scrolls it (smoothly, unless reduced motion). Images go through `next/image` with Cloudinary loaders, so the srcset is
-  real widths; the first photo is eager with high fetch priority. Greyed (45%, greyscale 40%) when no day in the window can take an
-  order, like the menu's "Not today" cards.
-- **About** — the form stores plain text with `**bold**`, `_italic_` and "• " lines; `parseAbout` makes paragraphs (one per line) and
-  lists. Never HTML.
+  thumbnail scrolls it (smoothly, unless reduced motion). Images go through `next/image` with Cloudinary loaders; the first photo is
+  eager with high fetch priority. It never greys (§10R — every item can be ordered or called about).
+- **About** — the form stores plain text with `**bold**`, `_italic_` and "• " lines; `parseAbout` makes paragraphs and lists. Never HTML.
 - **Allergens** always render: chips, or "No allergens declared.", then the kitchen disclaimer.
-- **Related** — up to four other active items: those on an open day this week first, then the same category, then the menu's order.
-- Server: `ItemDetail`, `ItemTitle`, `AvailabilityLine`, `GalleryDots`, the info sections, `RelatedItems`. Client: `TitleSync`,
-  `ItemGallery`, `GalleryRail`, `OrderPanel`, `PickupDays`, `OrderBar`.
+- **Related** — up to four other active items: orderable ones first, then the same category, then the menu's order.
+- Server: `ItemDetail`, `ItemTitle`, `ItemPrice`, `CounterBlock`, `CallBlock`, `DateLegend`, `AvailabilityLine`, `GalleryDots`, the info
+  sections, `RelatedItems`. Client: `TitleSync`, `ItemGallery`, `GalleryRail`, `OrderPanel`, `DateStrip`, `OrderBar`.
 
 ## Responsive behavior
 
 | Width | Effect |
 |---|---|
-| base (320px+) | one column; gallery full-bleed under the header, only its bottom corners rounded, dots; Add to cart in a fixed bottom bar; info sections stacked About → Ingredients → Allergens → Details; related as a 168px snap row |
+| base (320px+) | one column; gallery full-bleed under the header, only its bottom corners rounded, dots; the date strip scrolls and bleeds to the screen edge; Add to cart in a fixed bottom bar; info sections stacked About → Ingredients → Allergens → Details; related as a 168px snap row |
 | `xxs` 375px | the Add button carries the total ("Add to cart · ₹480") |
-| `md` 768px | photo and panel side by side, 1 : 1 (the design's 58 : 42 leaves Add too narrow for "Add to cart · ₹1,200" at 768–820px); the panel sticks under the header; Add sits inline; info two across; related cards 200px |
+| `md` 768px | photo and panel side by side, 1 : 1; the panel sticks under the header; the strip stays inside the panel (scrolls there); Add sits inline; info two across; related cards 200px |
 | `lg` 1024px | 3 : 2 split, 48px gap; thumbnail rail (96px) replaces the dots; related four across |
 | `3xl` 1920px | rail 112px; width follows the shared Container (the design capped at 1280px) |
 
@@ -176,20 +191,19 @@ Test at `xxxs` (320px) and `3xl` (1920px+) any time you touch this component.
 
 | Goal | File |
 |---|---|
-| Any wording | `src/content/en.json` → `store.itemPage`, `store.allergens` |
-| What a day's chip / line / CTA says | `dayOptions` in [availability.ts](availability.ts) |
-| Which day opens first | `initialDay` in [availability.ts](availability.ts) |
-| Which days show, related ranking | `loadItem` in [src/lib/storefront/item.ts](../../lib/storefront/item.ts) |
-| How a day's status is judged | `dayStatus` in [src/lib/storefront/status.ts](../../lib/storefront/status.ts) — shared with the landing page |
+| Any wording | `src/content/en.json` → `store.itemPage`, `store.notice`, `store.allergens` |
+| How a date is judged | `dayAvailability` / `deadlineFor` in [src/lib/orders/deadline.ts](../../lib/orders/deadline.ts) — shared with the cart and placeOrder |
+| What a chip / line says, which date opens | `dateOptions`, `initialDate` in [availability.ts](availability.ts) |
+| Chip looks | `chips` in [DateStrip.tsx](DateStrip.tsx) |
+| Related ranking, the counter check | `loadItem` in [src/lib/storefront/item.ts](../../lib/storefront/item.ts) |
 | About formatting | [src/lib/menu/about.ts](../../lib/menu/about.ts) (and the form's `AboutField`) |
-| Chip looks | `chipClasses` tones in `src/components/ui/Chip.tsx` (shared with admin filters) |
 | Photo sizes / crops | [photos.ts](photos.ts) and the `sizes` in [ItemGallery.tsx](ItemGallery.tsx) |
 | The phone bar | `bar` in [OrderBar.tsx](OrderBar.tsx); the shell's `CartBar` hides on `/menu/*` |
 
 ## Do not
 
-- Don't decide availability in the browser — `DayOption`s are server data; placeOrder re-checks everything at submit anyway.
-- Don't send the shown price anywhere but the cart's display snapshot.
-- Don't add a "Notify me" button until something can actually notify.
+- Don't judge a date in the browser — `DateOption`s are server data from the deadline rule; placeOrder re-checks everything at submit.
+- Don't show a per-day price here — online orders are priced at the base price.
+- Don't add a month view or "Later date" — the booking window is 7 days (owner's decision, 4 Oct).
 - Don't put the CTA in two elements for two breakpoints — the one bar changes position by CSS.
 - No inline `style`, no hardcoded strings, one component per file.

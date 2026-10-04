@@ -2,18 +2,9 @@ import type { IsoDate } from "@/lib/dates"
 import type { PriceUnit } from "@/lib/menu/units"
 
 /**
- * What the customer screens are shown about a fulfilment day and its items. Client-safe — the read models
- * that fill these live beside it (`landing.ts`, `item.ts`, `shell.ts`).
+ * What the customer screens are shown about menu items and today's counter (§10R). Client-safe — the read models that
+ * fill these live beside it (`landing.ts`, `item.ts`, `counter.ts`, `shell.ts`).
  */
-
-/**
- * Whether a day takes orders, judged the way `placeOrder` will judge the submit (src/lib/orders/place.ts),
- * in its order: paused, closed, past cutoff, full. `unplanned` — no MenuDay row yet.
- */
-export type DayStatus = "open" | "full" | "cutoff" | "closed" | "unplanned" | "paused"
-
-/** "Selling fast" / "Only 2 left" from here down. */
-export const FEW_LEFT = 3
 
 export type StoreItem = {
   id: string
@@ -23,52 +14,37 @@ export type StoreItem = {
   image: string | null
   /** The owner's alt text for the cover, "" when none — the card's name sits beside it either way. */
   imageAlt: string
-  /** This day's price (override, else base) — display only; the server prices the order. */
+  /** Display only. The menu shows the base price (orders are priced at it); Fresh today shows the counter's price for the day. */
   pricePaise: number
   priceUnit: PriceUnit
+  /** Off → call only: "Call to order", never in a cart. */
+  orderable: boolean
+  /** Days of notice an online order needs (orders/deadline.ts). */
+  noticeDays: number
 }
 
-export type DayItem = StoreItem & {
-  /** quantityAvailable − quantityOrdered, never below 0. */
-  left: number
-}
+/** One of today's counter-items — Fresh today. */
+export type CounterItem = StoreItem & { soldOut: boolean }
 
-export type StoreDay = {
-  date: IsoDate
-  status: DayStatus
-  /** Order requests the day still accepts: overbookLimit − live orders, never below 0. */
-  left: number
-  /** overbookLimit — what `taken` is measured against on the capacity bar. */
-  capacity: number
-  /** Live orders (pending or verified). */
-  taken: number
-  /** When ordering closes, bakery-local: its date and "18:00". Null when there's no MenuDay. */
-  cutoff: { date: IsoDate; time: string } | null
-  /** The owner's line for customers: the closure note on a closed day, else the day's public note. */
-  note: string | null
-  /** In the bakery's category order, then by name. Empty on a closed or unplanned day. */
-  items: DayItem[]
-}
-
-/** One item on one day of the order-ahead window — a pickup-day chip on the item page. */
-export type ItemDay = {
-  date: IsoDate
-  status: DayStatus
-  /** On that day's menu. False when the day is closed or unplanned, or the owner didn't put the item on it. */
-  listed: boolean
-  /** That day's price (override, else base) — display only. */
-  pricePaise: number
-  /** quantityAvailable − quantityOrdered, never below 0. 0 when not listed. */
-  left: number
-  /** quantityAvailable — what `left` is measured against. 0 when not listed. */
-  quantity: number
-  /** Null when there's no MenuDay. */
-  cutoff: { date: IsoDate; time: string } | null
-}
-
+/** A card in "Everything we bake". */
 export type CatalogueItem = StoreItem & {
-  /** The first open day after tomorrow that has it, within the order-ahead window — "Back Thursday". */
-  next: IsoDate | null
+  /** The category's slug, for the filter chips. */
+  category: string | null
+  /** On today's counter, sold out or not — "On the counter today". */
+  onCounter: boolean
+}
+
+/** `on` counter-items to walk in for · `soldOut` every one gone · `none` open, orders only · `closed` closed today. */
+export type FreshState = "on" | "soldOut" | "none" | "closed"
+
+export type FreshToday = {
+  state: FreshState
+  /** Today's counter-items, in the menu's order. Empty when closed. */
+  items: CounterItem[]
+  /** When the counter closes today, "16:00" — the opening hours' closing time. Null until the hours are saved. */
+  closes: string | null
+  /** Closed today: the next date the bakery opens, within the order-ahead window — "back Tuesday". */
+  back: IsoDate | null
 }
 
 /** The strip across the top of every customer screen. Pause beats the announcement. */

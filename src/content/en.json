@@ -1506,8 +1506,6 @@
       "days": "{count} days’ notice"
     },
     "item": {
-      "add": "Add",
-      "addLabel": "Add {name}",
       "decrease": "One fewer {name}",
       "increase": "One more {name}",
       "units": {
@@ -1516,50 +1514,46 @@
         "PER_KG": "per kg",
         "PER_SLICE": "per slice"
       },
-      "soldOut": "Sold out",
-      "fewLeft": "Only {count} left",
-      "notToday": "Not today",
-      "forDay": "For {day}",
-      "reasons": {
-        "full": "Every order for {day} is taken",
-        "cutoff": "Orders for {day} closed at {time} {when}",
-        "closed": "Not baking {day}",
-        "unplanned": "The menu for {day} isn’t up yet",
-        "paused": "Ordering is paused",
-        "soldOut": "None left for {day}",
-        "back": "Back {day}",
-        "notThisWeek": "Not on the menu this week"
-      }
+      "from": "from {price}",
+      "soldOut": "Sold out"
     },
     "itemPage": {
       "metaTitle": "{name} · {bakery}",
       "photos": "Photos of {name}",
       "photo": "Photo {index} of {count}",
       "showPhoto": "Show photo {index} of {count}",
-      "pickupDay": "Pickup day",
-      "labels": {
-        "today": "Today",
-        "tomorrow": "Tomorrow"
+      "needs": "Needs {notice}",
+      "chooseDate": "Choose a pickup date",
+      "dateLabel": "{date}, {status}",
+      "dateStatus": {
+        "open": "Open",
+        "left": "Only {count} orders left",
+        "leftOne": "Only 1 order left",
+        "soon": "Too soon — needs {notice}",
+        "soonCutoff": "Too soon — orders close {cutoff}",
+        "closed": "Closed",
+        "full": "Fully booked"
       },
-      "day": "{label}, {date}",
-      "dayStatus": "{label}, {date}, {status}",
-      "status": {
-        "soldOut": "sold out",
-        "full": "fully booked",
-        "cutoff": "ordering closed",
-        "paused": "ordering paused",
-        "off": "not on the menu"
+      "cutoff": {
+        "sameDay": "{time} the same day",
+        "dayBefore": "{time} the day before",
+        "daysBefore": "{time}, {count} days before"
       },
-      "line": {
-        "open": "Available {day} · order by {time} {when} · {left} of {quantity} left",
-        "soldOut": "Sold out {day}",
-        "full": "Fully booked {day}",
-        "cutoff": "Orders for {day} closed at {time} {when}",
-        "paused": "Ordering is paused",
-        "next": "{line} — available {day}",
-        "none": "Not on the menu this week"
+      "refusal": "{date} · {status}",
+      "pickup": "Pickup {date} · order by {deadline}",
+      "byToday": "{time} today",
+      "byDay": "{weekday} {time}",
+      "fewLeft": "Only {count} orders left that day",
+      "fewLeftOne": "Only 1 order left that day",
+      "counter": {
+        "till": "On the counter today — walk in till {time} or call",
+        "tillNoPhone": "On the counter today — walk in till {time}",
+        "open": "On the counter today — walk in or call",
+        "openNoPhone": "On the counter today — walk in"
       },
-      "meter": "{taken} of {quantity} already ordered for {day}",
+      "counterCall": "Call",
+      "callOnly": "We make this to order — call us to talk it through.",
+      "noDates": "No dates open right now — call us and we’ll see what we can do.",
       "add": "Add to cart · {total}",
       "addPlain": "Add to cart",
       "viewCart": "View cart",
@@ -1572,6 +1566,9 @@
       "disclaimer": "Made in a kitchen that handles nuts, dairy and gluten.",
       "details": "Details",
       "size": "Size",
+      "notice": "Notice",
+      "noticeSameDay": "Same day — order by {cutoff}",
+      "noticeCallOnly": "Made to order — call us",
       "storage": "Storage",
       "related": "You might also like"
     },
@@ -1751,48 +1748,34 @@
       "fallback": "Baked this morning, just round the corner",
       "sub": "Order ahead, then pay when you collect."
     },
-    "dayStrip": {
-      "label": "Choose a day",
-      "today": "Baking today",
-      "tomorrow": "Tomorrow",
-      "status": {
-        "open": "Available",
-        "few": "Selling fast",
-        "full": "Fully booked",
-        "cutoff": "Ordering closed",
-        "closed": "Closed",
-        "unplanned": "Menu soon",
-        "paused": "Paused"
+    "freshToday": {
+      "title": "Fresh today",
+      "pill": {
+        "on": "On the counter till {time}",
+        "onAllDay": "On the counter today",
+        "soldOut": "All sold out",
+        "none": "Orders only today",
+        "closed": "Closed today"
       },
-      "left": "{count} orders left · order by {time} {when}",
-      "leftOne": "1 order left · order by {time} {when}",
-      "cutoff": "Orders for {day} closed at {time} {when}.",
-      "full": "Every order for {day} is taken.",
-      "closed": "We aren’t baking for orders {day}.",
-      "unplanned": "The menu for {day} isn’t up yet.",
-      "paused": "Ordering is paused for now.",
-      "meter": "{taken} of {capacity} orders taken",
-      "empty": "Nothing on the menu {day} yet."
+      "walkIn": "Walk in, or call and we’ll keep some aside.",
+      "walkInUntil": "Walk in until {time}.",
+      "walkInOnly": "Walk in while we’re open.",
+      "soldOut": "The counter’s empty for today — order ahead from the menu below.",
+      "none": "Nothing extra on the counter today — we’re baking orders. Order ahead from the menu below.",
+      "closed": "Closed today — back {day}. You can still order ahead from the menu below.",
+      "closedNoBack": "Closed today. You can still order ahead from the menu below.",
+      "call": "Call {phone}"
     },
-    "howItWorks": {
-      "title": "How it works",
-      "steps": [
-        {
-          "title": "Pick your items",
-          "text": "Today’s tray or tomorrow’s bake."
-        },
-        {
-          "title": "Send your order",
-          "text": "Just your name and phone number. No account, no payment."
-        },
-        {
-          "title": "We call to confirm",
-          "text": "Within 2 hours. You pay when you collect."
-        }
-      ]
-    },
-    "menuGrid": {
-      "title": "Everything we bake"
+    "menu": {
+      "title": "Everything we bake",
+      "filterLabel": "Filter by category",
+      "all": "All",
+      "other": "Other",
+      "onCounter": "On the counter today",
+      "choose": "Choose date",
+      "chooseLabel": "Choose a date for {name}",
+      "call": "Call to order",
+      "callLabel": "Call to order {name}"
     },
     "visitUs": {
       "title": "Visit us",
