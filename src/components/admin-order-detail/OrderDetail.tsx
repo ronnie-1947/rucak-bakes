@@ -4,8 +4,11 @@ import { buttonClasses } from "@/components/ui/Button"
 import { Icon } from "@/components/ui/icons/Icon"
 import { Notice } from "@/components/ui/Notice"
 import { StatusBadge } from "@/components/ui/StatusBadge"
+import { Tag } from "@/components/ui/Tag"
 import type { OrderDetailData } from "@/lib/orders/queries"
+import { fill } from "@/lib/template"
 import { ActionBar } from "./ActionBar"
+import { AddedBar } from "./AddedBar"
 import { ActivityLog } from "./ActivityLog"
 import { ClosedBlock } from "./ClosedBlock"
 import { copyText } from "./copy-text"
@@ -24,6 +27,8 @@ type OrderDetailProps = {
   variant: DetailVariant
   /** Page variant: where "All orders" goes back to. */
   backHref?: string
+  /** Page variant, arriving from New order (`?added=1`) — the green "added" line. */
+  added?: boolean
 }
 
 const frames: Record<DetailVariant, string> = {
@@ -46,7 +51,7 @@ const headers: Record<DetailVariant, string> = {
  * where it can't be missed, the lines, the team note, and the one next step. Shared by the order page
  * and the 2xl split pane; status changes go through its own OrderActionsProvider.
  */
-export function OrderDetail({ order, dict, variant, backHref }: OrderDetailProps) {
+export function OrderDetail({ order, dict, variant, backHref, added = false }: OrderDetailProps) {
   const d = dict.orderDetail
   const target = { id: order.id, code: order.code, name: order.customer.name }
   const Heading = variant === "page" ? "h1" : "h2"
@@ -69,11 +74,15 @@ export function OrderDetail({ order, dict, variant, backHref }: OrderDetailProps
         <header className={headers[variant]}>
           <Heading className="text-h1">{order.code}</Heading>
           <StatusBadge status={order.status} label={dict.orderStatus[order.status]} />
+          {order.byStaff ? <Tag>{fill(d.byStaff, { name: order.byStaff })}</Tag> : null}
           <span className="flex-1" />
           <OrderMenu target={target} status={order.status} copyText={copyText(order, dict)} dict={d} />
         </header>
 
         <div className={bodies[variant]}>
+          {added && order.byStaff ? (
+            <AddedBar orderId={order.id} code={order.code} name={order.customer.name.trim().split(/\s+/)[0]} dict={d} />
+          ) : null}
           {order.isSuspected ? <Notice tone="error">{d.suspected}</Notice> : null}
           {order.notificationFailed ? <Notice tone="warm">{d.unnotified}</Notice> : null}
           {order.closed ? <ClosedBlock closed={order.closed} dict={d} /> : <Timeline timeline={order.timeline} status={order.status} dict={dict} />}

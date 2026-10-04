@@ -18,6 +18,7 @@ admin-order-detail/
   ActivityLog.tsx     <details> — placed / verified by / ready / collected / cancelled by, from the order's timestamps
   OrderMenu.tsx       "use client" — ⋯ Print, Copy details, Cancel order
   ActionBar.tsx       "use client" — over-capacity line, then the exit (Cancel / No-show) and the next step
+  AddedBar.tsx        "use client" — from New order (?added=1): "BK-4830 added for Meera — verified" + Add another (UndoBar)
   copy-text.ts        the plain-text summary for "Copy details"
   types.ts            AdminCopy, DetailCopy, DetailVariant
   README.md
@@ -29,14 +30,15 @@ admin-order-detail/
 OrderActionsProvider
 └─ article (frames[variant])
    ├─ Link "All orders" (page only)                 .back
-   ├─ header: h1|h2 code · StatusBadge · OrderMenu   .print · .copy · .cancelOrder
+   ├─ header: h1|h2 code · StatusBadge · Tag "By staff · Anjali" · OrderMenu   .byStaff · .print · .copy · .cancelOrder
    ├─ body
+   │  ├─ AddedBar (page, ?added=1, staff order)     .added · .addAnother · .dismiss
    │  ├─ Notice error (isSuspected)                 .suspected
    │  ├─ Notice warm (notificationFailed)           .unnotified
    │  ├─ ClosedBlock | Timeline                     .closed* | orderStatus.* · .now
    │  ├─ CustomerCard → OrderTagList                .callButton · .whatsapp · .firstOrder · .history* · .viewCustomer
    │  ├─ CustomerNote (if any)                      .customerNote
-   │  ├─ ItemsTable                                 .itemsTable.* · .quantity · .subtotal · .deliveryFee · .total
+   │  ├─ ItemsTable                                 .itemsTable.* · .quantity · .customPrice · .menuPrice · .subtotal · .deliveryFee · .totalAtPickup
    │  ├─ FulfilmentFacts                            .facts.*
    │  ├─ InternalNote                               .internalNote* · .save · .saved · .saveFailed
    │  └─ ActivityLog                                .activity · .activityKinds.*
@@ -61,7 +63,8 @@ Tokens: `border-o500` + `bg-o50` (customer note), `bg-green`/`border-green` (don
 ## Props
 
 ```ts
-OrderDetail     { order: OrderDetailData; dict: AdminCopy; variant: "page" | "pane"; backHref? }
+OrderDetail     { order: OrderDetailData; dict: AdminCopy; variant: "page" | "pane"; backHref?; added? }
+AddedBar        { orderId; code; name; dict: DetailCopy }
 Timeline        { timeline; status; dict }
 ClosedBlock     { closed; dict: DetailCopy }
 CustomerCard    { customer; dict }
@@ -82,6 +85,10 @@ ActionBar       { target; status; overCapacity; completedAt; dict; variant }
   the provider's CapacityDialog still confirms.
 - **Customer note** never truncates or collapses — it may be an allergy.
 - **Activity** is derived from `createdAt`, `verifiedAt`(+by; no `by` = auto-verified), `readyAt`, `completedAt`, `cancelledAt`(+by).
+  A staff order (7R.5) starts "Added by Anjali" instead of "Order placed by customer".
+- **Staff orders** — the header carries "By staff · {first name}". A line priced by hand shows a "Custom price" tag, its price in
+  o700 and "menu ₹1,500" under it (`OrderItem.menuPricePaise`). Arriving from New order (`?added=1`) the page shows AddedBar;
+  dismissing it drops `?added` from the URL, a reload keeps it.
 - **No-show trail** — the schema has one "closed unfulfilled" trail: `cancelledAt` / `cancelledById` / `cancellationNote` record a
   no-show too; `status` says which.
 - **Internal note** — one shared text per order (the schema's `internalNote`), not the design's threaded list.

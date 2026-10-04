@@ -54,6 +54,17 @@ export function hoursRuns(hours: OpeningHours): HoursRun[] {
   return runs
 }
 
+/** Pickup times a day's hours offer: every half hour from opening to the last one before closing — 07:00 … 15:30 for 7–4. */
+export function pickupSlots(day: DayHours): string[] {
+  if (!day.open) return []
+  const minutes = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5))
+  const slots: string[] = []
+  for (let at = Math.ceil(minutes(day.from) / 30) * 30; at < minutes(day.to); at += 30) {
+    slots.push(`${String(Math.floor(at / 60)).padStart(2, "0")}:${at % 60 ? "30" : "00"}`)
+  }
+  return slots
+}
+
 /** An open day must close after it opens. */
 export function hoursProblem(day: DayHours): boolean {
   return day.open && day.to <= day.from

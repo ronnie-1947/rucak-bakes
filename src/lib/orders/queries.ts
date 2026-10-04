@@ -1,6 +1,7 @@
-import { FulfilmentType, OrderStatus, Prisma } from "@/generated/prisma/client"
+import { FulfilmentType, OrderSource, OrderStatus, Prisma } from "@/generated/prisma/client"
 import { addDays, formatDayLabel, formatDayTimeIn, formatTimeIn, fromDbDate, type IsoDate, todayIn, toDbDate } from "@/lib/dates"
 import { prisma } from "@/lib/db"
+import { asPriceUnit, type PriceUnit } from "@/lib/menu/units"
 import { type OrderFilters, selectedDates } from "@/lib/orders/filters"
 import { FLOW, VERIFIED_STATUSES } from "@/lib/orders/status"
 import { formatForDisplay } from "@/lib/phone"
@@ -26,7 +27,14 @@ export type OrderTags = {
   note: boolean
   /** A blocked number. The order was accepted; staff see it greyed and flagged. */
   suspected: boolean
+  /** Entered by staff (7R.5) — the first name of who did: "By staff · Anjali". */
+  staff: string | null
+  /** A line priced by hand. */
+  customPrice: boolean
 }
+
+/** A line staff priced by hand — "Custom birthday cake ₹1,200 per kg · menu ₹1,500". */
+export type CustomLine = { name: string; unitPricePaise: number; menuPricePaise: number; unit: PriceUnit }
 
 export type OrderRowData = {
   id: string
@@ -41,6 +49,7 @@ export type OrderRowData = {
   fulfilmentType: FulfilmentType
   pickupTime: string | null
   tags: OrderTags
+  customLines: CustomLine[]
 }
 
 export type OrderGroupData = {
@@ -68,10 +77,29 @@ function relativeDay(date: IsoDate, today: IsoDate): RelativeDay {
   return null
 }
 
+type TaggedLine = { name: string; unitPricePaise: number; menuPricePaise: number | null; menuItem: { priceUnit: string } }
+
+/** The selection customLinesOf and tagsOf read from an order's lines and its creator. */
+const lineFacts = { name: true, unitPricePaise: true, menuPricePaise: true, menuItem: { select: { priceUnit: true } } } as const
+
+function customLinesOf(items: TaggedLine[]): CustomLine[] {
+  return items
+    .filter((item) => item.menuPricePaise !== null)
+    .map((item) => ({ name: item.name, unitPricePaise: item.unitPricePaise, menuPricePaise: item.menuPricePaise as number, unit: asPriceUnit(item.menuItem.priceUnit) }))
+}
+
+/** "Anjali Rao" → "Anjali". */
+function firstName(name: string): string {
+  return name.trim().split(/\s+/)[0] ?? name
+}
+
 function tagsOf(order: {
   fulfilmentType: FulfilmentType
   customerNote: string | null
   isSuspected: boolean
+  source: OrderSource
+  createdBy: { name: string } | null
+  items: { menuPricePaise: number | null }[]
   customer: { completedCount: number; isTrusted: boolean; noShowCount: number }
 }): OrderTags {
   return {
@@ -81,6 +109,8 @@ function tagsOf(order: {
     delivery: order.fulfilmentType === FulfilmentType.DELIVERY,
     note: Boolean(order.customerNote),
     suspected: order.isSuspected,
+    staff: order.source === OrderSource.STAFF && order.createdBy ? firstName(order.createdBy.name) : null,
+    customPrice: order.items.some((item) => item.menuPricePaise !== null),
   }
 }
 
@@ -136,7 +166,9 @@ export async function loadOrderQueue(filters: OrderFilters): Promise<OrderQueue>
         customerNote: true,
         totalPaise: true,
         isSuspected: true,
-        items: { select: { name: true, quantity: true }, orderBy: { lineTotalPaise: "desc" } },
+        source: true,
+        createdBy: { select: { name: true } },
+        items: { select: { quantity: true, ...lineFacts }, orderBy: { lineTotalPaise: "desc" } },
         customer: { select: { completedCount: true, isTrusted: true, noShowCount: true } },
       },
     }),
@@ -181,11 +213,12 @@ export async function loadOrderQueue(filters: OrderFilters): Promise<OrderQueue>
             name: order.customerName,
             phoneE164: order.customerPhone,
             phoneDisplay: formatForDisplay(order.customerPhone),
-            lines: order.items,
+            lines: order.items.map(({ name, quantity }) => ({ name, quantity })),
             totalPaise: order.totalPaise,
             fulfilmentType: order.fulfilmentType,
             pickupTime: order.pickupTime,
             tags: tagsOf(order),
+            customLines: customLinesOf(order.items),
           }),
         )
       return { date, dayLabel: formatDayLabel(date), relative: relativeDay(date, today), orders: rows, ...capacityOf(date) }
@@ -208,7 +241,8 @@ export async function loadOrderQueue(filters: OrderFilters): Promise<OrderQueue>
 
 export type ActivityEntry = {
   at: string
-  kind: "placed" | "verified" | "autoVerified" | "ready" | "completed" | "cancelled" | "noShow"
+  /** `added`: entered by staff (7R.5) rather than placed by the customer. */
+  kind: "placed" | "added" | "verified" | "autoVerified" | "ready" | "completed" | "cancelled" | "noShow"
   by: string | null
 }
 
@@ -218,6 +252,8 @@ export type OrderDetailData = {
   status: OrderStatus
   isSuspected: boolean
   notificationFailed: boolean
+  /** Entered by staff: the first name of who did ("By staff · Anjali"). Null for a customer's own order. */
+  byStaff: string | null
   date: IsoDate
   dayLabel: string
   relative: RelativeDay
@@ -235,7 +271,8 @@ export type OrderDetailData = {
   }
   customerNote: string | null
   internalNote: string | null
-  lines: { name: string; unitPricePaise: number; quantity: number; lineTotalPaise: number }[]
+  /** `menuPricePaise` is set when staff priced the line by hand — what the menu charged. */
+  lines: { name: string; unitPricePaise: number; menuPricePaise: number | null; unit: PriceUnit; quantity: number; lineTotalPaise: number }[]
   subtotalPaise: number
   deliveryFeePaise: number
   totalPaise: number
@@ -251,11 +288,12 @@ export async function loadOrderDetail(id: string): Promise<OrderDetailData | nul
   const order = await prisma.order.findUnique({
     where: { id },
     include: {
-      items: { orderBy: { lineTotalPaise: "desc" } },
+      items: { orderBy: { lineTotalPaise: "desc" }, include: { menuItem: { select: { priceUnit: true } } } },
       customer: true,
       menuDay: { select: { maxOrders: true } },
       verifiedBy: { select: { name: true } },
       cancelledBy: { select: { name: true } },
+      createdBy: { select: { name: true } },
     },
   })
   if (!order) return null
@@ -286,8 +324,9 @@ export async function loadOrderDetail(id: string): Promise<OrderDetailData | nul
   }
   const closedStatus = order.status === OrderStatus.CANCELLED || order.status === OrderStatus.NO_SHOW
 
+  const byStaff = order.source === OrderSource.STAFF
   const activity: (ActivityEntry & { time: number })[] = [
-    { time: order.createdAt.getTime(), at: formatTimeIn(order.createdAt, tz), kind: "placed", by: null },
+    { time: order.createdAt.getTime(), at: formatTimeIn(order.createdAt, tz), kind: byStaff ? "added" : "placed", by: order.createdBy?.name ?? null },
   ]
   if (order.verifiedAt) {
     activity.push({
@@ -314,6 +353,7 @@ export async function loadOrderDetail(id: string): Promise<OrderDetailData | nul
     status: order.status,
     isSuspected: order.isSuspected,
     notificationFailed: order.notificationFailed,
+    byStaff: byStaff && order.createdBy ? firstName(order.createdBy.name) : null,
     date,
     dayLabel: formatDayLabel(date),
     relative: relativeDay(date, today),
@@ -337,7 +377,14 @@ export async function loadOrderDetail(id: string): Promise<OrderDetailData | nul
     },
     customerNote: order.customerNote,
     internalNote: order.internalNote,
-    lines: order.items.map((item) => ({ name: item.name, unitPricePaise: item.unitPricePaise, quantity: item.quantity, lineTotalPaise: item.lineTotalPaise })),
+    lines: order.items.map((item) => ({
+      name: item.name,
+      unitPricePaise: item.unitPricePaise,
+      menuPricePaise: item.menuPricePaise,
+      unit: asPriceUnit(item.menuItem.priceUnit),
+      quantity: item.quantity,
+      lineTotalPaise: item.lineTotalPaise,
+    })),
     subtotalPaise: order.subtotalPaise,
     deliveryFeePaise: order.deliveryFeePaise,
     totalPaise: order.totalPaise,

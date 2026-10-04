@@ -53,8 +53,37 @@ export async function serializable<T>(fn: (tx: Tx) => Promise<T>, retries = 3): 
   throw new Error("unreachable")
 }
 
+/**
+ * Runs `fn` in a READ COMMITTED transaction — for writes that a row lock (`SELECT … FOR UPDATE`) serializes, not the
+ * isolation level. Each statement reads what is committed when it runs, so a transaction that waited for the lock sees
+ * everything the holder wrote. Under SERIALIZABLE the waiter keeps its first statement's snapshot, reads a stale count
+ * and aborts; with 20 orders at once the retries ran out (CHECKPOINT 7b), so placeOrder and verifyOrder take the day's
+ * lock here instead.
+ *
+ * Retries a deadlock (P2034) and a lost insert race (P2002 — the same idempotency key or a new customer's number from two
+ * requests at once): the next attempt reads the winner's row.
+ */
+export async function readCommitted<T>(fn: (tx: Tx) => Promise<T>, retries = 3): Promise<T> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await prisma.$transaction(fn, {
+        isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
+        maxWait: 5_000,
+        timeout: 15_000,
+      })
+    } catch (error) {
+      const isRace = error instanceof Prisma.PrismaClientKnownRequestError && (error.code === "P2034" || error.code === "P2002")
+      if (!isRace || attempt === retries) throw error
+      await new Promise((r) => setTimeout(r, 25 * 2 ** attempt + Math.random() * 25))
+    }
+  }
+  throw new Error("unreachable")
+}
+
 export type OrderErrorCode =
   | "DAY_CLOSED"
+  /** A staff order for a date gone by — customers get CUTOFF_PASSED for the same thing (7R.5). */
+  | "PAST_DATE"
   | "CUTOFF_PASSED"
   /** The lines' notice puts the deadline before now, though the day's own cutoff hasn't passed (§10R). */
   | "TOO_SOON"

@@ -1,6 +1,18 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react"
 
-export type ButtonVariant = "primary" | "ink" | "ghost" | "outline" | "outlineLink" | "outlineAccent" | "danger" | "dangerOutline" | "link" | "underline" | "quiet"
+export type ButtonVariant =
+  | "primary"
+  | "ink"
+  | "ghost"
+  | "outline"
+  | "outlineLink"
+  | "outlineAccent"
+  | "danger"
+  | "dangerOutline"
+  | "link"
+  | "underline"
+  | "quiet"
+  | "done"
 export type ButtonSize = "sm" | "md" | "lg" | "block" | "inline"
 export type ButtonShape = "rounded" | "pill"
 
@@ -38,6 +50,8 @@ const variants: Record<ButtonVariant, string> = {
   underline: "bg-transparent font-semibold text-foreground underline underline-offset-3 hover:decoration-2",
   /** Muted until hovered, then red — a small take-away action on a row ("Remove"). */
   quiet: "bg-transparent text-muted hover:text-red",
+  /** An action that has happened and stays so — "✓ Added" on the staff order's menu picker. */
+  done: "border border-green-soft bg-green-soft font-semibold text-green",
 }
 
 /**

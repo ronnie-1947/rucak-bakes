@@ -31,6 +31,12 @@ enum StaffRole {
   STAFF
 }
 
+/// Where an order came from: the customer checkout, or staff entering a phone / counter order (7R.5).
+enum OrderSource {
+  ONLINE
+  STAFF
+}
+
 model MenuItem {
   id               String    @id @default(cuid())
   slug             String    @unique
@@ -150,6 +156,7 @@ model Staff {
 
   verified  Order[] @relation("OrderVerifiedBy")
   cancelled Order[] @relation("OrderCancelledBy")
+  created   Order[] @relation("OrderCreatedBy")
 
   @@map("staff")
 }
@@ -164,6 +171,9 @@ model Order {
   menuDay            MenuDay        @relation(fields: [menuDayId], references: [id])
   fulfilmentDate     DateTime       @db.Date
   status             OrderStatus    @default(PENDING)
+  source             OrderSource    @default(ONLINE)
+  createdById        String? // the staff member who entered it — CHECK o_staff_has_creator
+  createdBy          Staff?         @relation("OrderCreatedBy", fields: [createdById], references: [id])
   fulfilmentType     FulfilmentType @default(PICKUP)
   customerName       String // SNAPSHOT
   customerPhone      String // SNAPSHOT
@@ -204,6 +214,7 @@ model OrderItem {
   menuItem       MenuItem  @relation(fields: [menuItemId], references: [id])
   name           String // SNAPSHOT
   unitPricePaise Int // SNAPSHOT
+  menuPricePaise Int? // the menu price when staff set a custom one; null = unitPricePaise IS the menu price
   quantity       Int
   lineTotalPaise Int
   bakedAt        DateTime? // the day sheet's Baked tick for ordered lines (counter-items tick MenuDayItem.bakedAt)

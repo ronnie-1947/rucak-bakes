@@ -13,9 +13,9 @@ type OrderTagListProps = {
   className?: string
 }
 
-const ORDER: (keyof OrderTags)[] = ["suspected", "before", "trusted", "noShows", "delivery", "note"]
+const ORDER: (keyof OrderTags)[] = ["suspected", "before", "trusted", "noShows", "delivery", "note", "staff", "customPrice"]
 
-/** The facts staff weigh before calling: history, trust, no-shows, and what kind of order it is. */
+/** The facts staff weigh before calling: history, trust, no-shows, what kind of order it is, and whether staff entered it. */
 export function OrderTagList({ tags, dict, include = ORDER, compact = false, className }: OrderTagListProps) {
   const items: { key: keyof OrderTags; label: string; tone: TagTone }[] = []
   for (const key of ORDER) {
@@ -30,6 +30,8 @@ export function OrderTagList({ tags, dict, include = ORDER, compact = false, cla
     }
     if (key === "delivery" && tags.delivery) items.push({ key, label: dict.delivery, tone: "neutral" })
     if (key === "note" && tags.note) items.push({ key, label: dict.note, tone: "neutral" })
+    if (key === "staff" && tags.staff) items.push({ key, label: fill(dict.staff, { name: tags.staff }), tone: "neutral" })
+    if (key === "customPrice" && tags.customPrice) items.push({ key, label: dict.customPrice, tone: "warm" })
   }
   if (items.length === 0) return null
 

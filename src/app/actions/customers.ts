@@ -5,6 +5,8 @@ import { z } from "zod"
 import { requireStaff } from "@/auth"
 import { changeFlag, type FlagOutcome, type FlagSnapshot, renameCustomer as rename, restoreFlags, saveCustomerNote as saveNote } from "@/lib/customers/changes"
 import { CUSTOMER_LIMITS } from "@/lib/customers/limits"
+import { type CustomerLookup, lookupCustomer } from "@/lib/customers/lookup"
+import { normalise } from "@/lib/phone"
 
 /**
  * The customer screens' server actions. Flags show across admin — the orders queue tags trusted and
@@ -64,4 +66,18 @@ export async function saveCustomerNote(input: z.input<typeof noteInput>): Promis
   const ok = await saveNote(parsed.data.id, parsed.data.note)
   if (ok) revalidatePath(`/admin/customers/${parsed.data.id}`)
   return { ok }
+}
+
+const phoneInput = z.string().trim().min(1).max(20)
+
+/**
+ * The staff order form's lookup (7R.5), as soon as the phone field holds a full number: the customer with exactly that
+ * number, or null — a new customer, created when the order is added.
+ */
+export async function findCustomerByPhone(phone: string): Promise<CustomerLookup | null> {
+  await requireStaff()
+  const parsed = phoneInput.safeParse(phone)
+  const phoneE164 = parsed.success ? normalise(parsed.data) : null
+  if (!phoneE164) return null
+  return lookupCustomer({ phoneE164 })
 }

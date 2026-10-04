@@ -14,6 +14,7 @@ Guidance for Claude Code when working in **sabiha-bakery**.
 | `pnpm lint` | `eslint` |
 | `pnpm telegram:test` | `tsx scripts/telegram-test.ts` — sends a test + sample order (`--dry-run` prints it) |
 | `pnpm orders:sample` | `tsx scripts/sample-orders.ts` — 19 local menu orders (today … +5) through the real pipeline (needs the seed; re-runnable) |
+| `pnpm orders:race` | `tsx scripts/order-race.ts` — CHECKPOINT 7b: same-key ×5, 20 orders at room for 15, 16 verifies at room for 10, all at once; cleans up after itself |
 | `postinstall` | `prisma generate` |
 
 Dev server runs on http://localhost:3000. Package manager: pnpm.
@@ -76,7 +77,7 @@ prisma/
   schema.prisma         the nine models
   migrations/           init + constraints (raw SQL the schema can't express) + later additive ones
   seed.ts
-scripts/                one-off tsx scripts (telegram-test.ts)
+scripts/                one-off tsx scripts (telegram-test.ts, sample-orders.ts, order-race.ts)
 src/
   auth.ts               Auth.js — Google only, staff allowlist, requireStaff()
   proxy.ts              guards /admin/* (Next 16's renamed middleware)
@@ -99,6 +100,8 @@ src/
     admin-login/        the /admin/login screen
     admin-shell/        sidebar / tab bar frame for /admin/(shell)
     admin-orders/       the orders queue;  admin-order-detail/  one order (page + 2xl pane)
+    admin-new-order/    staff orders (/admin/orders/new): customer lookup by phone, lines with custom prices, the day strip (warns, never blocks
+                        but closed), notes, summary card / bar / sheet, full-day confirm
     order-actions/      status changes + their confirm dialogs;  order-tag-list/  an order's fact tags
     admin-menu/         the menu library (/admin/menu): list / grid / table, Active switch, archive, undo
     admin-menu-item/    the item form (/admin/menu/new, /admin/menu/[id]): photos, details, ordering (online / notice / bake separately), live preview
@@ -132,17 +135,18 @@ src/
     telegram.ts         notifyOwner, formatOrderMessage, TelegramError, botUsername / findChatWithCode (connect flow)
     template.ts         fill() for {placeholders} in dict strings
     admin-routes.ts     ADMIN_HOME, admin sections, safeAdminPath (post-login redirects)
-    orders/             status.ts (state machine), lifecycle.ts (transitions), place.ts (createOrder tx),
+    orders/             status.ts (state machine), lifecycle.ts (transitions), place.ts (placeOrder tx — customer and staff rules, READ COMMITTED + day lock),
                         notify.ts, queries.ts (admin read models), filters.ts (queue URL state),
                         checkout.ts (checkout schema, refusals, form rules — client-safe), rate-limit.ts (7.3: by phone, by IP)
-                        deadline.ts (the order-ahead deadline rule, client-safe), booking.ts (newMenuDay, the booking window)
+                        deadline.ts (the order-ahead deadline rule, client-safe), booking.ts (newMenuDay, the booking window),
+                        staff-order.ts (staff order schema, warnings, missing step — client-safe), new-order.ts (the staff form's read model)
     menu/               queries.ts (library read model), filters.ts (URL state), changes.ts (writes + undo snapshots),
                         item.ts (form read model), form.ts (form values + rules, client-safe), save.ts (form writes),
                         copy.ts, units.ts, allergens.ts, about.ts (the About text's marks → blocks, client-safe)
     calendar/           week.ts / day.ts (read models), writes.ts (patchDay, applyToWeek, copyWeek, saveDay),
                         form.ts (DayPlan + rules, client-safe), cutoffs.ts, copy-plan.ts (planWeekCopy), routes.ts
     customers/          queries.ts (list + trigram search), detail.ts (record read model), changes.ts (flags, rename, note),
-                        filters.ts (URL state, client-safe), limits.ts
+                        filters.ts (URL state, client-safe), limits.ts, lookup.ts (one customer by phone or id, for the staff form)
     daysheet/           queries.ts (read model + poll version), ticks.ts (setItemBaked, setLineBaked, setCounterBaked, setCollected), routes.ts (URL state),
                         tick.ts (tick keys), notes.ts (allergen words) — client-safe except queries/ticks
     settings/           row.ts (getSettings() / findSettings() — the singleton row, cached per request), queries.ts (screen read model),

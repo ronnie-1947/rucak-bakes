@@ -11,7 +11,7 @@ Data: [src/lib/customers/detail.ts](../../lib/customers/detail.ts); writes: [src
 admin-customer-detail/
   AdminCustomerDetail.tsx  entry for the page (server) — CustomerActionsProvider (manual status) > CustomerDetail variant="page"
   CustomerDetail.tsx       the record, page or pane: header, history / patterns / note beside contact / flags / counts
-  DetailHeader.tsx         back (page), name + CustomerFlags; "Open full record" in the pane
+  DetailHeader.tsx         back (page), name + CustomerFlags, New order (page — /admin/orders/new?customer=, 7R.5); "Open full record" in the pane
   ContactCard.tsx          the number (large tel link), Call + WhatsApp, NameField, delivery address + Open in Maps, Customer since
   NameField.tsx            "use client" — "Name  Meera Iyer ✎" → field + Save / Cancel; past orders keep their name
   FlagCard.tsx             "use client" — Trusted and Blocked switches, each with its line; the other rests while one is on; undo strip (page)

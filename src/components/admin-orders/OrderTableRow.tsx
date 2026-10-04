@@ -11,6 +11,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge"
 import { Tag } from "@/components/ui/Tag"
 import { formatPaise } from "@/lib/money"
 import { fill } from "@/lib/template"
+import { CustomLines } from "./CustomLines"
 import type { AdminCopy, BoardOrder } from "./types"
 
 type OrderTableRowProps = {
@@ -83,6 +84,7 @@ export function OrderTableRow({ order, dict, selectMode, checked, onToggle, pane
       </td>
       <td className={`max-w-0 px-2 py-2 ${wideCell}`}>
         <ItemsLine lines={order.lines} dict={dict.orders} className="block" />
+        <CustomLines lines={order.customLines} dict={dict} className="block" />
       </td>
       <td className="px-2 py-2 text-right font-semibold text-o700">{formatPaise(order.totalPaise)}</td>
       <td className={`max-w-0 px-2 py-2 ${wideCell}`}>

@@ -20,6 +20,7 @@ const takens: Record<"full" | "room", string> = {
 
 /**
  * "Orders for this day" (§10R): what's booked — the count by status, a meter against max, then each order, opening it.
+ * "Add order" takes a phone order for this date (7R.5) while the date is in the booking window.
  * Stays fully visible on a closed day: closing never touches the orders already placed.
  */
 export function OrdersSection({ data, maxOrders, dict }: OrdersSectionProps) {
@@ -34,9 +35,16 @@ export function OrdersSection({ data, maxOrders, dict }: OrdersSectionProps) {
         <h2 id="orders-title" className="text-h2">
           {o.title}
         </h2>
-        <Link href={data.ordersHref} className="flex min-h-11 items-center text-small-admin font-semibold text-o700 hover:underline">
-          {o.open}
-        </Link>
+        <span className="flex items-center gap-4">
+          {data.addOrderHref ? (
+            <Link href={data.addOrderHref} className="flex min-h-11 items-center text-small-admin font-semibold text-o700 hover:underline">
+              {o.add}
+            </Link>
+          ) : null}
+          <Link href={data.ordersHref} className="flex min-h-11 items-center text-small-admin font-semibold text-o700 hover:underline">
+            {o.open}
+          </Link>
+        </span>
       </div>
       {count === 0 ? (
         <p className="rounded-panel bg-sunken p-4 text-center text-small-admin text-muted">{fill(o.none, { day: formatWeekday(data.date) })}</p>

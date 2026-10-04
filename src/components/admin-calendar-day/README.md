@@ -16,7 +16,7 @@ admin-calendar-day/
   useDayEditor.ts       the editor's state: plan vs saved, open rows, search/category, sold out, save / discard, copy-from
   DayHeader.tsx         back, "Saturday 3 Oct" + Open/Closed badge, Copy counter-items from another day, ‹ ›; every exit goes through the leave check
   ClosedLine.tsx        "This day is closed. Customers can’t order for …" above the orders
-  OrdersSection.tsx     "Orders for this day" + Open in Orders: "6 orders · 4 verified · 2 pending", Meter, "6 of 10 orders taken", the rows
+  OrdersSection.tsx     "Orders for this day" + Add order (?date=, inside the booking window, 7R.5) + Open in Orders: "6 orders · 4 verified · 2 pending", Meter, "6 of 10 orders taken", the rows
   DayOrderRow.tsx       one order, linked: name, code, status badge; its lines; "Pickup 08:00" + Allergen / Note tag
   ItemPicker.tsx        "Counter-items made this day": Select all / Clear all, intro, search, category chips, PlanStrip, groups (or none / no match)
   ItemGroup.tsx         a category: sticky header "3 of 4 on", then its rows

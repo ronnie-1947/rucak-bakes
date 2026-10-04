@@ -7,6 +7,9 @@ import { OrderStatus } from "@/generated/prisma/enums"
 import { formatDayLabel } from "@/lib/dates"
 import { OrderError, prisma } from "@/lib/db"
 import { cancelOrder, markCompleted, markNoShow, markReady, verifyOrder } from "@/lib/orders/lifecycle"
+import { placeOrder } from "@/lib/orders/place"
+import { type StaffOrderField, type StaffOrderInput, type StaffOrderResult, staffOrderSchema } from "@/lib/orders/staff-order"
+import { normalise } from "@/lib/phone"
 
 /** What the admin UI gets back from a status change — never a thrown error for a business refusal. */
 export type TransitionResult =
@@ -84,4 +87,79 @@ export async function saveInternalNote(input: z.input<typeof noteInput>): Promis
   revalidatePath(`/admin/orders/${parsed.data.id}`)
   revalidatePath("/admin/orders")
   return { ok: true }
+}
+
+const FIELDS: Record<string, StaffOrderField> = {
+  phone: "phone",
+  name: "name",
+  items: "items",
+  fulfilmentDate: "date",
+  address: "address",
+}
+
+/**
+ * /admin/orders/new (dev-docs/implementation.md 7R.5) — an order a customer gave staff by phone or at the counter. Verified
+ * as it's added, by whoever adds it; priced as staff set it; allowed past the cutoff, the notice and the website's switches;
+ * past a full day only with `allowFull`. One placeOrder transaction with the checkout, so the day is counted under one
+ * lock. No rate limit and no Telegram — staff made it.
+ */
+export async function createStaffOrder(input: StaffOrderInput): Promise<StaffOrderResult> {
+  const staff = await requireStaff()
+  const parsed = staffOrderSchema.safeParse(input)
+  if (!parsed.success) {
+    const key = parsed.error.issues.map((issue) => String(issue.path[0])).find((path) => path in FIELDS)
+    return { ok: false, reason: "INVALID", field: key ? FIELDS[key] : null }
+  }
+  const data = parsed.data
+  const phoneE164 = normalise(data.phone)
+  if (!phoneE164) return { ok: false, reason: "INVALID", field: "phone" }
+  const delivery = data.fulfilmentType === "DELIVERY"
+  if (delivery && !data.address) return { ok: false, reason: "INVALID", field: "address" }
+
+  try {
+    const placed = await placeOrder(
+      {
+        idempotencyKey: data.idempotencyKey,
+        fulfilmentDate: data.fulfilmentDate,
+        fulfilmentType: data.fulfilmentType,
+        name: data.name,
+        phoneE164,
+        address: delivery ? data.address : null,
+        pickupTime: delivery ? null : data.pickupTime,
+        note: data.note || null,
+        items: data.items,
+      },
+      { staff: { staffId: staff.id, allowFull: data.allowFull, deliveryFeePaise: data.deliveryFeePaise, internalNote: data.internalNote || null } },
+    )
+    revalidatePath("/admin", "layout")
+    return { ok: true, id: placed.id, code: placed.code }
+  } catch (error) {
+    if (!(error instanceof OrderError)) throw error
+    switch (error.code) {
+      case "DAY_CLOSED":
+      case "PAST_DATE":
+        return { ok: false, reason: error.code, date: data.fulfilmentDate }
+      case "ITEM_UNAVAILABLE":
+        return {
+          ok: false,
+          reason: "ITEM_UNAVAILABLE",
+          menuItemId: String(error.details.menuItemId),
+          name: typeof error.details.name === "string" ? error.details.name : null,
+        }
+      case "DAY_FULL":
+        return {
+          ok: false,
+          reason: "DAY_FULL",
+          date: data.fulfilmentDate,
+          liveCount: Number(error.details.liveCount),
+          overbookLimit: Number(error.details.overbookLimit),
+          verifiedCount: Number(error.details.verifiedCount),
+          maxOrders: Number(error.details.maxOrders),
+        }
+      case "FULFILMENT_UNAVAILABLE":
+        return { ok: false, reason: "INVALID", field: "address" }
+      default:
+        throw error
+    }
+  }
 }

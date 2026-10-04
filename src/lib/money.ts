@@ -5,6 +5,9 @@
 
 const RUPEES = /^(\d+)(?:\.(\d{1,2}))?$/
 
+/** ₹1,00,000 — the most a staff member can type as a line's price or a delivery fee. A typo guard, not a business rule. */
+export const MAX_PRICE_PAISE = 10_000_000
+
 /** "240", "240.5", "₹1,200.50" or 240.5 → paise. Throws on anything else, including negatives. */
 export function toPaise(rupees: number | string): number {
   if (typeof rupees === "number") {

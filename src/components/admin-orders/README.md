@@ -9,7 +9,7 @@ so every chip is a plain link and a filtered view survives refresh and back.
 ```
 admin-orders/
   AdminOrders.tsx        entry (server) — header, filter bar, banner, empty states, board, 2xl split pane
-  OrdersHeader.tsx       h1, capacity meters, Select / Done (a link toggling ?select=1)
+  OrdersHeader.tsx       h1, capacity meters, Select / Done (a link toggling ?select=1), New order (→ /admin/orders/new, 7R.5)
   CapacityMeters.tsx     today / tomorrow verified vs maxOrders, Meter bar, red "· full"
   OrdersFilterBar.tsx    sticky: SearchBox (ui) + Date / Status / Show chip rows (ChipLink) + Clear filters
   CustomDateChip.tsx     "use client" — a chip over a native date input → ?date=YYYY-MM-DD
@@ -20,6 +20,7 @@ admin-orders/
   OrderTable.tsx         the ≥1024 table shell (thead, column widths)
   OrderTableRow.tsx      "use client" — one row; code links to the page (<2xl) or the pane (2xl)
   WhenLine.tsx           "Pickup 11:30" / "Delivery"
+  CustomLines.tsx        lines staff priced by hand — "Custom birthday cake ₹1,200 per kg · menu ₹1,500"
   BulkBar.tsx            "use client" — sticky bottom: N selected · Cancel all · Verify all
   types.ts               AdminCopy, OrdersCopy, OrderLinks, BoardOrder
   README.md
@@ -29,7 +30,7 @@ admin-orders/
 
 ```
 AdminOrders dict=dict.admin queue filters pane
-├─ OrdersHeader                         .title · .select/.done
+├─ OrdersHeader                         .title · .select/.done · .newOrder
 │  └─ CapacityMeters (md+ beside h1, below it on phones)  .today/.tomorrow · .capacity · .capacityFull
 ├─ OrdersFilterBar                      .filters.* · .searchLabel/.searchPlaceholder
 │  ├─ SearchBox
@@ -40,8 +41,8 @@ AdminOrders dict=dict.admin queue filters pane
 ├─ EmptyState (.emptyToday + View tomorrow | .emptyFiltered + Clear filters)
 │  or OrderActionsProvider > OrderBoard
 │     ├─ section per day: OrderGroupHeader
-│     │  ├─ OrderCard × n  (lg:hidden; 1 col, 2 from md)  → OrderTagList, StatusMenu, SelectBox
-│     │  └─ OrderTable > OrderTableRow × n (hidden <lg)
+│     │  ├─ OrderCard × n  (lg:hidden; 1 col, 2 from md)  → CustomLines, OrderTagList, StatusMenu, SelectBox
+│     │  └─ OrderTable > OrderTableRow × n (hidden <lg) → CustomLines   .customLine
 │     └─ BulkBar (select mode)          .selected · .verifyAll · .cancelAll
 └─ aside (2xl, when ?order=) > OrderDetail variant="pane"   (src/components/admin-order-detail)
 ```
@@ -78,6 +79,7 @@ OrderCard        { order: BoardOrder; dict; selectMode; checked; onToggle }
 OrderTable       { dict; paneOpen; children }
 OrderTableRow    { order; dict; selectMode; checked; onToggle; paneOpen; current }
 WhenLine         { fulfilmentType; pickupTime; dict }
+CustomLines      { lines: CustomLine[]; dict: AdminCopy; className? }
 BulkBar          { dict; selectedCount; verifiable; cancellable; pending; onVerify; onCancel }
 ```
 
@@ -96,6 +98,8 @@ BulkBar          { dict; selectedCount; verifiable; cancellable; pending; onVeri
 - **Split view (2xl)** — a code link with `?order=` opens the order in a sticky pane (`h-pane`); the table drops its phone,
   items, badges and actions columns while the pane is open.
 - **Greyed** — completed, cancelled, no-show, and blocked-number orders render at 70% opacity.
+- **Staff orders (7R.5)** — New order in the header opens `/admin/orders/new`. An order staff entered carries "By staff · Anjali"
+  and, when a line was priced by hand, "Custom price" (`OrderTagList`) plus `CustomLines` under the items.
 
 ## Responsive behavior
 

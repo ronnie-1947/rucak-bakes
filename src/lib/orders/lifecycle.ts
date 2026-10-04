@@ -1,12 +1,13 @@
 import { OrderStatus } from "@/generated/prisma/client"
 import { fromDbDate } from "@/lib/dates"
-import { OrderError, serializable, type Tx } from "@/lib/db"
+import { OrderError, readCommitted, serializable, type Tx } from "@/lib/db"
 import { canTransition, VERIFIED_STATUSES } from "@/lib/orders/status"
 
 /**
- * Every write that changes an order's status. Each runs in one serializable() transaction; the ones that
- * change what counts against the day's limits (verify, cancel, no-show) take the day's row lock first —
- * the lock placeOrder holds while it counts.
+ * Every write that changes an order's status. Each runs in one transaction; the ones that change what counts against the
+ * day's limits (verify, cancel, no-show) take the day's row lock first — the lock placeOrder holds while it counts.
+ * verifyOrder counts under that lock as placeOrder does, so it runs at READ COMMITTED like placeOrder (db.ts,
+ * readCommitted); the rest stay serializable().
  *
  * Orders don't draw down a day's items (§10R): nothing here touches MenuDayItem.quantityOrdered.
  */
@@ -32,11 +33,13 @@ async function loadOrder(tx: Tx, orderId: string) {
  * numbers the confirm dialog names) unless `force` — the owner chose to take one more.
  */
 export async function verifyOrder(orderId: string, staffId: string, force = false) {
-  return serializable(async (tx) => {
+  return readCommitted(async (tx) => {
+    const { menuDayId } = await tx.order.findUniqueOrThrow({ where: { id: orderId }, select: { menuDayId: true } })
+    await lockMenuDay(tx, menuDayId)
+    // Read after the lock: at READ COMMITTED this sees a verify or cancel that finished while we waited.
     const order = await loadOrder(tx, orderId)
     assertTransition(order.status, OrderStatus.VERIFIED)
 
-    await lockMenuDay(tx, order.menuDayId)
     const day = await tx.menuDay.findUniqueOrThrow({ where: { id: order.menuDayId }, select: { maxOrders: true } })
     const verifiedCount = await tx.order.count({ where: { menuDayId: order.menuDayId, status: { in: [...VERIFIED_STATUSES] } } })
     if (verifiedCount >= day.maxOrders && !force) {

@@ -11,6 +11,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge"
 import { Tag } from "@/components/ui/Tag"
 import { formatPaise } from "@/lib/money"
 import { fill } from "@/lib/template"
+import { CustomLines } from "./CustomLines"
 import type { AdminCopy, BoardOrder } from "./types"
 import { WhenLine } from "./WhenLine"
 
@@ -67,6 +68,7 @@ export function OrderCard({ order, dict, selectMode, checked, onToggle }: OrderC
       </div>
 
       <ItemsLine lines={order.lines} dict={dict.orders} />
+      <CustomLines lines={order.customLines} dict={dict} />
 
       <div className="flex items-baseline gap-2">
         <span className="font-semibold text-o700">{formatPaise(order.totalPaise)}</span>

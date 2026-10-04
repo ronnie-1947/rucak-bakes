@@ -75,6 +75,8 @@ export type DayEditorData = {
   liveOrders: DayOrder[]
   /** "Open in Orders" — the queue on this date. */
   ordersHref: string
+  /** "Add order" — a staff order for this date (7R.5). Null for a day gone by or beyond the booking window. */
+  addOrderHref: string | null
   /** The orderable item that needs the most notice — "a 2-day cake closes Thursday 6pm". Null when none needs more than a day. */
   longestNotice: { name: string; days: number } | null
   copySources: CopySource[]
@@ -240,6 +242,7 @@ export async function loadDayEditor(date: IsoDate): Promise<DayEditorData | null
     pending: orders.length - verified,
     liveOrders: orders.map((order) => ({ id: order.id, code: order.code, name: order.customerName })),
     ordersHref: dayOrdersHref(date),
+    addOrderHref: date >= today && date <= addDays(today, settings.orderAheadDays) ? `/admin/orders/new?date=${date}` : null,
     longestNotice: longest ? { name: longest.name, days: longest.noticeDays } : null,
     copySources,
     bakeryName: settings.bakeryName,

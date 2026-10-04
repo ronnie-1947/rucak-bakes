@@ -1,7 +1,7 @@
 # order-tag-list
 
 The row of small labelled facts on an order — *Blocked number*, *Ordered before (4)*, *Trusted*, *2 no-shows*, *Delivery*,
-*Note*. Rendered on the orders queue (cards and table), the order detail page, and the split pane.
+*Note*, *By staff · Anjali*, *Custom price*. Rendered on the orders queue (cards and table), the order detail page, and the split pane.
 
 ## Files in this folder
 
@@ -22,6 +22,8 @@ OrderTagList tags dict include? compact?
    ├─ Tag tone=red      .noShows / .noShowsOne {count}
    ├─ Tag tone=neutral  .delivery
    ├─ Tag tone=neutral  .note
+   ├─ Tag tone=neutral  .staff {name}                           (a staff order — the creator's first name, 7R.5)
+   ├─ Tag tone=warm     .customPrice                             (a line priced by hand)
    └─ Tag tone=quiet    .more {count}   (compact only; title lists every hidden tag)
 ```
 
@@ -42,7 +44,7 @@ Tokens via `Tag`: `bg-o50`, `border-o200`, `text-o700`, `bg-green-soft`, `text-g
 OrderTagList {
   tags: OrderTags                                  // from loadOrderQueue / loadOrderDetail
   dict: Dict["admin"]["orderTags"]
-  include?: (keyof OrderTags)[]                    // default: all six
+  include?: (keyof OrderTags)[]                    // default: all eight
   compact?: boolean                                // table cell: first tag + "+n"
   className?: string
 }
@@ -52,7 +54,7 @@ OrderTagList {
 
 Server-safe, no state. "Ordered before (n)" counts the customer's **completed** orders — the counters move at
 COMPLETED, never at VERIFIED. Renders nothing when no fact applies. Order of tags is fixed by `ORDER`: the
-warning (blocked) first, then history, trust, no-shows, then the order's shape.
+warning (blocked) first, then history, trust, no-shows, then the order's shape, then who entered it and its prices.
 
 ## Responsive behavior
 
