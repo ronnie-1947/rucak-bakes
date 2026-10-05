@@ -11,11 +11,11 @@ lives in the URL ([src/lib/daysheet/routes.ts](../../lib/daysheet/routes.ts)), d
 ```
 admin-daysheet/
   AdminDaySheet.tsx     entry (server) — narrows rows/notes/orders to the view, builds the tick map, composes screen + print
-  DaySheetProvider.tsx  "use client" — both ticks: useOptimistic + server actions, the undo line, failures (context: hooks/useDaySheet)
+  DaySheetProvider.tsx  "use client" — both ticks: useOptimistic + server actions, the undo line, failures; whether the orders went stale (context: hooks/useDaySheet)
   SheetBar.tsx          sticky: ‹ day ›, Today, DateJump (lg+), Print; the SheetWatcher line rides inside it
   DateJump.tsx          "use client" — native date input → ?date=
-  PrintButton.tsx       "use client" — window.print()
-  SheetWatcher.tsx      "use client" — polls checkDaySheet every 15s; other devices' ticks refresh, order changes show "refresh to update"
+  PrintButton.tsx       "use client" — checks the day's orders, refreshes if they changed, then window.print() ("Updating…" meanwhile)
+  SheetWatcher.tsx      "use client" — polls checkDaySheet every 15s; other devices' ticks and cancelled / no-show orders refresh, new or verified orders show "refresh to update" and mark the sheet stale
   SheetSummary.tsx      "6 orders · 18 ordered items · 8 counter-items (112 pieces) · first pickup 7:30am · last 12pm", what For orders counts, PendingSwitch
   PendingSwitch.tsx     "use client" — Switch that toggles ?pending=1
   ViewTabs.tsx          Bake | Pickups · n — two links styled as a segmented control
@@ -36,7 +36,8 @@ admin-daysheet/
   PickupRow.tsx         "use client" — time, name + code link, every line, tel, tags, note, address + Maps, total, DoneBox
   TickProgress.tsx      "use client" — "4 of 9 done", Meter, and the undo line / failure for the kinds of row in that list
   DoneBox.tsx           the 28px tick in a 44px target (role="checkbox")
-  PrintSheet.tsx        hidden on screen, the whole printout in print: PrintPageRules, header, PrintNotes, For orders, counter-items, PrintPickups
+  PrintSheet.tsx        hidden on screen, the whole printout in print: PrintPageRules, header, PrintStale, PrintNotes, For orders, counter-items, PrintPickups
+  PrintStale.tsx        "use client" — the bordered "may be out of date" line, printed only when the sheet is stale (a Ctrl+P skips PrintButton)
   PrintPageRules.tsx    <style> with the @page margin boxes — "continued" header after page 1, "Page X of Y" footer (words from the dict)
   PrintNotes.tsx        the 2px-bordered notes box ("ALLERGY:" first on an allergen note)
   PrintGroup.tsx        one printed group (a category, Made to order, the counter-items), never split across pages, with pen-tick squares
@@ -50,7 +51,7 @@ admin-daysheet/
 
 ```
 AdminDaySheet dict=dict.admin data=DaySheetData
-└─ DaySheetProvider ticks readOnly=isPast
+└─ DaySheetProvider ticks readOnly=isPast version=orders version
    ├─ div.print:hidden!
    │  ├─ SheetBar → DateJump, PrintButton, SheetWatcher (key = orders version)
    │  └─ Container
@@ -62,7 +63,7 @@ AdminDaySheet dict=dict.admin data=DaySheetData
    │           │           BakeList → TickProgress, BakeSection × n → BakeRow → SheetRow, DoneBox · MadeSection → MadeRow → SheetRow, DoneBox
    │           │           CounterList → TickProgress, CounterRow × n → SheetRow, DoneBox
    │           └─ pickups: PickupList → TickProgress, PickupSlotList × n → PickupRow → DoneBox
-   └─ PrintSheet (hidden print:flex) → PrintPageRules, PrintNotes, PrintGroup × n, PrintPickups
+   └─ PrintSheet (hidden print:flex) → PrintPageRules, PrintStale, PrintNotes, PrintGroup × n, PrintPickups
 ```
 
 Copy: `dict.admin.daysheet` throughout; `dict.admin.orders.items` ("{quantity}× {name}") for order lines.
@@ -87,10 +88,10 @@ External: `next/link`, `next/navigation`. Tokens: `text-glance` / `text-glance-l
 
 ```ts
 AdminDaySheet    { dict: AdminCopy; data: DaySheetData }
-DaySheetProvider { date; ticks: Record<string, boolean>; readOnly: boolean; dict: DaySheetCopy; children }
+DaySheetProvider { date; ticks: Record<string, boolean>; readOnly: boolean; version: string; dict: DaySheetCopy; children }
 SheetBar         { data; dict }
 DateJump         { params: SheetParams; today: string; label: string; className? }
-PrintButton      { label }
+PrintButton      { date; orders: string[]; label; updatingLabel }
 SheetWatcher     { date; version: SheetVersion; live: boolean; dict }
 SheetSummary     { data; dict }
 PendingSwitch    { on; href; label }
@@ -113,6 +114,7 @@ PickupRow        { order: SheetOrder; dict; itemTemplate }
 TickProgress     { rows: { kind: TickKind; id }[]; template; meterLabel; synced?; dict }
 DoneBox          { done; onToggle; label; disabled }
 PrintSheet       { data; dict; itemTemplate }
+PrintStale       { text }
 PrintPageRules   { running; continued; footer; pageTemplate }
 PrintNotes       { notes; dict }
 PrintGroup       { title; lines: PrintLine[] }
@@ -138,7 +140,9 @@ PrintPickups     { orders; dict; itemTemplate }
   revalidates, so the next render's `ticks` carry it.
 - **Other devices** — `SheetWatcher` polls `checkDaySheet(date)` every 15 seconds while the tab is visible (and on returning to it).
   The version has two parts: `ticks` (baked lines and counter-items, collected orders) — a change just refreshes; `orders` (each live order and
-  whether it's pending) — a change shows "1 new order — refresh to update" instead of reshuffling the list under someone's finger.
+  whether it's pending) — orders only leaving the day (cancelled, no-show) just refresh, so nothing is baked for them; a new or newly
+  verified order shows "1 new order — refresh to update" instead of growing the list under someone's finger (with an order leaving
+  in the same poll, the line covers both).
 - **Notes** — every customer note, allergen notes first. `mentionsAllergen` (whole-word list in `src/lib/daysheet/notes.ts`) only
   ever promotes a note to red; a note it misses still shows. A bake row carries the note icon when an order containing it has a note.
 - **States** — closed in the Calendar with no orders · beyond `orderAheadDays` · neither orders nor counter-items ("Nothing planned
@@ -150,6 +154,10 @@ PrintPickups     { orders; dict; itemTemplate }
   bold; the counter-items; the collections table. Quantities 32px (24pt) semibold, pen-tick squares, `break-inside-avoid` on every
   group and row. `PrintPageRules` adds the "continued" header (not on page 1) and "Page X of Y" through `@page` margin boxes —
   Chromium 131+; other browsers print without them.
+- **A printout is never older than the orders** — the watcher catches up only every 15 seconds and only offers a refresh for new and
+  newly verified orders, so Print first asks `checkDaySheet`: if an order arrived, was verified, cancelled or marked no-show since, it refreshes and prints
+  once the fresh sheet has rendered. Ctrl+P or the browser menu skip that; once the watcher has seen the orders change, the printout
+  leads with "Orders for this day changed after this sheet was opened…" (`PrintStale`), cleared by the refresh that brings them in.
 
 ## Responsive behavior
 

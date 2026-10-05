@@ -49,7 +49,7 @@ export function AdminDaySheet({ dict, data }: AdminDaySheetProps) {
   for (const order of data.orders) if (!order.pending) ticks[tickKey("collect", order.id)] = order.collected
 
   return (
-    <DaySheetProvider date={data.params.date} ticks={ticks} readOnly={data.isPast} dict={copy}>
+    <DaySheetProvider date={data.params.date} ticks={ticks} readOnly={data.isPast} version={data.version.orders.join(",")} dict={copy}>
       <div className="flex flex-col text-body print:hidden!">
         <SheetBar data={data} dict={copy} />
 

@@ -5,6 +5,7 @@ import { PrintGroup, type PrintLine } from "./PrintGroup"
 import { PrintNotes } from "./PrintNotes"
 import { PrintPageRules } from "./PrintPageRules"
 import { PrintPickups } from "./PrintPickups"
+import { PrintStale } from "./PrintStale"
 import type { DaySheetCopy } from "./types"
 
 type PrintSheetProps = {
@@ -15,7 +16,8 @@ type PrintSheetProps = {
 
 /**
  * What Print puts on paper, in place of the screen: A4, black on white. Verified orders only, whatever the screen's
- * pending switch says — the printout is what gets baked. The header (summary without times, when it was printed), notes,
+ * pending switch says — the printout is what gets baked. Print refreshes first when the orders changed (PrintButton); a
+ * Ctrl+P on a sheet SheetWatcher found stale leads with a warning (PrintStale). The header (summary without times, when it was printed), notes,
  * For orders a category at a time with who each item is for, Made to order with its notes in bold, the counter-items,
  * then the collections table. No group or row splits across pages; later pages say "continued" and every page its
  * number. Hidden on screen.
@@ -78,6 +80,7 @@ export function PrintSheet({ data, dict, itemTemplate }: PrintSheetProps) {
         </div>
       </header>
 
+      <PrintStale text={dict.printStale} />
       {data.pendingCount > 0 ? <p>{fill(dict.printPendingLeftOut, { pending: pendingText(data.pendingCount, dict) })}</p> : null}
       {notes.length > 0 ? <PrintNotes notes={notes} dict={dict} /> : null}
 

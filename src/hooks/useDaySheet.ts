@@ -10,6 +10,9 @@ export type DaySheetApi = {
   toggle: (tick: Tick) => void
   /** A past day: shown as it was left. */
   readOnly: boolean
+  /** SheetWatcher saw the day's orders change since this render — the printout says it may be out of date. */
+  stale: boolean
+  markStale: () => void
   /** For TickProgress — the undo line and the failure notice, under the list the change was made in. */
   status: {
     undo: { kind: TickKind; text: string } | null

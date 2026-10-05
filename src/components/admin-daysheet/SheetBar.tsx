@@ -41,7 +41,7 @@ export function SheetBar({ data, dict }: SheetBarProps) {
           )}
           <DateJump params={data.params} today={data.today} label={dict.jumpTo} className="hidden lg:block" />
           <span className="flex-1" />
-          <PrintButton label={dict.print} />
+          <PrintButton date={data.params.date} orders={data.version.orders} label={dict.print} updatingLabel={dict.printUpdating} />
         </div>
         <SheetWatcher key={data.version.orders.join(",")} date={data.params.date} version={data.version} live={!data.isPast} dict={dict} />
       </Container>

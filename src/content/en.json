@@ -1129,6 +1129,7 @@
       "today": "Today",
       "jumpTo": "Jump to a date",
       "print": "Print",
+      "printUpdating": "Updating…",
       "orders": "{count} orders",
       "ordersOne": "1 order",
       "items": "{count} ordered items",
@@ -1254,6 +1255,7 @@
       "printAllergen": "Allergy:",
       "seeNote": "(see note)",
       "printPendingLeftOut": "Not on this sheet: {pending} still to verify.",
+      "printStale": "Orders for this day changed after this sheet was opened, so this printout may be out of date. Refresh the page and print again.",
       "printNothing": "No verified orders for this day.",
       "printTable": {
         "time": "Time",

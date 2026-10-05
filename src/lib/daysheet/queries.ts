@@ -109,8 +109,8 @@ export type SheetNote = {
 
 /**
  * What the sheet was built from, for the poller. `orders` changes when an order arrives, is verified or
- * leaves the day — the sheet asks before reshuffling. `ticks` changes when another device ticks something —
- * the sheet just refreshes.
+ * leaves the day — one leaving (cancelled, no-show) just refreshes the sheet, the others ask first. `ticks` changes
+ * when another device ticks something — the sheet just refreshes.
  */
 export type SheetVersion = { orders: string[]; ticks: string }
 
