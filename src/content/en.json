@@ -1,7 +1,7 @@
 {
   "meta": {
     "home": {
-      "title": "Sabiha Bakery",
+      "title": "Rucak",
       "description": "Order fresh bread, pastries and cakes from Sabiha Bakery for pickup. Pay in person when you collect."
     }
   },
@@ -10,7 +10,7 @@
     "languageSwitch": "Language"
   },
   "footer": {
-    "copyright": "© Sabiha Bakery"
+    "copyright": "© Rucak"
   },
   "admin": {
     "nav": {
@@ -1938,7 +1938,7 @@
       "all": "All",
       "other": "Other",
       "onCounter": "On the counter today",
-      "choose": "Choose date",
+      "choose": "Order",
       "chooseLabel": "Choose a date for {name}",
       "call": "Call to order",
       "callLabel": "Call to order {name}"

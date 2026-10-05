@@ -17,8 +17,9 @@ store-shell/
   SwitchDayDialog.tsx   "use client" — "Switch to Saturday?" before a cart for another day is cleared
   StoreBannerStrip.tsx  the line above the header: pause reason (red) or announcement (warm)
   StoreHeader.tsx       "use client" — the sticky <header>: HomeBar on /, PageBar elsewhere; remembers the visit's first page
-  HomeBar.tsx           "use client" — name (home link), "Pickup at …", CartButton; condenses once scrolled
-  PageBar.tsx           "use client" — Back (or the page's own, usePageBack), the page's title (faded in once its h1 scrolls away), CartButton (not on /cart)
+  HomeBar.tsx           "use client" — logo (/logo.png), name (home link), "Pickup at …", CartButton; condenses once scrolled
+  PageBar.tsx           "use client" — Back (or the page's own, usePageBack), logo + name (home link), the page's title (faded in once its h1
+                        scrolls away), CartButton (not on /cart)
   CartButton.tsx        "use client" — 44px cart square with the unit-count badge
   CartBar.tsx           "use client" — View cart: bottom bar on phones, floating pill from 768px; hidden when empty, on /cart and on /menu/*
   copy.ts               StoreCopy / CartCopy types, itemsText, cartLabel
@@ -33,8 +34,8 @@ StoreShell data=StoreShellData dict=dict.store
    ├─ PageTitleProvider
    │  ├─ StoreBannerStrip banner                   (only when paused or an announcement is on)
    │  ├─ StoreHeader bakeryName place dict.shell   <header> sticky
-   │  │  ├─ HomeBar  (on /)                          name + "Pickup at …" + CartButton
-   │  │  └─ PageBar  (elsewhere)                     Back + title + CartButton
+   │  │  ├─ HomeBar  (on /)                          logo + name + "Pickup at …" + CartButton
+   │  │  └─ PageBar  (elsewhere)                     Back + logo + name + title + CartButton
    │  ├─ Container as="main"  ← the page's bands stack here, gap-8 / md:gap-12
    │  └─ CartBar dict.shell                          spacer div + bottom bar (<md) + pill (md+)
    └─ SwitchDayDialog request                      (rendered by the provider; opens on a cross-day add)
@@ -55,7 +56,7 @@ StoreShell data=StoreShellData dict=dict.store
 | `@/components/ui/*` | `Container`, `Button`, `ButtonLink` (`shape="pill"`), `Dialog`, `Icon` (`cart`, `chevronLeft`) |
 | `@/lib/money` · `@/lib/template` | `formatPaise`, `fill` |
 
-External: `next/link`, `next/navigation` (`usePathname`, `useRouter`). Tokens: `bg-red-soft`, `text-red`, `bg-o50`, `bg-o700`, `text-o700`,
+External: `next/link`, `next/image` (`/logo.png`), `next/navigation` (`usePathname`, `useRouter`). Tokens: `bg-red-soft`, `text-red`, `bg-o50`, `bg-o700`, `text-o700`,
 `border-border`, `bg-sunken`, `shadow-raised`, `rounded-button`, `rounded-pill`, `text-h1`, `text-h2`, `text-small`, `text-micro`,
 `font-display`, utility `pb-safe-lg`; breakpoints `md`, `lg`.
 
@@ -69,7 +70,7 @@ SwitchDayDialog  { request: { from; to; count } | null; today; onConfirm; onClos
 StoreBannerStrip { banner: StoreBanner; dict: StoreCopy["shell"] }
 StoreHeader      { bakeryName; place: string | null; dict: StoreCopy["shell"] }
 HomeBar          { bakeryName; place: string | null; dict: StoreCopy["shell"] }
-PageBar          { canGoBack: boolean; showCart: boolean; dict: StoreCopy["shell"] }
+PageBar          { bakeryName; canGoBack: boolean; showCart: boolean; dict: StoreCopy["shell"] }
 CartButton       { dict: StoreCopy["shell"] }
 CartBar          { dict: StoreCopy["shell"] }
 ```
@@ -91,16 +92,20 @@ CartBar          { dict: StoreCopy["shell"] }
   order on the server.
 - **Banner** — `storeBanner()` gives pause precedence over the announcement, as the settings preview does. Paused is `role="alert"`.
 - **Header** — sticky, `shadow-raised` (a sticky bar may have one). Two rows, by path:
-  - **HomeBar** on `/`. `useScrolled` condenses past 64px and expands only above 8px — the name drops from `text-h1` to `text-h2` and
-    the address line goes, so the header shrinks by up to ~42px; scroll anchoring then moves `scrollY` by as much, and a single
+  - **HomeBar** on `/`. `useScrolled` condenses past 64px and expands only above 8px — the logo drops from 44px to 32px, the name from
+    `text-h1` to `text-h2`, and the address line goes, so the header shrinks by up to ~42px; scroll anchoring then moves `scrollY` by as much, and a single
     threshold would flip-flop into a render loop. Keep the gap wider than the shrink. No animation — sizes aren't transform or opacity.
-  - **PageBar** everywhere else (the item and cart designs): Back, a centred title, the cart; 61px tall. The title is the page's own —
+    The logo (`public/logo.png`, decorative `alt=""`) is a second link home for the pointer only — `tabIndex={-1}` and `aria-hidden`,
+    so keyboards and screen readers meet one home link, the name.
+  - **PageBar** everywhere else (the item and cart designs): Back, the logo and name (one home link, `{name}, home`), the title centred
+    in the space left, the cart; 61px tall. The title is the page's own —
     a page calls `usePageTitle(text, h1Id)` and it fades in (opacity + 4px rise, 150ms) once that h1 has scrolled under the header.
-    It's `aria-hidden`: the h1 is the heading. **Back** is a link to `/`, so it works before hydration and after a direct visit; once
+    It's `aria-hidden`: the h1 is the heading. While it shows, phones (<768px) drop the bakery's name and keep the logo, so the title
+    has the room. **Back** is a link to `/`, so it works before hydration and after a direct visit; once
     the visit has moved past its first page (`StoreHeader` keeps that path), it calls `router.back()` instead, which returns to the
     menu at the same scroll position. It never steps back off the site.
     A page with steps of its own takes Back over with `usePageBack(handler)` — the cart's details step returns to the cart that way. On
-    `/cart` the cart button gives way to a 44px space, so the title stays centred.
+    `/cart` the cart button gives way to a 44px space, so the row keeps its balance.
 - **CartBar** renders nothing while the cart is empty, on `/cart`, or on an item page (`/menu/*` — its own bottom bar has Add to cart
   and then View cart, and two fixed bars would stack). When shown it puts a spacer in the flow (`h-32` / `md:h-24`) so
   the page's last lines clear it. Phones: fixed bottom bar, count + total over a 48px button, `pb-safe-lg` clears the home indicator.
@@ -111,8 +116,8 @@ CartBar          { dict: StoreCopy["shell"] }
 
 | Width | Effect |
 |---|---|
-| base (320px+) | header `py-3`, name `text-h1` (condensed `text-h2`); View cart is a full-width bottom bar |
-| `md` 768px | HomeBar `py-4` (PageBar stays `py-2`); View cart becomes the floating pill, 24px from the corner; main gap 48px |
+| base (320px+) | header `py-3`, logo 44px (condensed 32px), name `text-h1` (condensed `text-h2`); View cart is a full-width bottom bar |
+| `md` 768px | HomeBar `py-4` (PageBar stays `py-2`); PageBar keeps the bakery's name beside the page title; View cart becomes the floating pill, 24px from the corner; main gap 48px |
 | `lg` 1024px | pill 32px from the corner; main top padding 32px |
 | `2xl`/`3xl` | Container widens (88rem / 100rem) |
 

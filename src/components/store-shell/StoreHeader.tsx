@@ -14,9 +14,9 @@ type StoreHeaderProps = {
 }
 
 /**
- * The sticky top bar of every customer screen. The landing page gets the bakery's name and pickup line
- * (HomeBar); every other screen gets Back, its own name and the cart (PageBar), as the item and cart designs
- * draw it. Client for the path, and so it can remember where this visit started.
+ * The sticky top bar of every customer screen. The landing page gets the logo, the bakery's name and pickup line
+ * (HomeBar); every other screen gets Back, the logo and name, its own title and the cart (PageBar). Client for the
+ * path, and so it can remember where this visit started.
  */
 export function StoreHeader({ bakeryName, place, dict }: StoreHeaderProps) {
   const pathname = usePathname()
@@ -27,7 +27,7 @@ export function StoreHeader({ bakeryName, place, dict }: StoreHeaderProps) {
       {pathname === "/" ? (
         <HomeBar bakeryName={bakeryName} place={place} dict={dict} />
       ) : (
-        <PageBar canGoBack={pathname !== entry} showCart={pathname !== "/cart"} dict={dict} />
+        <PageBar bakeryName={bakeryName} canGoBack={pathname !== entry} showCart={pathname !== "/cart"} dict={dict} />
       )}
     </header>
   )

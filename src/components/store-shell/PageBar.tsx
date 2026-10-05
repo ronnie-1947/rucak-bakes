@@ -1,17 +1,20 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Container } from "@/components/ui/Container"
 import { Icon } from "@/components/ui/icons/Icon"
 import { usePageTitleState } from "@/hooks/usePageTitle"
+import { fill } from "@/lib/template"
 import { CartButton } from "./CartButton"
 import type { StoreCopy } from "./copy"
 
 type PageBarProps = {
+  bakeryName: string
   /** An earlier page of this visit is behind this one in the history — Back steps to it instead of opening the menu. */
   canGoBack: boolean
-  /** Off on /cart — the page is the cart. A 44px space keeps the title centred. */
+  /** Off on /cart — the page is the cart. A 44px space keeps the row balanced. */
   showCart: boolean
   dict: StoreCopy["shell"]
 }
@@ -21,15 +24,22 @@ const titles: Record<"shown" | "hidden", string> = {
   hidden: "translate-y-1 opacity-0",
 }
 
+// Once the page's title is in the bar, a phone's bar keeps the logo and gives the name's room to the title.
+const names: Record<"shown" | "hidden", string> = {
+  shown: "hidden md:block",
+  hidden: "block",
+}
+
 /**
- * Every other customer screen's header row: Back, the page's name once its own heading has scrolled away
- * (hooks/usePageTitle), and the cart. Back is a link to the menu, so it works before hydration and after a
- * direct visit; within a visit it goes back instead, which keeps the menu's scroll position. A page with steps of
- * its own (the cart) can take Back over with usePageBack.
+ * Every other customer screen's header row: Back, the logo and bakery's name (home link), the page's name once
+ * its own heading has scrolled away (hooks/usePageTitle), and the cart. Back is a link to the menu, so it works
+ * before hydration and after a direct visit; within a visit it goes back instead, which keeps the menu's scroll
+ * position. A page with steps of its own (the cart) can take Back over with usePageBack.
  */
-export function PageBar({ canGoBack, showCart, dict }: PageBarProps) {
+export function PageBar({ bakeryName, canGoBack, showCart, dict }: PageBarProps) {
   const { title, back } = usePageTitleState()
   const router = useRouter()
+  const titleState = title?.shown ? "shown" : "hidden"
   return (
     <Container className="flex items-center gap-2 py-2">
       <Link
@@ -49,10 +59,18 @@ export function PageBar({ canGoBack, showCart, dict }: PageBarProps) {
       >
         <Icon name="chevronLeft" className="size-5.5" />
       </Link>
+      <Link
+        href="/"
+        aria-label={fill(dict.home, { name: bakeryName })}
+        className="flex h-11 min-w-0 shrink items-center gap-2 rounded-button text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-o700"
+      >
+        <Image src="/logo.png" alt="" width={34} height={32} className="h-8 w-auto shrink-0" />
+        <span className={`truncate font-display text-h2 font-semibold ${names[titleState]}`}>{bakeryName}</span>
+      </Link>
       {/* The page's own h1 is the heading; this repeats it for sighted users only. */}
       <span
         aria-hidden
-        className={`min-w-0 flex-1 truncate text-center font-display text-h2 font-semibold transition duration-150 ease-out motion-reduce:transition-none ${titles[title?.shown ? "shown" : "hidden"]}`}
+        className={`min-w-0 flex-1 truncate text-center font-display text-h2 font-semibold transition duration-150 ease-out motion-reduce:transition-none ${titles[titleState]}`}
       >
         {title?.text}
       </span>

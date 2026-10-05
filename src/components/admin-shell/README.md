@@ -7,7 +7,8 @@ which calls `requireStaff()` first. The login screen sits outside the `(shell)` 
 
 ```
 admin-shell/
-  AdminShell.tsx     entry (server) — one viewport tall; `main` is the scroll container
+  AdminShell.tsx     entry (server) — one viewport tall; `main` is the scroll container and (`relative`) the containing block,
+                     so no `sr-only` / absolute part of a screen can escape it and scroll the document
   Sidebar.tsx        ≥768px: 220px ink column — bakery, today, all six screens, who's signed in, sign out
   TabBar.tsx         <768px: five bottom tabs (Orders, Day sheet, Calendar, Menu, More), clear of the home indicator
   MobileHeader.tsx   <768px: bakery, today, "N pending" (links to the pending filter)
@@ -29,7 +30,7 @@ AdminShell dict=dict.admin data=ShellData
 └─ column
    ├─ p.status (only when ADMIN_AUTH_BYPASS)  dict.admin.shell.bypass
    ├─ MobileHeader (md:hidden)              shell.pending
-   ├─ main#admin-main  ← the page
+   ├─ main#admin-main (relative)  ← the page
    └─ TabBar (md:hidden) → NavLink × 5 (tabNav)
 ```
 

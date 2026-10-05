@@ -14,7 +14,9 @@ type AdminShellProps = {
 /**
  * The frame around every signed-in admin screen. The shell is exactly one viewport tall and `main`
  * is the scroll container — so a screen's sticky bars stick inside it, and the tab bar never covers
- * content.
+ * content. `main` is `relative` so it is also the containing block: an `sr-only` radio or legend deep in a long form
+ * would otherwise be placed against the page root, escape main's clip, and make the document itself scroll — sliding
+ * the whole shell up and leaving blank page under the tab bar.
  */
 export function AdminShell({ dict, data, children }: AdminShellProps) {
   return (
@@ -27,7 +29,7 @@ export function AdminShell({ dict, data, children }: AdminShellProps) {
           </p>
         ) : null}
         <MobileHeader dict={dict} data={data} />
-        <main id="admin-main" className="min-h-0 flex-1 overflow-y-auto overscroll-contain print:overflow-visible">
+        <main id="admin-main" className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain print:overflow-visible">
           {children}
         </main>
         <TabBar dict={dict} pendingCount={data.pendingCount} />
