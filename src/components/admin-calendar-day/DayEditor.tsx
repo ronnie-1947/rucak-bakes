@@ -55,7 +55,7 @@ export function DayEditor({ data, dict }: DayEditorProps) {
 
   return (
     <div className="flex min-h-full flex-col">
-      <Container className="flex flex-1 flex-col gap-6 pt-4 pb-12 md:pt-6 lg:gap-8 lg:pt-8">
+      <Container className="flex flex-1 flex-col gap-4 pt-3 pb-12 md:gap-6 md:pt-6 lg:gap-8 lg:pt-8">
         <DayHeader
           title={data.title}
           badge={badge}

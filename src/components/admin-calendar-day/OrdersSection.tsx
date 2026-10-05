@@ -30,9 +30,9 @@ export function OrdersSection({ data, maxOrders, dict }: OrdersSectionProps) {
   const ordersText = count === 1 ? o.countOne : fill(o.count, { count })
 
   return (
-    <section aria-labelledby="orders-title" className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id="orders-title" className="text-h2">
+    <section aria-labelledby="orders-title" className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-x-2">
+        <h2 id="orders-title" className="text-body md:text-h2">
           {o.title}
         </h2>
         <span className="flex items-center gap-4">
@@ -47,17 +47,19 @@ export function OrdersSection({ data, maxOrders, dict }: OrdersSectionProps) {
         </span>
       </div>
       {count === 0 ? (
-        <p className="rounded-panel bg-sunken p-4 text-center text-small-admin text-muted">{fill(o.none, { day: formatWeekday(data.date) })}</p>
+        <p className="rounded-panel bg-sunken p-3 text-center text-small-admin text-muted">{fill(o.none, { day: formatWeekday(data.date) })}</p>
       ) : (
         <>
-          <div className="flex flex-col gap-2">
-            <span className="font-semibold tabular-nums">
+          <div className="flex flex-col gap-1">
+            <span className="text-small-admin font-semibold tabular-nums">
               {fill(o.summary, { orders: ordersText, verified: data.verified, pending: data.pending })}
             </span>
-            <Meter value={count} max={maxOrders} tone={full ? "full" : "warm"} label={fill(o.taken, { count, max: maxOrders })} />
-            <span className={`text-small-admin tabular-nums ${takens[full ? "full" : "room"]}`}>
-              {fill(full ? o.takenFull : o.taken, { count, max: maxOrders })}
-            </span>
+            <div className="flex items-center gap-3">
+              <Meter value={count} max={maxOrders} tone={full ? "full" : "warm"} label={fill(o.taken, { count, max: maxOrders })} className="min-w-0 flex-1" />
+              <span className={`shrink-0 text-small-admin tabular-nums ${takens[full ? "full" : "room"]}`}>
+                {fill(full ? o.takenFull : o.taken, { count, max: maxOrders })}
+              </span>
+            </div>
           </div>
           <ul className="flex flex-col gap-2">
             {data.orders.map((order) => (

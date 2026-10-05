@@ -14,13 +14,13 @@ admin-calendar-day/
   AdminCalendarDay.tsx  entry (server) — DayEditor keyed by date
   DayEditor.tsx         "use client" — header, read-only note, the grid (orders + counter-items · settings + save card · preview), save bar, dialogs
   useDayEditor.ts       the editor's state: plan vs saved, open rows, search/category, sold out, save / discard, copy-from
-  DayHeader.tsx         back, "Saturday 3 Oct" + Open/Closed badge, Copy counter-items from another day, ‹ ›; every exit goes through the leave check
+  DayHeader.tsx         one row: back, "Saturday 3 Oct" + Open/Closed badge, ‹ ›; Copy counter-items from another day (a link under the title, a button beside it from 1280px); every exit goes through the leave check
   ClosedLine.tsx        "This day is closed. Customers can’t order for …" above the orders
-  OrdersSection.tsx     "Orders for this day" + Add order (?date=, inside the booking window, 7R.5) + Open in Orders: "6 orders · 4 verified · 2 pending", Meter, "6 of 10 orders taken", the rows
-  DayOrderRow.tsx       one order, linked: name, code, status badge; its lines; "Pickup 08:00" + Allergen / Note tag
+  OrdersSection.tsx     "Orders for this day" + Add order (?date=, inside the booking window, 7R.5) + Open in Orders: "6 orders · 4 verified · 2 pending", Meter beside "6 of 10 orders taken", the rows
+  DayOrderRow.tsx       one order, linked, two lines: name, code, status badge; its lines with Allergen / Note tag + "Pickup 08:00" at the right
   ItemPicker.tsx        "Counter-items made this day": Select all / Clear all, intro, search, category chips, PlanStrip, groups (or none / no match)
   ItemGroup.tsx         a category: sticky header "3 of 4 on", then its rows
-  ItemRow.tsx           tick ("Bake X as a counter-item"), 48px photo, name, base price, "12 made", Override / Sold out tags, chevron
+  ItemRow.tsx           tick ("Bake X as a counter-item"), 36px photo, name, base price, "12 made", Override / Sold out tags, chevron
   ItemControls.tsx      the opened row: Quantity made Stepper (0–99) + "Usual batch 8", ₹ override, Sold out / Undo sold out
   PlanStrip.tsx         <1024: sticky "5 counter-items · 86 pieces"
   DaySettings.tsx       Day status (+ why closed), Orders close (+ how much earlier a long-notice item closes), Max verified orders,
@@ -128,9 +128,10 @@ LeaveDialog      { day; changes; dict: DayCopy["leave"]; onClose; onLeave }
 
 | Width | Effect |
 |---|---|
-| `xxxs`–`sm` | one column: orders, counter-items, then settings; title and badge stacked; Copy full width; chips scroll sideways; sticky strip + save bar |
-| `md` (768, the 820px kitchen tablet) | settings 2×2; item controls three across; chips wrap; title and badge in a row; Copy beside them |
+| `xxxs`–`sm` | one column: orders, counter-items, then settings; title (H2 size) + badge beside ‹ ›, Copy as a link under the title ("Copy counter-items…" below 375px); chips scroll sideways; sticky strip + save bar |
+| `md` (768, the 820px kitchen tablet) | settings 2×2; item controls three across; chips wrap; title at H1, section titles at H2 |
 | `lg` (1024) | orders + counter-items 62% · sticky settings column 38% with the save card; strip and save bar go away |
+| `xl` (1280) | Copy counter-items from another day moves up beside the title as an outline button |
 | `2xl` (1600) | orders + counter-items 45% · settings 30% · Fresh today preview 25% |
 
 Test at `xxxs` (320px) and `3xl` (1920px+) any time you touch this component. The 820px tablet matters most.

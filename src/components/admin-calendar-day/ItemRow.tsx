@@ -41,12 +41,12 @@ export function ItemRow({ item, plan, expanded, onToggle, onExpand, onQuantity, 
 
   return (
     <li className="rounded-panel border border-border bg-background">
-      <div className="grid min-h-14 grid-cols-[2.75rem_3rem_minmax(0,1fr)_2.75rem] items-center gap-2 py-1 pr-1">
+      <div className="grid min-h-12 grid-cols-[2.75rem_2.25rem_minmax(0,1fr)_2.75rem] items-center gap-2 py-1 pr-1">
         <span className="grid place-items-center">
           <SelectBox checked={plan.included} onChange={onToggle} label={fill(dict.include, { name: item.name })} />
         </span>
         <span className={fades[fade]}>
-          <ItemThumb images={item.image ? [item.image] : []} muted={item.state !== "active"} size="md" />
+          <ItemThumb images={item.image ? [item.image] : []} muted={item.state !== "active"} size="sm" />
         </span>
         <span className={`flex min-w-0 flex-col ${fades[fade]}`}>
           <span className="flex min-w-0 items-center gap-2">

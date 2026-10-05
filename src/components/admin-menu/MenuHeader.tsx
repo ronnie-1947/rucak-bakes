@@ -42,7 +42,7 @@ export function MenuHeader({ dict, filters, totalCount, activeCount, archivedCou
             </Link>
           ) : null}
           {archived ? null : (
-            <ButtonLink href="/admin/menu/new" variant="primary" className="ml-1 hidden md:inline-flex">
+            <ButtonLink href="/admin/menu/new" variant="primary" className="ml-1 max-md:hidden">
               <Icon name="plus" className="size-4.5" strokeWidth={2.4} />
               <span>{dict.add}</span>
             </ButtonLink>

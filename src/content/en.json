@@ -825,6 +825,7 @@
       "open": "Open",
       "closed": "Closed",
       "copyFrom": "Copy counter-items from another day",
+      "copyFromShort": "Copy counter-items…",
       "pastNote": "This day has passed — it’s shown read-only.",
       "closedLine": "This day is closed. Customers can’t order for {day}.",
       "orders": {

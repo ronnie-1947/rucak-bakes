@@ -40,8 +40,8 @@ export function ItemPicker({ data, editor, dict }: ItemPickerProps) {
 
   return (
     <section aria-labelledby="items-title" className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id="items-title" className="text-h2">
+      <div className="-mb-2 flex flex-wrap items-center justify-between gap-x-2">
+        <h2 id="items-title" className="text-body md:text-h2">
           {d.title}
         </h2>
         <div className="flex gap-1">

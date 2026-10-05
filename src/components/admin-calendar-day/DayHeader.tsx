@@ -34,35 +34,37 @@ const dots: Record<Badge, string> = {
 const arrow = buttonClasses("outline", "sm", "w-11 shrink-0 px-0")
 
 /**
- * Back to the week, the day with its saved Open / Closed badge (red when closed with orders), Copy from
- * another day (beside the title from 768px, full width under it on phones), and ‹ › to the next day.
+ * Back to the week, the day with its saved Open / Closed badge (red when closed with orders), and ‹ › to the next day —
+ * one row at every width. Copy from another day is a link under the title (shortened below 375px) and a button beside it
+ * from 1280px, where it fits beside an H1 day. `max-xl:hidden`, not `hidden xl:inline-flex`: Button's own `inline-flex`
+ * sorts after `hidden` and would win.
  */
 export function DayHeader({ title, badge, backHref, prevHref, nextHref, onCopy, onLeave, dict }: DayHeaderProps) {
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-start gap-2">
+    <div className="flex flex-col">
+      <div className="flex items-center gap-1">
         <Link
           href={backHref}
           onClick={(event) => onLeave(event, backHref)}
           aria-label={dict.back}
           className="grid size-11 shrink-0 place-items-center rounded-button hover:bg-sunken focus-visible:outline-2 focus-visible:outline-o700"
         >
-          <Icon name="chevronLeft" className="size-5.5" />
+          <Icon name="chevronLeft" className="size-5" />
         </Link>
-        <div className="flex min-w-0 flex-1 flex-col items-start gap-x-3 gap-y-1 pt-2 md:flex-row md:flex-wrap md:items-center">
-          <h1 className="text-h1 tabular-nums">{title}</h1>
-          <span className={`inline-flex items-center gap-2 rounded-chip px-2 text-micro font-semibold ${badges[badge]}`}>
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+          <h1 className="text-h2 tabular-nums md:text-h1">{title}</h1>
+          <span className={`inline-flex items-center gap-1 rounded-chip px-2 text-micro font-semibold ${badges[badge]}`}>
             <span aria-hidden className={`size-1.5 rounded-pill ${dots[badge]}`} />
             {badge === "open" ? dict.open : dict.closed}
           </span>
         </div>
         {onCopy ? (
-          <Button variant="outlineLink" className="hidden shrink-0 md:inline-flex" onClick={onCopy}>
-            <Icon name="copy" className="size-4.5" />
+          <Button variant="outlineLink" size="sm" className="mr-1 shrink-0 max-xl:hidden" onClick={onCopy}>
+            <Icon name="copy" className="size-4" />
             <span>{dict.copyFrom}</span>
           </Button>
         ) : null}
-        <div className="flex shrink-0 gap-2">
+        <div className="flex shrink-0 gap-1">
           {prevHref ? (
             <Link href={prevHref} onClick={(event) => onLeave(event, prevHref)} aria-label={dict.prevDay} className={arrow}>
               <Icon name="chevronLeft" className="size-4.5" strokeWidth={2.2} />
@@ -84,9 +86,10 @@ export function DayHeader({ title, badge, backHref, prevHref, nextHref, onCopy, 
         </div>
       </div>
       {onCopy ? (
-        <Button variant="outlineLink" className="w-full md:hidden" onClick={onCopy}>
-          <Icon name="copy" className="size-4.5" />
-          <span>{dict.copyFrom}</span>
+        <Button variant="link" size="inline" className="ml-12 self-start xl:hidden" onClick={onCopy}>
+          <Icon name="copy" className="size-4" />
+          <span className="xxs:hidden">{dict.copyFromShort}</span>
+          <span className="max-xxs:hidden">{dict.copyFrom}</span>
         </Button>
       ) : null}
     </div>
