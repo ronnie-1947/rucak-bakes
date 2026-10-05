@@ -15,7 +15,14 @@ export default async function Home() {
     <div lang={htmlLang(locale)} className="contents">
       <Hero hero={data.hero} dict={dict.landing.hero} />
       <FreshToday fresh={data.fresh} today={data.today} phone={data.visit.phone} dict={dict.landing.freshToday} store={dict.store} />
-      <Menu catalogue={data.catalogue} categories={data.categories} phone={data.visit.phone} dict={dict.landing.menu} store={dict.store} />
+      <Menu
+        catalogue={data.catalogue}
+        categories={data.categories}
+        phone={data.visit.phone}
+        today={data.today}
+        dict={dict.landing.menu}
+        store={dict.store}
+      />
       <VisitUs visit={data.visit} dict={dict.landing.visitUs} />
     </div>
   )

@@ -1,7 +1,7 @@
 # menu
 
 "Everything we bake" on `/` (§10R): every active item, in the bakery's category order, under category chips. Every item can be ordered
-ahead (Choose date → its page, where the pickup dates are) or, call only, called about — nothing fades. Imported from
+ahead (Add to cart, straight from the card) or, call only, called about — nothing fades. Imported from
 `Bakery Order Landing.dc.html`.
 
 ## Files in this folder
@@ -10,7 +10,7 @@ ahead (Choose date → its page, where the pickup dates are) or, call only, call
 menu/
   Menu.tsx             entry (server) — heading; builds the filters and the cards, hands both to CategoryFilter
   CategoryFilter.tsx   "use client" — the chips (All + each category with its count) and the grid they narrow
-  copy.ts              menuChip (the notice chip), menuAction (Choose date / Call to order)
+  copy.ts              menuChip (the notice chip), addCopy (Add to cart's words), menuAction (Add to cart / Call to order / none)
   README.md
 ```
 
@@ -28,10 +28,9 @@ section (nothing when the catalogue is empty)
 
 | Import | Purpose |
 |---|---|
-| `@/lib/storefront/types` | `CatalogueItem` |
+| `@/lib/storefront/types` | `CatalogueItem` (with `dates`, the dates it can be ordered for) |
 | `@/lib/storefront/words` | `noticeChip` — "Same day", "Order by tomorrow", "Order 3 days ahead", "Made to order" |
-| `@/lib/storefront/routes` | `itemHref` |
-| `@/components/item-card/*` | `ItemCard`; `CardAction`, `ItemChip` |
+| `@/components/item-card/*` | `ItemCard`; `CardAction`, `AddCopy`, `ItemChip` |
 | `@/components/ui/Chip` | the filter chips (`ink` tone, `pill` shape, `small` size) |
 
 Tokens: `text-h2`; breakpoints `md`, `lg`.
@@ -39,7 +38,7 @@ Tokens: `text-h2`; breakpoints `md`, `lg`.
 ## Props
 
 ```ts
-Menu           { catalogue: CatalogueItem[]; categories: { slug; name }[]; phone: string | null; dict: Dict["landing"]["menu"]; store: Dict["store"] }
+Menu           { catalogue: CatalogueItem[]; categories: { slug; name }[]; phone: string | null; today: IsoDate; dict: Dict["landing"]["menu"]; store: Dict["store"] }
 CategoryFilter { label: string; filters: { key; label; count }[]; cards: { id; key; card: ReactNode }[] }
 ```
 
@@ -47,16 +46,23 @@ CategoryFilter { label: string; filters: { key; label; count }[]; cards: { id; k
 
 ```json
 "menu": { "title", "filterLabel", "all", "other", "onCounter": "On the counter today",
-          "choose": "Choose date", "chooseLabel": "Choose a date for {name}", "call": "Call to order", "callLabel": "Call to order {name}" }
+          "add": "Add to cart", "addLabel": "Add {name} to cart for {day}", "forDay": "For {day}",
+          "call": "Call to order", "callLabel": "Call to order {name}" }
 ```
 
-Also `store.notice` (the chip), `store.item` (prices, units, "from {price}").
+Also `store.notice` (the chip), `store.item` (prices, units, "from {price}", the stepper's `decrease` / `increase`), `store.itemPage.inCart`
+(the status line) and `store.days`.
 
 ## How it works
 
 - **Card** — `ItemCard` with the notice chip on the photo (white), name, price (a call-only item reads "from ₹1,500"), a green "On the
-  counter today" tag when it's one of today's counter-items (on or sold out), and a full-width 44px button: **Choose date** (its item
-  page) or **Call to order** (`tel:`, o700 border; the item page when the bakery has no public phone).
+  counter today" tag when it's one of today's counter-items (on or sold out), and a full-width 44px control (`menuAction`):
+  - **Add to cart** when `dates` has one — the booking window's dates the item can be ordered for, judged by the deadline rule in
+    `loadLanding`. It adds for the cart's day when the item can be had then, else for the earliest date, then becomes a stepper with
+    "For Wednesday" ([item-card](../../../../components/item-card/)). The item page still lets the customer pick any date.
+  - **Call to order** otherwise — call only, or no date open (fully booked, too soon, paused): `tel:` with the phone glyph, o700 border.
+    No public phone → no button; the card still opens its page, which says why.
+  - Tapping anywhere else on the card opens `/menu/[slug]`.
 - **Filter** — client state only, no URL: All plus each category that has an item (and "Other" for uncategorised ones), each with its
   count; the chosen chip goes dark (`aria-pressed`). The cards are rendered on the server and handed to the filter as nodes.
 

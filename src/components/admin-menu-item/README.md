@@ -42,7 +42,7 @@ admin-menu-item/
   SaveActions.tsx        Discard · Save and add another (create) · Save item / Create item
   SaveCard.tsx           ≥1024: status + actions at the top of the sticky right column
   SaveBar.tsx            <1024: sticky bottom bar while there's something to save
-  ItemPreview.tsx        the customer's menu card (notice chip, Choose date / Call to order) and item-page header, live
+  ItemPreview.tsx        the customer's menu card (notice chip, Add to cart / Call to order) and item-page header, live
   ItemPerformance.tsx    ≥1600 (saved items): last 30 days (orders, units, counter days, counter sold out) + coming up by date
   LeaveDialog.tsx        "Leave without saving?" naming what changed
   copy.ts                problemText, inlineError, changesText, noticeValue, noticeHelp

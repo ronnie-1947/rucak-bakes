@@ -653,7 +653,7 @@
         "namePlaceholder": "Item name",
         "descriptionPlaceholder": "Short description appears here",
         "notice": { "sameDay": "Same day", "byTomorrow": "Order by tomorrow", "daysAhead": "Order {count} days ahead", "callOnly": "Made to order" },
-        "choose": "Choose date",
+        "add": "Add to cart",
         "call": "Call to order",
         "disclaimer": "Made in a kitchen that handles nuts, dairy and gluten."
       },
@@ -1941,8 +1941,9 @@
       "all": "All",
       "other": "Other",
       "onCounter": "On the counter today",
-      "choose": "Order",
-      "chooseLabel": "Choose a date for {name}",
+      "add": "Add to cart",
+      "addLabel": "Add {name} to cart for {day}",
+      "forDay": "For {day}",
       "call": "Call to order",
       "callLabel": "Call to order {name}"
     },

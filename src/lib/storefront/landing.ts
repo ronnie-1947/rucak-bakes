@@ -2,6 +2,7 @@ import { connection } from "next/server"
 import { type IsoDate, todayIn } from "@/lib/dates"
 import { prisma } from "@/lib/db"
 import { loadBookingWindow } from "@/lib/orders/booking"
+import { dayAvailability } from "@/lib/orders/deadline"
 import { type OpeningHours, parseOpeningHours } from "@/lib/settings/hours"
 import { getSettings } from "@/lib/settings/row"
 import { catalogueOrder, storeItemSelect, toStoreItem } from "./catalogue"
@@ -61,6 +62,11 @@ export async function loadLanding(): Promise<LandingData> {
       })
     : []
   const used = new Set(ordered.map((item) => item.category))
+  // Judged by the deadline rule, as the item page's strip is; none while ordering is paused. The cart and placeOrder check again.
+  const datesFor = (item: { orderable: boolean; noticeDays: number }): IsoDate[] =>
+    item.orderable && !window.paused
+      ? window.days.filter((day) => dayAvailability(day, [item.noticeDays], window) === "open").map((day) => day.date)
+      : []
 
   return {
     today,
@@ -70,7 +76,12 @@ export async function loadLanding(): Promise<LandingData> {
       closes: counterCloses(settings.openingHours, today),
       back: open ? null : (window.days.find((day) => day.date > today && day.isOpen)?.date ?? null),
     },
-    catalogue: ordered.map((item) => ({ ...toStoreItem(item), category: item.category, onCounter: open && onCounter.has(item.id) })),
+    catalogue: ordered.map((item) => ({
+      ...toStoreItem(item),
+      category: item.category,
+      onCounter: open && onCounter.has(item.id),
+      dates: datesFor(item),
+    })),
     categories: categories.filter((category) => used.has(category.slug)),
     hero: { image: settings.heroImage, tagline: settings.tagline?.trim() || null },
     visit: {

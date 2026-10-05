@@ -10,16 +10,23 @@ type CallLinkProps = {
   ariaLabel?: string
   variant?: ButtonVariant
   size?: ButtonSize
+  /** Let a long label wrap — "Call to order" on a narrow card. Off by default: a phone number never breaks. */
+  wrap?: boolean
   className?: string
 }
 
+const wraps: Record<"wrap" | "nowrap", string> = {
+  wrap: "text-center",
+  nowrap: "whitespace-nowrap",
+}
+
 /** A tel: link drawn as a button, with the phone glyph — the customer screens' one way to reach the bakery. */
-export function CallLink({ phone, label, ariaLabel, variant = "outlineAccent", size = "md", className }: CallLinkProps) {
+export function CallLink({ phone, label, ariaLabel, variant = "outlineAccent", size = "md", wrap = false, className }: CallLinkProps) {
   return (
     <a
       href={`tel:${phone}`}
       aria-label={ariaLabel}
-      className={buttonClasses(variant, size, `font-semibold whitespace-nowrap tabular-nums ${className ?? ""}`)}
+      className={buttonClasses(variant, size, `font-semibold tabular-nums ${wraps[wrap ? "wrap" : "nowrap"]} ${className ?? ""}`)}
     >
       <Icon name="phone" className="size-4.5 shrink-0" />
       {label}

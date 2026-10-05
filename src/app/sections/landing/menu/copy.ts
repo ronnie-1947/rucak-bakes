@@ -1,6 +1,6 @@
-import type { CardAction, ItemChip } from "@/components/item-card/card"
+import type { AddCopy, CardAction, ItemChip } from "@/components/item-card/card"
+import type { IsoDate } from "@/lib/dates"
 import type { Dict } from "@/lib/i18n"
-import { itemHref } from "@/lib/storefront/routes"
 import type { CatalogueItem } from "@/lib/storefront/types"
 import { noticeChip } from "@/lib/storefront/words"
 import { fill } from "@/lib/template"
@@ -14,8 +14,25 @@ export function menuChip(item: CatalogueItem, notice: Dict["store"]["notice"]): 
   return { text: noticeChip(item.noticeDays, item.orderable, notice), tone: "plain" }
 }
 
-/** Choose date (its page, where the dates are), or Call to order — the page instead when the bakery has no public phone. */
-export function menuAction(item: CatalogueItem, phone: string | null, dict: MenuCopy): CardAction {
-  if (item.orderable) return { look: "choose", label: dict.choose, ariaLabel: fill(dict.chooseLabel, { name: item.name }), href: itemHref(item.slug) }
-  return { look: "call", label: dict.call, ariaLabel: fill(dict.callLabel, { name: item.name }), href: phone ? `tel:${phone}` : itemHref(item.slug) }
+/** Add to cart's words — the band's, plus the item page's stepper labels and status line. */
+export function addCopy(dict: MenuCopy, store: Dict["store"]): AddCopy {
+  return {
+    add: dict.add,
+    addLabel: dict.addLabel,
+    forDay: dict.forDay,
+    inCart: store.itemPage.inCart,
+    decrease: store.item.decrease,
+    increase: store.item.increase,
+    days: store.days,
+  }
+}
+
+/**
+ * Add to cart while the item can be ordered online for a date in the window; otherwise — call only, or no date open — Call
+ * to order, which rings the bakery. No button without a public phone: the card still opens the item page, which says why.
+ */
+export function menuAction(item: CatalogueItem, phone: string | null, today: IsoDate, add: AddCopy, dict: MenuCopy): CardAction | undefined {
+  if (item.dates.length > 0) return { look: "add", dates: item.dates, today, copy: add }
+  if (!phone) return undefined
+  return { look: "call", label: dict.call, ariaLabel: fill(dict.callLabel, { name: item.name }), phone }
 }

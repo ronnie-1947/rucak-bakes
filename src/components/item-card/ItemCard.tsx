@@ -1,9 +1,10 @@
 import Link from "next/link"
-import { ButtonLink } from "@/components/ui/ButtonLink"
+import { CallLink } from "@/components/ui/CallLink"
 import { Tag } from "@/components/ui/Tag"
 import type { Dict } from "@/lib/i18n"
 import { itemHref } from "@/lib/storefront/routes"
 import type { StoreItem } from "@/lib/storefront/types"
+import { AddToCart } from "./AddToCart"
 import { type CardAction, type ItemChip, priceParts } from "./card"
 import { ItemPhoto } from "./ItemPhoto"
 
@@ -15,7 +16,7 @@ type ItemCardProps = {
   muted?: boolean
   /** A green fact under the price — "On the counter today". */
   tag?: string | null
-  /** The full-width button at the foot — Choose date or Call to order. Omitted: a card that only links. */
+  /** The full-width control at the foot — Add to cart (then its stepper) or Call to order. Omitted: a card that only links. */
   action?: CardAction
   dict: Dict["store"]["item"]
   className?: string
@@ -26,21 +27,16 @@ const looks: Record<"muted" | "plain", string> = {
   plain: "",
 }
 
-const actions: Record<CardAction["look"], "outlineLink" | "outlineAccent"> = {
-  choose: "outlineLink",
-  call: "outlineAccent",
-}
-
 /**
  * One item as a customer card (16px corners, 1px border, no shadow): photo with its chip, name, price, an optional green
  * tag and an optional button. The name's link stretches over the whole card, so a tap anywhere opens /menu/[slug]; the
- * button sits above that layer.
+ * button sits above that layer. 12px padding below 375px, where a 2-column card is too narrow for the stepper otherwise.
  */
 export function ItemCard({ item, chip, muted = false, tag, action, dict, className }: ItemCardProps) {
   const { price, unit } = priceParts(item, dict)
   return (
     <article
-      className={`relative flex flex-col gap-3 rounded-card border border-border bg-background p-4 transition-transform duration-150 ease-out active:scale-99 motion-reduce:transition-none ${looks[muted ? "muted" : "plain"]} ${className ?? ""}`}
+      className={`relative flex flex-col gap-3 rounded-card border border-border bg-background p-3 transition-transform duration-150 ease-out active:scale-99 motion-reduce:transition-none xxs:p-4 ${looks[muted ? "muted" : "plain"]} ${className ?? ""}`}
     >
       <ItemPhoto image={item.image} alt={item.imageAlt} chip={chip} muted={muted} />
       <div className="flex flex-1 flex-col gap-1">
@@ -62,10 +58,9 @@ export function ItemCard({ item, chip, muted = false, tag, action, dict, classNa
           </Tag>
         ) : null}
       </div>
-      {action ? (
-        <ButtonLink href={action.href} variant={actions[action.look]} aria-label={action.ariaLabel} className="relative z-10 w-full font-semibold">
-          {action.label}
-        </ButtonLink>
+      {action?.look === "add" ? <AddToCart item={item} dates={action.dates} today={action.today} dict={action.copy} /> : null}
+      {action?.look === "call" ? (
+        <CallLink phone={action.phone} label={action.label} ariaLabel={action.ariaLabel} wrap className="relative z-10 w-full" />
       ) : null}
     </article>
   )

@@ -45,10 +45,13 @@ const widths: Record<Width, string> = {
   full: "w-full",
 }
 
-/** The value's width; `lg` sits beside a button that needs the room, and only ever shows one or two digits. */
+/**
+ * The value's width; `lg` sits beside a button that needs the room, and only ever shows one or two digits. `full` takes the
+ * rest of its column, down to 20px — two digits, so the stepper fits a 2-column card at 320px.
+ */
 const values: Record<Size, Record<Width, string>> = {
-  md: { auto: "min-w-14", full: "min-w-6 flex-1" },
-  lg: { auto: "min-w-8", full: "min-w-6 flex-1" },
+  md: { auto: "min-w-14", full: "min-w-5 flex-1" },
+  lg: { auto: "min-w-8", full: "min-w-5 flex-1" },
 }
 
 /** − value + in one bordered pill. Each button is a 44px target; the value is a spinbutton for screen readers. */

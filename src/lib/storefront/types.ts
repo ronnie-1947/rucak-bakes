@@ -32,6 +32,8 @@ export type CatalogueItem = StoreItem & {
   category: string | null
   /** On today's counter, sold out or not — "On the counter today". */
   onCounter: boolean
+  /** The booking window's dates an online order can be placed for now, earliest first — Add to cart picks one. Empty: call only, or none open. */
+  dates: IsoDate[]
 }
 
 /** `on` counter-items to walk in for · `soldOut` every one gone · `none` open, orders only · `closed` closed today. */
