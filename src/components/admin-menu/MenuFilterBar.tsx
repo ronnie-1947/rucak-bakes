@@ -20,8 +20,9 @@ type MenuFilterBarProps = {
 export function MenuFilterBar({ dict, filters, view, categories }: MenuFilterBarProps) {
   const sortOptions = sortChoices.map((sort) => ({ value: sort, label: dict.sorts[sort], href: menuHref({ ...filters, sort }) }))
 
+  // z-30: above the rows' controls (z-20, which clears Select's z-10 row cover).
   return (
-    <div className="sticky top-0 z-20 border-y border-border bg-background shadow-raised">
+    <div className="sticky top-0 z-30 border-y border-border bg-background shadow-raised">
       <Container className="flex flex-col gap-2 py-3">
         <div className="flex items-center gap-x-4 gap-y-2">
           <div className="min-w-0 flex-1 md:max-w-80">

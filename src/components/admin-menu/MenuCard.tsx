@@ -60,7 +60,7 @@ export function MenuCard({ item, dict, selectMode, checked, onToggle }: MenuCard
         {item.isActive ? null : <span className="text-small-admin text-muted">{d.inactiveNote}</span>}
       </div>
 
-      <div className="relative z-20 mt-auto flex flex-wrap items-center justify-between gap-x-2 border-t border-border pt-1">
+      <div className="relative z-20 mt-auto flex flex-wrap items-center justify-between gap-x-2 border-t border-border pt-1 has-[[aria-expanded=true]]:z-40">
         <ItemSwitch item={item} dict={d} />
         <ItemMenu item={item} dict={d} direction="up" />
       </div>

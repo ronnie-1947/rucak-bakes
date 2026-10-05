@@ -63,7 +63,8 @@ export function MenuRow({ item, dict, selectMode, checked, onToggle }: MenuRowPr
         {item.isActive ? null : <span className="text-small-admin text-muted">{d.inactiveNote}</span>}
       </div>
 
-      <div className="relative z-20 flex shrink-0 flex-col items-end">
+      {/* z-20 clears Select's z-10 row cover; an open ⋯ menu lifts it over the next row (z-40). */}
+      <div className="relative z-20 flex shrink-0 flex-col items-end has-[[aria-expanded=true]]:z-40">
         <ItemMenu item={item} dict={d} />
         <ItemSwitch item={item} dict={d} className="min-w-26" />
       </div>

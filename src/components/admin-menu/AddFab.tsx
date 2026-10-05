@@ -11,7 +11,7 @@ type AddFabProps = {
  */
 export function AddFab({ label }: AddFabProps) {
   return (
-    <div className="pointer-events-none sticky bottom-4 flex justify-end px-4 md:hidden">
+    <div className="pointer-events-none sticky bottom-4 z-30 flex justify-end px-4 md:hidden">
       <Link
         href="/admin/menu/new"
         aria-label={label}
