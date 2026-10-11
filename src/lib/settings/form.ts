@@ -113,15 +113,14 @@ export function orderingChanges(current: OrderingValues, saved: OrderingValues):
 
 // ── Appearance ──────────────────────────────────────────────────────────────
 
+/** The landing photo isn't here: it saves on its own, the moment it's uploaded (saveHeroImage). */
 export type AppearanceValues = {
-  /** A Cloudinary public_id. */
-  heroImage: string | null
   announcementOn: boolean
   /** Kept while the banner is off, so turning it back on brings the text back. */
   announcement: string
 }
 
-export type AppearanceField = "heroImage" | "announcement"
+export type AppearanceField = "announcement"
 
 export function appearanceProblems(values: AppearanceValues): Problems<AppearanceField> {
   const problems: Problems<AppearanceField> = {}

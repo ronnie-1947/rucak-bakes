@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { deleteImage } from "@/app/actions/cloudinary"
-import { saveAppearanceSettings } from "@/app/actions/settings"
+import { saveAppearanceSettings, saveHeroImage } from "@/app/actions/settings"
 import { Field } from "@/components/ui/Field"
 import { Switch } from "@/components/ui/Switch"
 import { TextInput } from "@/components/ui/TextInput"
@@ -27,14 +27,9 @@ type AppearanceSectionProps = {
 
 const submit = (values: AppearanceValues) => saveAppearanceSettings(values)
 
-/** A photo uploaded but never saved — dropped from Cloudinary (deleteImage refuses anything still in use). */
-function dropUnsaved(publicId: string | null, saved: string | null) {
-  if (publicId && publicId !== saved) void deleteImage(publicId).catch(() => undefined)
-}
-
 /**
- * The landing page photo and the announcement strip, saved together; currency and timezone are shown but
- * fixed. From 1280px the landing page previews beside them — with the pause message in place of the
+ * The landing page photo, saved the moment it's uploaded, and the announcement strip, saved with Save;
+ * currency and timezone are shown but fixed. From 1280px the landing page previews beside them — with the pause message in place of the
  * announcement while ordering is paused, as customers would see it.
  */
 export function AppearanceSection({ data, dict }: AppearanceSectionProps) {
@@ -48,21 +43,34 @@ export function AppearanceSection({ data, dict }: AppearanceSectionProps) {
     timezone: data.timezone,
   })
   const { values, problems, set } = form
-  const [uploading, setUploading] = useState(false)
+  const [hero, setHero] = useState(data.heroImage)
+  const [seenHero, setSeenHero] = useState(data.heroImage)
   const announcement = values.announcement.trim()
   const banner = landingBanner(data.pause, values.announcementOn, values.announcement, dict)
 
-  const controls = {
-    ...form,
-    canSave: form.canSave && !uploading,
-    discard: () => {
-      dropUnsaved(values.heroImage, form.saved.heroImage)
-      form.discard()
-    },
+  // Fresh from the server (after a save, or another owner's): the photo shown follows it.
+  if (data.heroImage !== seenHero) {
+    setSeenHero(data.heroImage)
+    setHero(data.heroImage)
+  }
+
+  const changeHero = async (heroImage: string | null) => {
+    try {
+      const result = await saveHeroImage({ heroImage })
+      if (result.ok) {
+        setHero(heroImage)
+        return true
+      }
+    } catch {
+      // A dropped connection — said below the photo, like a refusal.
+    }
+    // An upload that never got saved is dropped from Cloudinary (deleteImage refuses anything still in use).
+    if (heroImage) void deleteImage(heroImage).catch(() => undefined)
+    return false
   }
 
   return (
-    <FormFrame form={controls} canEdit={data.canEdit} dict={dict.save}>
+    <FormFrame form={form} canEdit={data.canEdit} dict={dict.save}>
       <PaneGrid
         canEdit={data.canEdit}
         where="landing"
@@ -74,7 +82,7 @@ export function AppearanceSection({ data, dict }: AppearanceSectionProps) {
             phone={data.bakery.phone ? `${dict.bakery.phonePrefix} ${data.bakery.phone}` : ""}
             address={data.bakery.pickupAddress}
             hours={data.hoursSet ? data.bakery.hours : null}
-            heroImage={values.heroImage}
+            heroImage={hero}
             banner={banner}
             today={data.today}
             dict={dict}
@@ -84,12 +92,8 @@ export function AppearanceSection({ data, dict }: AppearanceSectionProps) {
         <div className={`flex min-w-0 flex-col gap-2 ${fullRow}`}>
           <span className="text-small-admin text-muted">{d.hero}</span>
           <HeroPicker
-            value={values.heroImage}
-            onChange={(heroImage) => {
-              dropUnsaved(values.heroImage, form.saved.heroImage)
-              set({ heroImage })
-            }}
-            onUploading={setUploading}
+            value={hero}
+            onChange={changeHero}
             overlay={data.bakery.bakeryName}
             dict={d}
           />

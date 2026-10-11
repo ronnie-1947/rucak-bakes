@@ -1,7 +1,6 @@
-import Image from "next/image"
-import { imageUrl } from "@/lib/cloudinary"
 import type { Dict } from "@/lib/i18n"
 import type { LandingData } from "@/lib/storefront/landing"
+import { HeroPhoto } from "./HeroPhoto"
 
 type HeroProps = {
   hero: LandingData["hero"]
@@ -15,18 +14,7 @@ type HeroProps = {
 export function Hero({ hero, dict }: HeroProps) {
   return (
     <section className="relative isolate min-h-90 overflow-hidden rounded-sheet bg-sunken md:aspect-21/9 md:min-h-0 lg:aspect-21/8">
-      {hero.image ? (
-        <Image
-          // Uncropped: the frame is near-square on a phone and 21:9 on a laptop, so object-cover does the crop.
-          src={imageUrl(hero.image, { w: 2560 })}
-          alt=""
-          fill
-          priority
-          unoptimized
-          sizes="(min-width: 1280px) 1280px, 100vw"
-          className="-z-10 object-cover"
-        />
-      ) : null}
+      {hero.image ? <HeroPhoto image={hero.image} /> : null}
       <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1 bg-o500 p-4 text-foreground lg:px-8 lg:py-6">
         <h1 className="text-glance text-balance lg:text-glance-lg">{hero.tagline ?? dict.fallback}</h1>
         <p className="text-pretty">{dict.sub}</p>

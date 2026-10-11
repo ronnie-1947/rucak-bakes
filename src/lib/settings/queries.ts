@@ -38,6 +38,8 @@ export type SettingsPageData = {
   autoVerifyTrusted: boolean
   pause: { paused: boolean; reason: string }
   appearance: AppearanceValues
+  /** The landing photo's Cloudinary public_id — saved on upload, outside the Appearance form. */
+  heroImage: string | null
   telegram: TelegramState
   staff: StaffMember[]
 }
@@ -88,10 +90,10 @@ export async function loadSettingsPage(searchParams: Record<string, string | str
     autoVerifyTrusted: settings.autoVerifyTrusted,
     pause: { paused: settings.orderingPaused, reason: settings.orderingPausedReason ?? "" },
     appearance: {
-      heroImage: settings.heroImage,
       announcementOn: Boolean(settings.announcement?.trim()),
       announcement: settings.announcement ?? "",
     },
+    heroImage: settings.heroImage,
     // Only the Notifications pane shows the connect steps — and only an owner gets today's code.
     telegram: await telegramState(settings, timezone, today, canEdit && active === "notifications"),
     staff: people.map((person) => ({

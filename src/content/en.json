@@ -1518,7 +1518,7 @@
       },
       "appearance": {
         "hero": "Landing page photo",
-        "heroHint": "The first thing customers see. Your bakery name sits over the bottom of it, as shown.",
+        "heroHint": "The first thing customers see. Your bakery name sits over the bottom of it, as shown. A new photo goes live as soon as it uploads.",
         "heroEmpty": "Add a wide photo — landscape works best",
         "heroAlt": "The landing page photo",
         "replace": "Replace",
@@ -1527,6 +1527,8 @@
         "uploadFailed": "That photo didn’t upload. Try again.",
         "wrongType": "Use a JPEG or PNG under 10 MB.",
         "uploadsOff": "Photo uploads aren’t set up yet.",
+        "saving": "Saving…",
+        "saveFailed": "The photo didn’t save. Try again.",
         "announcement": "Announcement banner",
         "announcementSwitch": "Announcement banner showing",
         "showing": "Showing",

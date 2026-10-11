@@ -39,13 +39,17 @@ export async function saveOrdering(record: OrderingRecord): Promise<void> {
   await prisma.settings.update({ where: ROW, data: record })
 }
 
-export type AppearanceRecord = { heroImage: string | null; announcement: string | null }
+export type AppearanceRecord = { announcement: string | null }
 
-/** Returns the photo this replaced, if any — the caller destroys it once nothing points at it. */
-export async function saveAppearance(record: AppearanceRecord): Promise<string | null> {
-  const before = await prisma.settings.findUniqueOrThrow({ where: ROW, select: { heroImage: true } })
+export async function saveAppearance(record: AppearanceRecord): Promise<void> {
   await prisma.settings.update({ where: ROW, data: record })
-  return before.heroImage && before.heroImage !== record.heroImage ? before.heroImage : null
+}
+
+/** The landing photo, saved the moment it's uploaded or removed. Returns the photo this replaced, if any — the caller destroys it. */
+export async function setHeroImage(heroImage: string | null): Promise<string | null> {
+  const before = await prisma.settings.findUniqueOrThrow({ where: ROW, select: { heroImage: true } })
+  await prisma.settings.update({ where: ROW, data: { heroImage } })
+  return before.heroImage && before.heroImage !== heroImage ? before.heroImage : null
 }
 
 export async function setAutoVerify(on: boolean): Promise<void> {

@@ -57,7 +57,7 @@ export function BakerySection({ data, dict }: BakerySectionProps) {
             phone={values.phone.trim() ? `${d.phonePrefix} ${values.phone.trim()}` : ""}
             address={address}
             hours={values.hours}
-            heroImage={data.appearance.heroImage}
+            heroImage={data.heroImage}
             banner={landingBanner(data.pause, data.appearance.announcementOn, data.appearance.announcement, dict)}
             today={data.today}
             dict={dict}

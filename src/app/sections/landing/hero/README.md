@@ -6,7 +6,8 @@ The top band of `/`: the owner's hero photo (Settings → Appearance) with the t
 
 ```
 hero/
-  Hero.tsx    entry (server) — photo layer, tagline band
+  Hero.tsx       entry (server) — photo layer, tagline band
+  HeroPhoto.tsx  the photo (client) — next/image with a Cloudinary loader, so the srcset is sized per screen
   README.md
 ```
 
@@ -14,7 +15,7 @@ hero/
 
 ```
 section.relative.isolate (rounded-sheet, bg-sunken)
-├─ Image fill priority (-z-10, object-cover)        only when hero.image is set
+├─ HeroPhoto → Image fill preload (-z-10, cover)    only when hero.image is set
 └─ div  bg-o500, bottom
    ├─ h1  hero.tagline ?? dict.fallback             text-glance → lg:text-glance-lg
    └─ p   dict.sub                                  "Order ahead, then pay when you collect."
@@ -25,9 +26,10 @@ section.relative.isolate (rounded-sheet, bg-sunken)
 | Import | Purpose |
 |---|---|
 | `@/lib/storefront/landing` | `LandingData["hero"]` — `{ image, tagline }` |
-| `@/lib/cloudinary` | `imageUrl` (uncropped, 2560px wide) |
+| `./HeroPhoto` | the photo layer |
+| `@/lib/cloudinary` | `imageUrl` — HeroPhoto's loader, uncropped, each srcset width capped at 2560px |
 
-External: `next/image` (`fill`, `priority`, `unoptimized`). Tokens: `rounded-sheet` (24px hero), `bg-sunken`, `bg-o500`,
+External: `next/image` (`fill`, `preload`, `loader`, `sizes`). Tokens: `rounded-sheet` (24px hero), `bg-sunken`, `bg-o500`,
 `text-foreground`, `text-glance` / `text-glance-lg`, breakpoints `md`, `lg`.
 
 ## Props
@@ -49,7 +51,11 @@ Hero { hero: { image: string | null; tagline: string | null }; dict: Dict["landi
 - Ink text on `o500`, never white (2.8:1). The `h1` takes Fraunces from the base layer.
 - **Type** — the design's 32 / 38 / 44 / 52px headline is held to the locked scale: `text-glance` (32px) on phones and tablets,
   `text-glance-lg` (40px) from `lg`. Those tokens were added for the day sheet's quantities; this is their second use.
-- Server Component.
+- **Photo size** — a Cloudinary loader gives next/image a srcset, and `sizes` follows the main Container's content width
+  (full width below 1280px; 1216 / 1344 / 1536px from `xl` / `2xl` / `3xl`), so a phone fetches ~800px, not the full 2560.
+  `preload` puts it in `<head>`: it's the page's largest paint. HeroPhoto is a client component only because a loader is a
+  function, which can't be passed from a Server Component.
+- Hero is a Server Component.
 
 ## Responsive behavior
 

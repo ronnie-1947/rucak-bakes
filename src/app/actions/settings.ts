@@ -32,6 +32,7 @@ import {
   saveBakery as writeBakery,
   saveOrdering as writeOrdering,
   setAutoVerify,
+  setHeroImage,
   setPaused,
 } from "@/lib/settings/writes"
 import { botConfigured, findChatWithCode, notifyOwner } from "@/lib/telegram"
@@ -116,7 +117,6 @@ export async function saveOrderingRules(input: z.input<typeof orderingInput>): P
 
 const appearanceInput = z
   .object({
-    heroImage: z.string().refine(isOurPublicId).nullable(),
     announcementOn: z.boolean(),
     announcement: z.string().trim().max(L.announcement),
   })
@@ -126,15 +126,27 @@ export async function saveAppearanceSettings(input: z.input<typeof appearanceInp
   if (!(await requireOwner())) return forbidden
   const parsed = appearanceInput.safeParse(input)
   if (!parsed.success) return invalid
-  const { heroImage, announcementOn, announcement } = parsed.data
-  const replaced = await writeAppearance({ heroImage, announcement: announcementOn ? announcement : null })
-  // The old photo goes once nothing points at it — deleteImage checks. A Cloudinary hiccup only leaves a file behind.
-  if (replaced) await deleteImage(replaced).catch((error: unknown) => console.error(`Could not delete the old hero ${replaced}:`, error))
+  const { announcementOn, announcement } = parsed.data
+  await writeAppearance({ announcement: announcementOn ? announcement : null })
   refreshEverywhere()
   return { ok: true }
 }
 
 // ── Immediate-effect switches ───────────────────────────────────────────────
+
+const heroImageInput = z.object({ heroImage: z.string().refine(isOurPublicId).nullable() })
+
+/** The landing photo saves as soon as it's uploaded (or removed) — no Save press, so it can't be lost by leaving the screen. */
+export async function saveHeroImage(input: z.input<typeof heroImageInput>): Promise<SaveResult> {
+  if (!(await requireOwner())) return forbidden
+  const parsed = heroImageInput.safeParse(input)
+  if (!parsed.success) return invalid
+  const replaced = await setHeroImage(parsed.data.heroImage)
+  // The old photo goes once nothing points at it — deleteImage checks. A Cloudinary hiccup only leaves a file behind.
+  if (replaced) await deleteImage(replaced).catch((error: unknown) => console.error(`Could not delete the old hero ${replaced}:`, error))
+  refreshEverywhere()
+  return { ok: true }
+}
 
 const autoVerifyInput = z.object({ on: z.boolean() })
 

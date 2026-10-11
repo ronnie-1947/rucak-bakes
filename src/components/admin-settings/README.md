@@ -51,8 +51,8 @@ admin-settings/
   RoleChoice.tsx         Staff / Owner cards (native radios)
   RemoveStaffDialog.tsx  "Remove Ravi?" confirm
   RolesPreview.tsx       what each role can do — as enforced
-  AppearanceSection.tsx  "use client" — HeroPicker, announcement switch + text (120), currency and timezone (fixed); landing preview
-  HeroPicker.tsx         16:9 pick → Cloudinary upload with progress; Replace / Remove
+  AppearanceSection.tsx  "use client" — HeroPicker (saves on upload), announcement switch + text (120), currency and timezone (fixed); landing preview
+  HeroPicker.tsx         16:9 pick → Cloudinary upload with progress → saved at once; Replace / Remove
   FixedSetting.tsx       a locked, read-only value with why
   LandingPreview.tsx     the landing page top: banner, name, hero + tagline, contact line with today's hours
   copy.ts                saveText, errorText, cutoff sentences, todayHoursText, fulfilmentText, landingBanner, sectionSummary
@@ -87,8 +87,8 @@ Copy: `dict.admin.settings` throughout; `dict.admin.cutoffs` for the list's cuto
 | `@/lib/settings/hours` | `WEEK`, `HOUR_TIMES`, `OpeningHours`, `hoursProblem`, `weekdayKey` |
 | `@/lib/settings/sections` | `settingsSections`, `sectionHref` |
 | `@/lib/settings/telegram` | `TelegramState`, `ConnectSteps` (types only on the client) |
-| `@/app/actions/settings` | every save, the two live switches, Telegram connect / test / disconnect, add / remove staff |
-| `@/app/actions/cloudinary` | `getUploadSignature`, `deleteImage` (an uploaded hero that was never saved) |
+| `@/app/actions/settings` | every save, the two live switches, the hero photo (`saveHeroImage`), Telegram connect / test / disconnect, add / remove staff |
+| `@/app/actions/cloudinary` | `getUploadSignature`, `deleteImage` (an uploaded hero whose save failed) |
 | `@/hooks/useSettingsLeave` | the LeaveGuard's context |
 | `@/lib/calendar/cutoffs` · `@/lib/calendar/form` | `formatClock`, `cutoffLabel` · `withMaxOrders` (shared with the Calendar) |
 | `@/components/ui/*` | `Button`, `Checkbox`, `Container`, `Dialog`, `Field`, `Notice`, `SelectField`, `Stepper` (now with `step` / `display`), `Switch`, `TextInput`, icons |
@@ -134,7 +134,7 @@ AddStaffDialog     { dict; onClose; onAdded(name, restored) }
 RoleChoice         { value: StaffRole; onChange; dict }
 RemoveStaffDialog  { name; pending; dict; onClose; onConfirm }
 RolesPreview       { dict }
-HeroPicker         { value; onChange; onUploading; overlay; dict }
+HeroPicker         { value; onChange: (publicId | null) => Promise<boolean>; overlay; dict }
 FixedSetting       { label; value; hint; fixed }
 LandingPreview     { name; tagline; phone; address; hours | null; heroImage; banner: Banner | null; today; dict }
 LiveMark           { mark; dict }
@@ -167,8 +167,10 @@ LiveMark           { mark; dict }
 - **Staff** — Add puts a Google address on the allowlist; there's no invite email, since sign-in is Google-only. A removed address comes
   back with the new name and role, and one that already has access is refused. Remove sets `isActive = false` (signed out on their next
   request) after a confirm — never yourself, never the last owner (checked in a serializable transaction).
-- **Hero photo** — straight to Cloudinary under a server signature; Save waits while it uploads. A photo uploaded and then replaced or
-  discarded before saving is deleted, and the one a save replaces is deleted by the action once nothing uses it.
+- **Hero photo** — not part of the Appearance form. It goes straight to Cloudinary under a server signature, and the moment the upload
+  returns its public_id, `saveHeroImage` writes it to `settings.heroImage` and revalidates the app — no Save press, so leaving the screen
+  can't lose it. Remove saves at once the same way. The photo a save replaces is deleted by the action once nothing uses it; an upload
+  whose save fails is deleted by the section and the picker says "The photo didn't save".
 
 ## Responsive behavior
 
