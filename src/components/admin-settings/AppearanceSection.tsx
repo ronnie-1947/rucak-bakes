@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { deleteImage } from "@/app/actions/cloudinary"
 import { saveAppearanceSettings, saveHeroImage } from "@/app/actions/settings"
 import { Field } from "@/components/ui/Field"
 import { Switch } from "@/components/ui/Switch"
@@ -54,19 +53,15 @@ export function AppearanceSection({ data, dict }: AppearanceSectionProps) {
     setHero(data.heroImage)
   }
 
+  // HeroPicker says when this fails, and discards the upload that didn't save.
   const changeHero = async (heroImage: string | null) => {
     try {
       const result = await saveHeroImage({ heroImage })
-      if (result.ok) {
-        setHero(heroImage)
-        return true
-      }
+      if (result.ok) setHero(heroImage)
+      return result.ok
     } catch {
-      // A dropped connection — said below the photo, like a refusal.
+      return false
     }
-    // An upload that never got saved is dropped from Cloudinary (deleteImage refuses anything still in use).
-    if (heroImage) void deleteImage(heroImage).catch(() => undefined)
-    return false
   }
 
   return (

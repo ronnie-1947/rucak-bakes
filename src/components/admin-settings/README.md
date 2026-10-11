@@ -88,7 +88,7 @@ Copy: `dict.admin.settings` throughout; `dict.admin.cutoffs` for the list's cuto
 | `@/lib/settings/sections` | `settingsSections`, `sectionHref` |
 | `@/lib/settings/telegram` | `TelegramState`, `ConnectSteps` (types only on the client) |
 | `@/app/actions/settings` | every save, the two live switches, the hero photo (`saveHeroImage`), Telegram connect / test / disconnect, add / remove staff |
-| `@/app/actions/cloudinary` | `getUploadSignature`, `deleteImage` (an uploaded hero whose save failed) |
+| `@/hooks/useImageUpload` | HeroPicker's `upload`, and `discard` for an uploaded hero whose save failed |
 | `@/hooks/useSettingsLeave` | the LeaveGuard's context |
 | `@/lib/calendar/cutoffs` · `@/lib/calendar/form` | `formatClock`, `cutoffLabel` · `withMaxOrders` (shared with the Calendar) |
 | `@/components/ui/*` | `Button`, `Checkbox`, `Container`, `Dialog`, `Field`, `Notice`, `SelectField`, `Stepper` (now with `step` / `display`), `Switch`, `TextInput`, icons |
@@ -167,10 +167,14 @@ LiveMark           { mark; dict }
 - **Staff** — Add puts a Google address on the allowlist; there's no invite email, since sign-in is Google-only. A removed address comes
   back with the new name and role, and one that already has access is refused. Remove sets `isActive = false` (signed out on their next
   request) after a confirm — never yourself, never the last owner (checked in a serializable transaction).
-- **Hero photo** — not part of the Appearance form. It goes straight to Cloudinary under a server signature, and the moment the upload
-  returns its public_id, `saveHeroImage` writes it to `settings.heroImage` and revalidates the app — no Save press, so leaving the screen
-  can't lose it. Remove saves at once the same way. The photo a save replaces is deleted by the action once nothing uses it; an upload
-  whose save fails is deleted by the section and the picker says "The photo didn't save".
+- **Hero photo** — not part of the Appearance form; no Save press, so leaving the screen can't lose it. Three steps:
+  1. **Upload** — HeroPicker sends the file straight to Cloudinary (`useImageUpload().upload`) and gets its public_id back.
+  2. **Save** — `saveHeroImage` writes it to `settings.heroImage`, returning the photo it replaced.
+  3. **Delete the previous photo** — the same action passes that one to `deleteFromCloudinary` (`src/lib/cloudinary-server.ts`). It runs
+     after the save, never between upload and save: until the save lands the old photo is still live, and deleting it first would leave
+     the landing page on a broken image if the save failed (`deleteFromCloudinary` refuses a photo still in use anyway).
+
+  Remove saves `null` the same way. If the save fails, HeroPicker discards the new upload and says "The photo didn't save".
 
 ## Responsive behavior
 

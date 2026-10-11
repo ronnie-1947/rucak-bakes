@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { requireOwner } from "@/auth"
-import { deleteImage } from "@/app/actions/cloudinary"
 import { isOurPublicId } from "@/lib/cloudinary"
+import { deleteFromCloudinary } from "@/lib/cloudinary-server"
 import { formatTimeIn, todayIn } from "@/lib/dates"
 import { defaultLocale, getDictionary } from "@/lib/i18n"
 import { normalise } from "@/lib/phone"
@@ -136,14 +136,19 @@ export async function saveAppearanceSettings(input: z.input<typeof appearanceInp
 
 const heroImageInput = z.object({ heroImage: z.string().refine(isOurPublicId).nullable() })
 
-/** The landing photo saves as soon as it's uploaded (or removed) — no Save press, so it can't be lost by leaving the screen. */
+/**
+ * The landing photo saves as soon as it's uploaded (or removed) — no Save press, so it can't be lost by leaving
+ * the screen. The browser has already done step 1, the upload; this is steps 2 and 3.
+ */
 export async function saveHeroImage(input: z.input<typeof heroImageInput>): Promise<SaveResult> {
   if (!(await requireOwner())) return forbidden
   const parsed = heroImageInput.safeParse(input)
   if (!parsed.success) return invalid
-  const replaced = await setHeroImage(parsed.data.heroImage)
-  // The old photo goes once nothing points at it — deleteImage checks. A Cloudinary hiccup only leaves a file behind.
-  if (replaced) await deleteImage(replaced).catch((error: unknown) => console.error(`Could not delete the old hero ${replaced}:`, error))
+  // 2. Save the new photo, getting back the one it replaces.
+  const previous = await setHeroImage(parsed.data.heroImage)
+  // 3. Delete the previous photo from Cloudinary — only now, so the landing page never points at a deleted image.
+  //    A Cloudinary hiccup only leaves a file behind; it never fails the save.
+  if (previous) await deleteFromCloudinary(previous).catch((error: unknown) => console.error(`Could not delete the old hero ${previous}:`, error))
   refreshEverywhere()
   return { ok: true }
 }

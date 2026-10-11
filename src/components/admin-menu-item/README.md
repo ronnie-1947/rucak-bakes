@@ -79,8 +79,8 @@ AdminMenuItem dict=dict.admin page justCreated
 | `@/lib/storefront/words` | `noticeChip` — the preview card's chip, the same words the customer's card uses |
 | `@/lib/calendar/cutoffs` · `@/lib/dates` | `formatClock`, weekday / date labels — the notice line |
 | `@/app/actions/menu` | `saveMenuItem` |
-| `@/app/actions/cloudinary` | `getUploadSignature`, `deleteImage` (photos removed before they were ever saved) |
-| `@/lib/cloudinary` | `uploadImage` (XHR, progress), `imageUrl` |
+| `@/hooks/useImageUpload` | `upload` (signed, XHR with progress), `discard` (photos removed before they were ever saved) |
+| `@/lib/cloudinary` | `imageUrl` |
 | `@/components/menu-actions/*` | provider, `MenuActionsStatus` — duplicate, archive, restore + undo |
 | `@/hooks/useMenuActions` · `@/hooks/useDismiss` | action context · ⋯ menu dismissal |
 | `@/components/ui/*` | `Button`, `Chip`, `Container`, `Dialog`, `Field`, `Notice`, `Stepper`, `Switch`, `Tag`, `TextInput`/`inputClasses`, icons |
@@ -133,7 +133,7 @@ LeaveDialog       { changes; dict; onClose; onLeave }
 - **Errors** — required fields and limits come from `validate` in `src/lib/menu/form.ts`; the server re-checks with zod. Field
   errors appear after the first Save attempt; photo problems (failed / still uploading) show at once. Save stays enabled until
   a refused attempt, then waits for the problems to clear.
-- **Photos** — up to 6, index 0 is the cover. A pick or drop uploads straight to Cloudinary (`uploadImage`, signature from the
+- **Photos** — up to 6, index 0 is the cover. A pick or drop uploads straight to Cloudinary (`useImageUpload`, signature from the
   server, refreshed every 30 min) with a progress ring; a wrong type or >10MB fails before uploading. Removing a photo that
   was uploaded but never saved destroys it; photos a save drops are destroyed by the action once no other item uses them.
   Alt text is stored alongside, in `MenuItem.imageAlts`.

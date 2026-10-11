@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
-import { deleteImage } from "@/app/actions/cloudinary"
+import { deleteFromCloudinary } from "@/lib/cloudinary-server"
 import { requireStaff } from "@/auth"
 import { isOurPublicId } from "@/lib/cloudinary"
 import { todayIn } from "@/lib/dates"
@@ -147,8 +147,8 @@ export async function saveMenuItem(input: z.input<typeof saveInput>): Promise<Sa
   })
   if (!outcome.ok) return outcome
 
-  // Best effort: deleteImage refuses while anything still uses a photo, and a Cloudinary hiccup must not fail the save.
-  await Promise.allSettled(outcome.removedPhotos.map((publicId) => deleteImage(publicId)))
+  // Best effort: deleteFromCloudinary refuses while anything still uses a photo, and a Cloudinary hiccup must not fail the save.
+  await Promise.allSettled(outcome.removedPhotos.map((publicId) => deleteFromCloudinary(publicId)))
   refresh()
   return { ok: true, id: outcome.id, categorySlug: outcome.categorySlug }
 }

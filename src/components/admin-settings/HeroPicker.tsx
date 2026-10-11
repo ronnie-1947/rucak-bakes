@@ -2,10 +2,10 @@
 
 import Image from "next/image"
 import { type ChangeEvent, useEffect, useRef, useState } from "react"
-import { getUploadSignature } from "@/app/actions/cloudinary"
 import { Button } from "@/components/ui/Button"
 import { Icon } from "@/components/ui/icons/Icon"
-import { imageUrl, type UploadSignature, uploadImage } from "@/lib/cloudinary"
+import { useImageUpload } from "@/hooks/useImageUpload"
+import { imageUrl, UploadError } from "@/lib/cloudinary"
 import { PHOTO_MAX_BYTES, PHOTO_TYPES } from "@/lib/menu/form"
 import { fill } from "@/lib/template"
 import type { SettingsCopy } from "./types"
@@ -23,8 +23,9 @@ type HeroPickerProps = {
 type Problem = "wrongType" | "uploadFailed" | "uploadsOff" | "saveFailed"
 
 /**
- * The landing page photo at 16:9: tap to pick (a JPEG or PNG up to 10 MB), and it uploads straight to
- * Cloudinary with its progress shown, then saves its public_id at once — no Save press. Filled, it has
+ * The landing page photo at 16:9: tap to pick (a JPEG or PNG up to 10 MB). Three steps, no Save press:
+ * 1. upload straight to Cloudinary, progress shown; 2. save the new public_id (onChange); 3. the save deletes
+ * the previous photo from Cloudinary. A save that fails discards the new upload instead. Filled, it has
  * Replace and Remove; Remove saves at once too.
  */
 export function HeroPicker({ value, onChange, overlay, dict }: HeroPickerProps) {
@@ -33,6 +34,7 @@ export function HeroPicker({ value, onChange, overlay, dict }: HeroPickerProps) 
   const [progress, setProgress] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [problem, setProblem] = useState<Problem | null>(null)
+  const images = useImageUpload()
 
   useEffect(() => {
     return () => {
@@ -42,9 +44,14 @@ export function HeroPicker({ value, onChange, overlay, dict }: HeroPickerProps) 
 
   const pick = () => input.current?.click()
 
+  /** Steps 2 and 3 — the save, which also deletes the photo it replaces. */
   const save = async (publicId: string | null) => {
     setSaving(true)
-    if (!(await onChange(publicId))) setProblem("saveFailed")
+    const saved = await onChange(publicId)
+    if (!saved) {
+      setProblem("saveFailed")
+      if (publicId) images.discard(publicId)
+    }
     setSaving(false)
   }
 
@@ -57,21 +64,15 @@ export function HeroPicker({ value, onChange, overlay, dict }: HeroPickerProps) 
       setProblem("wrongType")
       return
     }
-    let signature: UploadSignature
-    try {
-      signature = await getUploadSignature()
-    } catch {
-      setProblem("uploadsOff")
-      return
-    }
     setLocal(URL.createObjectURL(file))
     setProgress(0)
     try {
-      const publicId = await uploadImage(file, signature, { onProgress: setProgress })
+      // Step 1 — the upload.
+      const publicId = await images.upload(file, { onProgress: setProgress })
       setProgress(null)
       await save(publicId)
-    } catch {
-      setProblem("uploadFailed")
+    } catch (error) {
+      setProblem(error instanceof UploadError && error.reason === "unavailable" ? "uploadsOff" : "uploadFailed")
     } finally {
       setLocal(null)
       setProgress(null)

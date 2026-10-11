@@ -123,7 +123,7 @@ src/
   content/
     en.json
   hooks/                useOrderActions, useMenuActions, useCustomerActions, useDaySheet (action contexts), useSettingsLeave (unsaved-changes guard),
-                        useDismiss (popover close), useCart (the customer cart's context), usePageTitle (the store header's title + usePageBack), useScrolled
+                        useDismiss (popover close), useImageUpload (Cloudinary upload + discard from a component), useCart (the customer cart's context), usePageTitle (the store header's title + usePageBack), useScrolled
   lib/
     content.ts          localePath / localeAlternates / htmlLang
     i18n.ts             locales, defaultLocale, getDictionary
@@ -131,7 +131,8 @@ src/
     dates.ts            calendar dates, computeCutoffAt, bakery-local time
     money.ts            toPaise / formatPaise — Int paise only
     phone.ts            normalise → E.164 / formatForDisplay
-    cloudinary.ts       imageUrl, browser uploadImage (no secrets)
+    cloudinary.ts       imageUrl, toPublicId (public_id or delivery URL), browser uploadImage, UploadError (no secrets)
+    cloudinary-server.ts signUpload, deleteFromCloudinary (by public_id or URL; refuses while in use) — server actions call these
     telegram.ts         notifyOwner, formatOrderMessage, TelegramError, botUsername / findChatWithCode (connect flow)
     template.ts         fill() for {placeholders} in dict strings
     admin-routes.ts     ADMIN_HOME, admin sections, safeAdminPath (post-login redirects)

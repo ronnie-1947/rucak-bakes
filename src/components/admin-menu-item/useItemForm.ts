@@ -2,9 +2,8 @@
 
 import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react"
-import { deleteImage, getUploadSignature } from "@/app/actions/cloudinary"
 import { saveMenuItem } from "@/app/actions/menu"
-import { type UploadSignature, uploadImage } from "@/lib/cloudinary"
+import { useImageUpload } from "@/hooks/useImageUpload"
 import { BLANK, type ChangeKey, changedFields, LIMITS, type MenuItemValues, PHOTO_MAX_BYTES, PHOTO_TYPES, slugify, validate } from "@/lib/menu/form"
 
 /** One photo in the form — saved, uploading, or failed. Index 0 is the cover. */
@@ -29,8 +28,6 @@ export type Problem = { section: "basics" | "photos"; code: string; values?: Rec
 
 export type SaveState = "saved" | "created" | "fix" | "unsaved" | "createPrompt" | "clean"
 
-/** Cloudinary signatures last an hour; refresh well inside that. */
-const SIGNATURE_TTL_MS = 30 * 60 * 1000
 const FLASH_MS = 1800
 
 function fieldsOf(values: MenuItemValues): Fields {
@@ -89,7 +86,7 @@ export function useItemForm({ id, initial, justCreated }: Options) {
   const [saveFailed, setSaveFailed] = useState(false)
   const [pending, startTransition] = useTransition()
 
-  const signature = useRef<{ at: number; promise: Promise<UploadSignature> } | null>(null)
+  const images = useImageUpload()
   const uploads = useRef(new Map<string, AbortController>())
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const photosRef = useRef(photos)
@@ -135,22 +132,13 @@ export function useItemForm({ id, initial, justCreated }: Options) {
     setPhotos((current) => current.map((photo) => (photo.key === key ? { ...photo, ...patch } : photo)))
   }, [])
 
-  const freshSignature = useCallback(() => {
-    if (!signature.current || Date.now() - signature.current.at > SIGNATURE_TTL_MS) {
-      const promise = getUploadSignature()
-      signature.current = { at: Date.now(), promise }
-      promise.catch(() => (signature.current = null))
-    }
-    return signature.current.promise
-  }, [])
-
   const upload = useCallback(
     (key: string, file: File) => {
       const controller = new AbortController()
       uploads.current.set(key, controller)
       void (async () => {
         try {
-          const publicId = await uploadImage(file, await freshSignature(), {
+          const publicId = await images.upload(file, {
             signal: controller.signal,
             onProgress: (progress) => patchPhoto(key, { progress }),
           })
@@ -162,7 +150,7 @@ export function useItemForm({ id, initial, justCreated }: Options) {
         }
       })()
     },
-    [freshSignature, patchPhoto],
+    [images, patchPhoto],
   )
 
   /** Adds picked or dropped files. `cover` puts the first file in front; the rest join the gallery, up to 6 in all. */
@@ -201,10 +189,10 @@ export function useItemForm({ id, initial, justCreated }: Options) {
       if (!photo) return
       uploads.current.get(key)?.abort()
       if (photo.localUrl) URL.revokeObjectURL(photo.localUrl)
-      if (photo.publicId && !savedIds.has(photo.publicId)) void deleteImage(photo.publicId).catch(() => undefined)
+      if (photo.publicId && !savedIds.has(photo.publicId)) images.discard(photo.publicId)
       setPhotos((current) => current.filter((candidate) => candidate.key !== key))
     },
-    [savedIds, touched],
+    [images, savedIds, touched],
   )
 
   /** Replace the cover: the new file takes its place, the old cover leaves the form. */
@@ -338,10 +326,10 @@ export function useItemForm({ id, initial, justCreated }: Options) {
   const discard = useCallback(() => {
     photosRef.current
       .filter((photo) => photo.publicId && !savedIds.has(photo.publicId))
-      .forEach((photo) => void deleteImage(photo.publicId as string).catch(() => undefined))
+      .forEach((photo) => images.discard(photo.publicId as string))
     reset(saved, id !== null)
     touched()
-  }, [id, reset, saved, savedIds, touched])
+  }, [id, images, reset, saved, savedIds, touched])
 
   const save = useCallback(
     (andAnother = false) => {

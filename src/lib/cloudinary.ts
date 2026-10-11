@@ -1,6 +1,7 @@
 /**
- * Cloudinary, browser-safe half. Signing and deleting live in src/app/actions/cloudinary.ts —
- * the API secret never reaches this file or the browser.
+ * Cloudinary, browser-safe half. Signing and deleting live in src/lib/cloudinary-server.ts (behind the
+ * actions in src/app/actions/cloudinary.ts) — the API secret never reaches this file or the browser.
+ * In a component, upload and discard through the useImageUpload hook rather than calling these directly.
  *
  * Store the public_id only, never a full URL: URLs are built at render time, so sizes and formats
  * can change without touching the database.
@@ -14,6 +15,30 @@ const PUBLIC_ID = new RegExp(`^${CLOUDINARY_FOLDER}/[A-Za-z0-9_-]+$`)
 /** An auto-generated id inside our folder — the only shape this app ever creates or accepts back. */
 export function isOurPublicId(value: string): boolean {
   return PUBLIC_ID.test(value)
+}
+
+/**
+ * The public_id behind a stored value: a public_id as-is, or one read out of a delivery URL (any transforms,
+ * version or extension). Null for anything outside our folder — the only images this app may delete.
+ */
+export function toPublicId(urlOrId: string): string | null {
+  if (isOurPublicId(urlOrId)) return urlOrId
+  let url: URL
+  try {
+    url = new URL(urlOrId)
+  } catch {
+    return null
+  }
+  if (url.hostname !== "res.cloudinary.com") return null
+  const id = url.pathname.match(new RegExp(`/(${CLOUDINARY_FOLDER}/[A-Za-z0-9_-]+)(?:\\.[A-Za-z0-9]+)?$`))?.[1]
+  return id && isOurPublicId(id) ? id : null
+}
+
+/** Why an upload didn't land: uploads aren't set up (no signature), or the file didn't get through. */
+export class UploadError extends Error {
+  constructor(readonly reason: "unavailable" | "failed") {
+    super(reason === "unavailable" ? "Cloudinary uploads are not set up" : "Cloudinary upload failed")
+  }
 }
 
 /** What getUploadSignature() hands the browser for one direct upload. */
@@ -64,9 +89,9 @@ export function uploadImage(file: File, signature: UploadSignature, { onProgress
     }
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) resolve((JSON.parse(xhr.responseText) as { public_id: string }).public_id)
-      else reject(new Error(`Cloudinary upload failed (${xhr.status})`))
+      else reject(new UploadError("failed"))
     }
-    xhr.onerror = () => reject(new Error("Cloudinary upload failed (network)"))
+    xhr.onerror = () => reject(new UploadError("failed"))
     xhr.onabort = () => reject(new DOMException("Upload cancelled", "AbortError"))
     signal?.addEventListener("abort", () => xhr.abort(), { once: true })
     xhr.send(body)
