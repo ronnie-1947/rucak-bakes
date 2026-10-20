@@ -3,7 +3,7 @@
 import Image, { type ImageLoader } from "next/image"
 import { imageUrl } from "@/lib/cloudinary"
 
-/** Uncropped: the frame is near-square on a phone and 21:9 on a laptop, so object-cover does the crop. Capped at 2560 — the widest slot at 2×. */
+/** Uncropped: the frame is 4:3 on a phone and 21:9 on a laptop, so object-cover does the crop. Capped at 2560 — the widest slot at 2×. */
 const heroLoader: ImageLoader = ({ src, width }) => imageUrl(src, { w: Math.min(width, 2560) })
 
 type HeroPhotoProps = {
