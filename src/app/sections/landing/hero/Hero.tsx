@@ -15,7 +15,7 @@ type HeroProps = {
 export function Hero({ hero, dict }: HeroProps) {
   return (
     <section className="relative isolate flex flex-col overflow-hidden rounded-sheet bg-sunken md:block md:aspect-21/9 lg:aspect-21/8">
-      <div className="relative aspect-4/3 sm:aspect-16/9 md:absolute md:inset-0 md:aspect-auto">
+      <div className="relative aspect-4/3 sm:aspect-video md:absolute md:inset-0 md:aspect-auto">
         {hero.image ? <HeroPhoto image={hero.image} /> : null}
       </div>
       <div className="flex flex-col gap-1 bg-o500 px-4 py-3 text-foreground md:absolute md:inset-x-0 md:bottom-0 lg:px-8 lg:py-4">

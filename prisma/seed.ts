@@ -3,6 +3,8 @@
  *
  * Every write is an upsert that leaves existing rows alone, so re-running is safe and never
  * clobbers what the owner has edited since.
+ *
+ * `pnpm exec prisma db seed -- --bare` writes only the settings row and the owners — for production.
  */
 import { loadEnvConfig } from "@next/env"
 import type { PrismaClient } from "@/generated/prisma/client"
@@ -198,6 +200,12 @@ async function seed(prisma: PrismaClient) {
       update: { role: "OWNER", isActive: true },
       create: { email: owner.email, name: owner.name, role: "OWNER" },
     })
+  }
+
+  // `prisma db seed -- --bare` — production: settings and owners only, the owner builds the menu
+  if (process.argv.includes("--bare")) {
+    console.log(`Seeded (bare): settings ✓, ${await prisma.staff.count({ where: { role: "OWNER" } })} owners`)
+    return
   }
 
   for (const [sortOrder, category] of CATEGORIES.entries()) {
