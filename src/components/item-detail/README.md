@@ -135,7 +135,7 @@ Also reads `store.notice` (the notice words), `store.item` (`units`, `from`, `de
 
 ## How it works
 
-- **Rendered per request** — `loadItem` calls `connection()` (the store layout does too): orders taken and every deadline move with the
+- **Rendered per request** — `loadItem` calls `connection()` (the store layout doesn't — `/` is prerendered): orders taken and every deadline move with the
   clock. Inactive and archived items are a 404 — they can't be ordered. `loadItem` is wrapped in `cache()`, so `generateMetadata` and
   the page share one read.
 - **The dates** — the booking window, today … today + `orderAheadDays` (8 chips), from `loadBookingWindow` (unplanned dates take the

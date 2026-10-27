@@ -8,6 +8,7 @@ import { loadLanding } from "@/lib/storefront/landing"
 
 const locale: Locale = "en"
 
+/** Prerendered, and only re-rendered when a menu, calendar, settings or order write revalidates "/". The cart and placeOrder check again. */
 export default async function Home() {
   const [dict, data] = await Promise.all([getDictionary(locale), loadLanding()])
 

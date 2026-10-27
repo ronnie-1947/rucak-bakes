@@ -71,6 +71,8 @@ export async function transitionOrders(input: z.input<typeof transitionInput>): 
   }
 
   revalidatePath("/admin", "layout")
+  // A cancel or no-show frees a slot on the landing page's cards.
+  revalidatePath("/")
   if (over.size > 0) return { ok: false, reason: "CAPACITY_EXCEEDED", over: [...over.values()] }
   if (stale.length > 0) return { ok: false, reason: "STALE", codes: stale }
   return { ok: true }
@@ -132,6 +134,7 @@ export async function createStaffOrder(input: StaffOrderInput): Promise<StaffOrd
       { staff: { staffId: staff.id, allowFull: data.allowFull, deliveryFeePaise: data.deliveryFeePaise, internalNote: data.internalNote || null } },
     )
     revalidatePath("/admin", "layout")
+    revalidatePath("/")
     return { ok: true, id: placed.id, code: placed.code }
   } catch (error) {
     if (!(error instanceof OrderError)) throw error

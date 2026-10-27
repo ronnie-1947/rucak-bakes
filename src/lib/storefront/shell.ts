@@ -1,4 +1,3 @@
-import { connection } from "next/server"
 import { todayIn, type IsoDate } from "@/lib/dates"
 import { getSettings } from "@/lib/settings/row"
 import type { StoreBanner } from "./types"
@@ -25,8 +24,7 @@ export function storeBanner(settings: { orderingPaused: boolean; orderingPausedR
 }
 
 export async function loadStoreShell(): Promise<StoreShellData> {
-  // Settings, the banner and "today" change without a deploy: render per request.
-  await connection()
+  // Static on / (the settings actions revalidate it); the item page and the cart render per request through their own read models.
   const settings = await getSettings()
   return {
     bakeryName: settings.bakeryName,

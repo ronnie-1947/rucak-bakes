@@ -1,5 +1,6 @@
 "use server"
 
+import { revalidatePath } from "next/cache"
 import { headers } from "next/headers"
 import { after } from "next/server"
 import { z } from "zod"
@@ -70,6 +71,8 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
 
     const origin = `${head.get("x-forwarded-proto") ?? "https"}://${head.get("x-forwarded-host") ?? head.get("host")}`
     after(() => notifyNewOrder(placed, origin))
+    // A day that fills drops off the landing page's cards.
+    revalidatePath("/")
 
     return {
       ok: true,

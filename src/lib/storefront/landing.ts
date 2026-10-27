@@ -1,4 +1,3 @@
-import { connection } from "next/server"
 import { type IsoDate, todayIn } from "@/lib/dates"
 import { prisma } from "@/lib/db"
 import { loadBookingWindow } from "@/lib/orders/booking"
@@ -36,8 +35,8 @@ function freshState(open: boolean, items: CounterItem[]): FreshState {
 }
 
 export async function loadLanding(): Promise<LandingData> {
-  // The counter and sold-out marks change through the day: never prerender this.
-  await connection()
+  // Prerendered: every write the page shows (menu, calendar, settings, orders) revalidates "/". There's no time-based
+  // revalidation, so `today` and the deadlines are as of the last such write.
   const settings = await getSettings()
   const now = new Date()
   const today = todayIn(settings.timezone, now)

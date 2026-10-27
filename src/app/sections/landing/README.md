@@ -21,8 +21,10 @@ other customer screens.
 
 ## Shared across the bands
 
-- **One read model** — `loadLanding()` in [src/lib/storefront/landing.ts](../../../lib/storefront/landing.ts) feeds every band; it calls
-  `connection()`, so the page renders per request (the counter and its sold-out marks change through the day).
+- **One read model** — `loadLanding()` in [src/lib/storefront/landing.ts](../../../lib/storefront/landing.ts) feeds every band. The
+  page is prerendered (build shows `○ /`): the menu, calendar, settings, checkout and order actions call `revalidatePath`, so the next
+  load after a change renders fresh. Nothing else re-renders it — no time-based `revalidate` — so `today` and the deadlines are as
+  of the last such write.
 - **One card** — fresh-today and menu both render [src/components/item-card/](../../../components/item-card/), and both grids are
   2 / 3 / 4 columns with 12px gaps. Only menu cards add to the cart (for the cart's day, else the item's earliest open date); Fresh
   today's counter-items are walked in for, never ordered online.
