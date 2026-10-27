@@ -28,7 +28,8 @@
       "pendingBadge": "{count} pending orders",
       "signedInAs": "Signed in as {name}",
       "signOut": "Sign out",
-      "bypass": "Sign-in is switched off (ADMIN_AUTH_BYPASS) — acting as {name}."
+      "bypass": "Sign-in is switched off (ADMIN_AUTH_BYPASS) — acting as {name}.",
+      "loading": "Loading…"
     },
     "orderStatus": {
       "PENDING": "Pending",

@@ -76,7 +76,7 @@ export async function loadWeek(monday: IsoDate): Promise<WeekPlan> {
   const from = addDays(monday, -7)
   const sunday = addDays(monday, 6)
 
-  const [categories, days] = await Promise.all([
+  const [categories, days, orders] = await Promise.all([
     prisma.menuCategory.findMany({ select: { slug: true, sortOrder: true } }),
     prisma.menuDay.findMany({
       where: { date: { gte: toDbDate(from), lte: toDbDate(sunday) } },
@@ -91,22 +91,21 @@ export async function loadWeek(monday: IsoDate): Promise<WeekPlan> {
         items: { select: { quantityAvailable: true, menuItem: { select: { name: true, category: true, isActive: true, archivedAt: true } } } },
       },
     }),
+    // This week's days only — `days` reaches back a week further, for the copy-last-week check.
+    prisma.order.findMany({
+      where: { menuDay: { date: { gte: toDbDate(monday), lte: toDbDate(sunday) } }, status: { in: [...LIVE_STATUSES] } },
+      select: {
+        id: true,
+        code: true,
+        customerName: true,
+        status: true,
+        menuDayId: true,
+        pickupTime: true,
+        items: { select: { name: true, quantity: true }, orderBy: { lineTotalPaise: "desc" }, take: 1 },
+      },
+      orderBy: { createdAt: "asc" },
+    }),
   ])
-
-  const targetIds = days.filter((day) => fromDbDate(day.date) >= monday).map((day) => day.id)
-  const orders = await prisma.order.findMany({
-    where: { menuDayId: { in: targetIds }, status: { in: [...LIVE_STATUSES] } },
-    select: {
-      id: true,
-      code: true,
-      customerName: true,
-      status: true,
-      menuDayId: true,
-      pickupTime: true,
-      items: { select: { name: true, quantity: true }, orderBy: { lineTotalPaise: "desc" }, take: 1 },
-    },
-    orderBy: { createdAt: "asc" },
-  })
 
   const sortOrder = new Map(categories.map((category) => [category.slug, category.sortOrder]))
   const byDate = new Map(days.map((day) => [fromDbDate(day.date), day]))

@@ -114,14 +114,16 @@ export async function loadMenuItemPage(id: string | null): Promise<MenuItemPage 
   const settings = await getSettings()
   const today = todayIn(settings.timezone)
   const rules: NoticeRules = { today, cutoffTime: settings.defaultCutoffTime, cutoffDaysBefore: settings.defaultCutoffDays }
-  const [categories, ingredientSuggestions] = await Promise.all([
+  // The item and its numbers are read alongside the form's lists, not after them — for an unknown id they come back empty.
+  const [categories, ingredientSuggestions, item, upcoming, performance] = await Promise.all([
     prisma.menuCategory.findMany({ where: { isActive: true }, orderBy: [{ sortOrder: "asc" }, { name: "asc" }], select: { slug: true, name: true } }),
     suggestions(id),
+    id ? prisma.menuItem.findUnique({ where: { id } }) : null,
+    id ? upcomingOf(id, today) : [],
+    id ? performanceOf(id, today) : null,
   ])
 
   if (!id) return { id: null, values: BLANK, categories, ingredientSuggestions, archivedLabel: null, upcoming: [], performance: null, rules }
-
-  const item = await prisma.menuItem.findUnique({ where: { id } })
   if (!item) return null
 
   // A category that was switched off still shows as this item's choice.
@@ -157,8 +159,8 @@ export async function loadMenuItemPage(id: string | null): Promise<MenuItemPage 
     categories,
     ingredientSuggestions,
     archivedLabel: item.archivedAt ? formatDayLabel(isoDateInZone(item.archivedAt, settings.timezone)) : null,
-    upcoming: await upcomingOf(item.id, today),
-    performance: await performanceOf(item.id, today),
+    upcoming,
+    performance,
     rules,
   }
 }

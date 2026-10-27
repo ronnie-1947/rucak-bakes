@@ -3,6 +3,9 @@ import type { AdminSection } from "@/lib/admin-routes"
 
 export type NavKey = AdminSection | "more"
 
+/** A sidebar row (≥768px) or a bottom tab (<768px). */
+export type NavVariant = "sidebar" | "tab"
+
 export type NavEntry = {
   key: NavKey
   href: string

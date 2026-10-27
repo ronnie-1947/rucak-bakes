@@ -2,10 +2,9 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Icon, type IconName } from "@/components/ui/icons/Icon"
-import { sidebarRow } from "./nav"
-
-type Variant = "sidebar" | "tab"
+import type { IconName } from "@/components/ui/icons/Icon"
+import { type NavVariant, sidebarRow } from "./nav"
+import { NavIcon } from "./NavIcon"
 
 type NavLinkProps = {
   href: string
@@ -13,19 +12,19 @@ type NavLinkProps = {
   icon: IconName
   /** Path prefixes that make this link the current page. */
   match: string[]
-  variant: Variant
+  variant: NavVariant
   /** The pending-order count on Orders. Hidden at 0. */
   badge?: number
   /** Accessible text for the badge ("3 pending orders"). */
   badgeLabel?: string
 }
 
-const shells: Record<Variant, string> = {
+const shells: Record<NavVariant, string> = {
   sidebar: `${sidebarRow} text-body-admin`,
   tab: "relative flex min-h-12 flex-col items-center justify-center gap-1 text-micro",
 }
 
-const states: Record<Variant, Record<"on" | "off", string>> = {
+const states: Record<NavVariant, Record<"on" | "off", string>> = {
   sidebar: {
     on: "bg-background/10 font-semibold text-background",
     off: "font-medium text-subtle hover:bg-background/10 hover:text-background",
@@ -36,7 +35,7 @@ const states: Record<Variant, Record<"on" | "off", string>> = {
   },
 }
 
-const badges: Record<Variant, string> = {
+const badges: Record<NavVariant, string> = {
   sidebar: "ml-auto",
   tab: "absolute top-1 left-1/2 ml-1",
 }
@@ -49,7 +48,7 @@ export function NavLink({ href, label, icon, match, variant, badge, badgeLabel }
   return (
     <Link href={href} aria-current={active ? "page" : undefined} className={`${shells[variant]} ${states[variant][active ? "on" : "off"]}`}>
       {variant === "sidebar" && active ? <span aria-hidden className="absolute top-2 bottom-2 left-0 w-1 rounded-pill bg-o500" /> : null}
-      <Icon name={icon} className={variant === "tab" ? "size-6" : "size-5"} />
+      <NavIcon icon={icon} variant={variant} />
       <span className={variant === "sidebar" ? "flex-1" : undefined}>{label}</span>
       {badge ? (
         <span

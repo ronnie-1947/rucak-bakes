@@ -13,8 +13,10 @@ admin-shell/
   TabBar.tsx         <768px: five bottom tabs (Orders, Day sheet, Calendar, Menu, More), clear of the home indicator
   MobileHeader.tsx   <768px: bakery, today, "N pending" (links to the pending filter)
   NavLink.tsx        "use client" — a sidebar row or a tab; usePathname() for the active state
+  NavIcon.tsx        "use client" — NavLink's glyph; useLinkStatus() swaps it for a Spinner (same box) while the click is pending
+  AdminLoading.tsx   the spinner + "Loading…" that `main` shows while a screen loads — rendered by the admin loading.tsx files
   SignOutButton.tsx  form → actions/auth.ts signOutStaff; `sidebar` and `list` (More screen) tones
-  nav.ts             tabNav / sidebarNav entries, and `sidebarRow` (shared row classes)
+  nav.ts             tabNav / sidebarNav entries, NavVariant, and `sidebarRow` (shared row classes)
   types.ts           AdminCopy, ShellData
   README.md
 ```
@@ -30,7 +32,7 @@ AdminShell dict=dict.admin data=ShellData
 └─ column
    ├─ p.status (only when ADMIN_AUTH_BYPASS)  dict.admin.shell.bypass
    ├─ MobileHeader (md:hidden)              shell.pending
-   ├─ main#admin-main (relative)  ← the page
+   ├─ main#admin-main (relative)  ← the page, or AdminLoading while it loads
    └─ TabBar (md:hidden) → NavLink × 5 (tabNav)
 ```
 
@@ -40,10 +42,11 @@ AdminShell dict=dict.admin data=ShellData
 |---|---|
 | `@/app/actions/auth` | `signOutStaff` |
 | `@/components/ui/icons/Icon` | nav glyphs |
+| `@/components/ui/Spinner` | AdminLoading, NavIcon's pending state |
 | `@/lib/admin-routes` | `AdminSection` |
 | `@/lib/template` | `fill` |
 
-External: `next/link`, `next/navigation` (`usePathname`). Tokens: `bg-sidebar`, `text-background`, `text-subtle`, `bg-o500` (active
+External: `next/link` (`Link`, `useLinkStatus`), `next/navigation` (`usePathname`). Tokens: `bg-sidebar`, `text-background`, `text-subtle`, `bg-o500` (active
 marker), `bg-o700` (badge), `text-o700`, `bg-o50`, `border-border`, `text-body-admin`, `text-small-admin`, `text-micro`, `text-h2`,
 `font-display`, `rounded-chip`, `rounded-pill`, `pb-safe`, breakpoint `md`.
 
@@ -54,7 +57,9 @@ AdminShell    { dict: AdminCopy; data: ShellData; children }
 Sidebar       { dict; data }
 TabBar        { dict; pendingCount: number }
 MobileHeader  { dict; data }
-NavLink       { href; label; icon: IconName; match: string[]; variant: "sidebar" | "tab"; badge?: number; badgeLabel?: string }
+NavLink       { href; label; icon: IconName; match: string[]; variant: NavVariant; badge?: number; badgeLabel?: string }
+NavIcon       { icon: IconName; variant: NavVariant }
+AdminLoading  { label: string }
 SignOutButton { label: string; tone: "sidebar" | "list" }
 ShellData     { bakeryName; todayLabel; pendingCount; staffName; bypassed }
 ```
@@ -66,7 +71,12 @@ ShellData     { bakeryName; todayLabel; pendingCount; staffName; bypassed }
 - The pending badge counts PENDING orders from today on (`shell-data.ts`). Order actions call
   `revalidatePath("/admin", "layout")`, so the badge refreshes with the screen.
 - `More` lights up for `/admin/more`, `/admin/customers` and `/admin/settings` (its `match`).
-- Server components except `NavLink` (pathname). Sign-out is a plain form — works before hydration.
+- Server components except `NavLink` (pathname) and `NavIcon` (link status). Sign-out is a plain form — works before hydration.
+- **Loading** — every admin route is dynamic, so without a `loading.tsx` a click prefetches nothing and hangs on the old screen.
+  `src/app/admin/(shell)/loading.tsx` renders `AdminLoading` in `main` when switching sections; `orders/`, `menu/`, `calendar/`
+  and `customers/` re-export it so moving within a section (list → one record) shows it too. Where nothing was prefetched
+  (dev, a slow network), `NavIcon` spins on the tapped item until the new screen arrives. Query-string changes (filters,
+  `?week=`, panes) keep the old screen up — they aren't covered.
 - **Print** — the sidebar, header, tab bar and bypass line are `print:hidden`, and the shell drops its one-viewport height so `main`
   flows onto paper. Only the day sheet has a print layout (`admin-daysheet/PrintSheet.tsx`).
 
@@ -84,7 +94,8 @@ Test at `xxxs` (320px) and `3xl` (1920px+) any time you touch this component.
 | Goal | Where |
 |---|---|
 | Add a screen | `adminSections` in `src/lib/admin-routes.ts`, `dict.admin.nav`, `sidebarNav` (and `tabNav` or More) in `nav.ts`, an icon in `ui/icons/Icon.tsx` |
-| Nav copy | `src/content/en.json` → `admin.nav`, `admin.shell` |
+| Nav / loading copy | `src/content/en.json` → `admin.nav`, `admin.shell` |
+| A section gets nested screens | add `export { default } from "../loading"` as its `loading.tsx` |
 | What the badge counts | `src/app/admin/(shell)/shell-data.ts` |
 
 ## Do not

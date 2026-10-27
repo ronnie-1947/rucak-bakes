@@ -114,11 +114,11 @@ function tagsOf(order: {
   }
 }
 
-async function verifiedCounts(menuDayIds: string[]): Promise<Map<string, number>> {
-  if (menuDayIds.length === 0) return new Map()
+/** Verified orders per menu day, for the days `days` matches — filtered through the relation, so it runs alongside the days query. */
+async function verifiedCounts(days: Prisma.MenuDayWhereInput): Promise<Map<string, number>> {
   const rows = await prisma.order.groupBy({
     by: ["menuDayId"],
-    where: { menuDayId: { in: menuDayIds }, status: { in: [...VERIFIED_STATUSES] } },
+    where: { menuDay: days, status: { in: [...VERIFIED_STATUSES] } },
     _count: { _all: true },
   })
   return new Map(rows.map((row) => [row.menuDayId, row._count._all]))
@@ -150,7 +150,14 @@ export async function loadOrderQueue(filters: OrderFilters): Promise<OrderQueue>
     ]
   }
 
-  const [orders, days] = await Promise.all([
+  const onDays: Prisma.MenuDayWhereInput = {
+    OR: [
+      ...(scope.from ? [{ date: { gte: toDbDate(scope.from) } }] : []),
+      { date: { in: [...new Set([...scope.dates, today, addDays(today, 1)])].map(toDbDate) } },
+    ],
+  }
+
+  const [orders, days, counts, unnotified] = await Promise.all([
     prisma.order.findMany({
       where,
       select: {
@@ -172,18 +179,15 @@ export async function loadOrderQueue(filters: OrderFilters): Promise<OrderQueue>
         customer: { select: { completedCount: true, isTrusted: true, noShowCount: true } },
       },
     }),
-    prisma.menuDay.findMany({
-      where: {
-        OR: [
-          ...(scope.from ? [{ date: { gte: toDbDate(scope.from) } }] : []),
-          { date: { in: [...new Set([...scope.dates, today, addDays(today, 1)])].map(toDbDate) } },
-        ],
-      },
-      select: { id: true, date: true, maxOrders: true },
+    prisma.menuDay.findMany({ where: onDays, select: { id: true, date: true, maxOrders: true } }),
+    verifiedCounts(onDays),
+    prisma.order.findMany({
+      where: { notificationFailed: true, status: OrderStatus.PENDING, fulfilmentDate: { gte: toDbDate(today) } },
+      select: { id: true, code: true },
+      orderBy: { createdAt: "asc" },
     }),
   ])
 
-  const counts = await verifiedCounts(days.map((day) => day.id))
   const dayByDate = new Map(days.map((day) => [fromDbDate(day.date), day]))
   const capacityOf = (date: IsoDate) => {
     const day = dayByDate.get(date)
@@ -228,12 +232,6 @@ export async function loadOrderQueue(filters: OrderFilters): Promise<OrderQueue>
   const capacity: CapacityData[] = (["today", "tomorrow"] as const).map((relative) => {
     const date = relative === "today" ? today : addDays(today, 1)
     return { relative, dayLabel: formatDayLabel(date), ...capacityOf(date) }
-  })
-
-  const unnotified = await prisma.order.findMany({
-    where: { notificationFailed: true, status: OrderStatus.PENDING, fulfilmentDate: { gte: toDbDate(today) } },
-    select: { id: true, code: true },
-    orderBy: { createdAt: "asc" },
   })
 
   return { today, groups, capacity, unnotified }
@@ -285,20 +283,22 @@ export type OrderDetailData = {
 }
 
 export async function loadOrderDetail(id: string): Promise<OrderDetailData | null> {
-  const order = await prisma.order.findUnique({
-    where: { id },
-    include: {
-      items: { orderBy: { lineTotalPaise: "desc" }, include: { menuItem: { select: { priceUnit: true } } } },
-      customer: true,
-      menuDay: { select: { maxOrders: true } },
-      verifiedBy: { select: { name: true } },
-      cancelledBy: { select: { name: true } },
-      createdBy: { select: { name: true } },
-    },
-  })
+  const [order, settings] = await Promise.all([
+    prisma.order.findUnique({
+      where: { id },
+      include: {
+        items: { orderBy: { lineTotalPaise: "desc" }, include: { menuItem: { select: { priceUnit: true } } } },
+        customer: true,
+        menuDay: { select: { maxOrders: true } },
+        verifiedBy: { select: { name: true } },
+        cancelledBy: { select: { name: true } },
+        createdBy: { select: { name: true } },
+      },
+    }),
+    getSettings(),
+  ])
   if (!order) return null
 
-  const settings = await getSettings()
   const tz = settings.timezone
   const today = todayIn(tz)
   const date = fromDbDate(order.fulfilmentDate)

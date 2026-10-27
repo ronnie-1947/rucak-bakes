@@ -1,4 +1,4 @@
-import { FulfilmentType, OrderStatus } from "@/generated/prisma/client"
+import { FulfilmentType, OrderStatus, Prisma } from "@/generated/prisma/client"
 import { dayHref, inPlanningRange } from "@/lib/calendar/routes"
 import { formatClock } from "@/lib/calendar/cutoffs"
 import { addDays, formatDayLabel, formatLongDayLabel, formatTimeIn, type IsoDate, isoDateInZone, todayIn, toDbDate } from "@/lib/dates"
@@ -206,7 +206,9 @@ export async function loadDaySheet(searchParams: Record<string, string | string[
   const params = parseSheetParams(searchParams, today)
   const { date } = params
 
-  const [day, orders, categories] = await Promise.all([
+  const onSheet: Prisma.OrderWhereInput = { fulfilmentDate: toDbDate(date), status: { in: [...LIVE_STATUSES] } }
+
+  const [day, orders, categories, catalogue] = await Promise.all([
     prisma.menuDay.findUnique({
       where: { date: toDbDate(date) },
       select: {
@@ -222,7 +224,7 @@ export async function loadDaySheet(searchParams: Record<string, string | string[
       },
     }),
     prisma.order.findMany({
-      where: { fulfilmentDate: toDbDate(date), status: { in: [...LIVE_STATUSES] } },
+      where: onSheet,
       orderBy: { createdAt: "asc" },
       select: {
         id: true,
@@ -241,13 +243,13 @@ export async function loadDaySheet(searchParams: Record<string, string | string[
       },
     }),
     prisma.menuCategory.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }], select: { slug: true, name: true } }),
+    // Every item on those orders — matched through the lines, so it needn't wait for them.
+    prisma.menuItem.findMany({
+      where: { orderItems: { some: { order: onSheet } } },
+      select: { id: true, name: true, category: true, priceUnit: true, sizeNote: true, bakeSeparately: true },
+    }),
   ])
 
-  const itemIds = [...new Set(orders.flatMap((order) => order.items.map((line) => line.menuItemId)))]
-  const catalogue = await prisma.menuItem.findMany({
-    where: { id: { in: itemIds } },
-    select: { id: true, name: true, category: true, priceUnit: true, sizeNote: true, bakeSeparately: true },
-  })
   const separate = new Set(catalogue.filter((item) => item.bakeSeparately).map((item) => item.id))
   const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? name
 

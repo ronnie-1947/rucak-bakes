@@ -8,15 +8,15 @@ const locale: Locale = "en"
 
 /**
  * Every signed-in admin screen. requireStaff() re-checks the staff row on every render — the proxy's
- * check is optimistic, and a JWT outlives a deactivation. The login screen sits outside this group.
+ * check is optimistic, and a JWT outlives a deactivation. The login screen sits outside this group. The shell's own reads
+ * run alongside it rather than after: a signed-out request still redirects before anything renders.
  */
 export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
-  const staff = await requireStaff()
-  const [dict, data] = await Promise.all([getDictionary(locale), loadShellData(staff.name)])
+  const [staff, dict, data] = await Promise.all([requireStaff(), getDictionary(locale), loadShellData()])
 
   return (
     <div lang={htmlLang(locale)} className="contents">
-      <AdminShell dict={dict.admin} data={data}>
+      <AdminShell dict={dict.admin} data={{ ...data, staffName: staff.name }}>
         {children}
       </AdminShell>
     </div>
