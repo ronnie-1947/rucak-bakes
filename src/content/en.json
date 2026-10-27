@@ -1686,6 +1686,7 @@
         "PER_SLICE": "per slice"
       },
       "from": "from {price}",
+      "onRequest": "Price on request",
       "soldOut": "Sold out"
     },
     "itemPage": {

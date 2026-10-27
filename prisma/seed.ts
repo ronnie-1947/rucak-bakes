@@ -8,22 +8,20 @@
  */
 import { loadEnvConfig } from "@next/env"
 import type { PrismaClient } from "@/generated/prisma/client"
-import { addDays, computeCutoffAt, todayIn, toDbDate, weekday } from "@/lib/dates"
+import { addDays, computeCutoffAt, todayIn, toDbDate } from "@/lib/dates"
 
 loadEnvConfig(process.cwd(), true, { info: () => {}, error: console.error })
 
+// The bakery's menu — transcribed from the owner's handwritten list (dev-docs/menu.md).
 const CATEGORIES = [
-  { name: "Breads", slug: "breads" },
-  { name: "Pastries", slug: "pastries" },
   { name: "Cakes", slug: "cakes" },
-  { name: "Savoury", slug: "savoury" },
-  { name: "Seasonal", slug: "seasonal" },
+  { name: "Bento cakes", slug: "bento-cakes" },
+  { name: "Pastries", slug: "pastries" },
+  { name: "Muffins", slug: "muffins" },
+  { name: "Custards", slug: "custards" },
+  { name: "Ladoos", slug: "ladoos" },
+  { name: "Custom cakes", slug: "custom-cakes" },
 ]
-
-const SAT = 6
-const SUN = 0
-const FRI = 5
-const WED = 3
 
 type SeedItem = {
   slug: string
@@ -33,6 +31,7 @@ type SeedItem = {
   category: string
   basePricePaise: number
   priceUnit: "EACH" | "PER_BOX" | "PER_KG" | "PER_SLICE"
+  sizeNote?: string
   ingredients: string[]
   allergens: string[]
   defaultQuantity: number
@@ -42,123 +41,114 @@ type SeedItem = {
   orderable?: boolean
   /** The day sheet's Made to order rows — one per order line, with the customer's note. */
   bakeSeparately?: boolean
-  /** Weekdays it's a counter-item (0 = Sunday). Omitted = every day; [] = never. */
-  days?: number[]
-  /** A one-weekday price, to exercise MenuDayItem.priceOverridePaise. */
-  override?: { day: number; pricePaise: number }
+}
+
+/** One category's flavours at their list prices (₹). Descriptions, ingredients and allergens are the owner's to fill in. */
+function flavours(
+  category: string,
+  suffix: string,
+  rows: [flavour: string, rupees: number][],
+  rest: Pick<SeedItem, "priceUnit" | "defaultQuantity" | "sizeNote" | "bakeSeparately">,
+): SeedItem[] {
+  return rows.map(([flavour, rupees]) => {
+    const name = `${flavour} ${suffix}`
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-")
+    return { slug, name, shortDescription: "", category, basePricePaise: rupees * 100, ingredients: [], allergens: [], ...rest }
+  })
 }
 
 const ITEMS: SeedItem[] = [
+  // Priced per half kg — ordering one is half a kilo.
+  ...flavours(
+    "cakes",
+    "cake",
+    [
+      ["Chocolate", 600],
+      ["Vanilla", 500],
+      ["Butterscotch", 500],
+      ["Rasmalai", 500],
+      ["Pineapple", 500],
+      ["Strawberry", 500],
+      ["Mango", 500],
+      ["Orange", 500],
+      ["Black Forest", 500],
+      ["White Forest", 500],
+    ],
+    { priceUnit: "EACH", sizeNote: "Half kg", defaultQuantity: 1, bakeSeparately: true },
+  ),
+  ...flavours(
+    "bento-cakes",
+    "bento cake",
+    [
+      ["Chocolate", 250],
+      ["Strawberry", 250],
+      ["Vanilla", 250],
+      ["Butterscotch", 250],
+      ["Mango", 250],
+      ["Orange", 250],
+    ],
+    { priceUnit: "EACH", defaultQuantity: 1, bakeSeparately: true },
+  ),
+  ...flavours(
+    "pastries",
+    "pastry",
+    [
+      ["Chocolate", 50],
+      ["Vanilla", 40],
+      ["Butterscotch", 40],
+      ["Black Forest", 40],
+      ["Cheese", 50],
+    ],
+    { priceUnit: "EACH", defaultQuantity: 12 },
+  ),
+  ...flavours(
+    "muffins",
+    "muffin",
+    [
+      ["Chocolate", 40],
+      ["Vanilla", 40],
+      ["Strawberry", 40],
+      ["Pineapple", 40],
+    ],
+    { priceUnit: "EACH", defaultQuantity: 12 },
+  ),
+  ...flavours(
+    "custards",
+    "custard",
+    [
+      ["Apple", 60],
+      ["Grape", 60],
+      ["Strawberry", 60],
+      ["Cherry", 60],
+      ["Mango", 60],
+      ["Mixed fruit", 60],
+    ],
+    { priceUnit: "EACH", defaultQuantity: 10 },
+  ),
+  ...flavours(
+    "ladoos",
+    "ladoo",
+    [
+      ["Besan", 50],
+      ["Coconut", 50],
+      ["Sesame", 50],
+      ["Rice flour", 50],
+    ],
+    { priceUnit: "PER_BOX", defaultQuantity: 10 },
+  ),
+  // No fixed price: 0 reads "Price on request" — the price is agreed on the phone.
   {
-    slug: "sourdough-loaf",
-    name: "Sourdough loaf",
-    shortDescription: "Slow-fermented country loaf with a crackly crust.",
-    about: "Made with our own starter and fermented for 24 hours. Keeps three days in a paper bag — refresh it in a hot oven.",
-    category: "breads",
-    basePricePaise: 24000,
+    slug: "custom-cake",
+    name: "Custom cake",
+    shortDescription: "",
+    category: "custom-cakes",
+    basePricePaise: 0,
     priceUnit: "EACH",
-    ingredients: ["Wheat flour", "Water", "Sourdough starter", "Salt"],
-    allergens: ["GLUTEN"],
-    defaultQuantity: 12,
-    override: { day: WED, pricePaise: 22000 },
-  },
-  {
-    slug: "multigrain-loaf",
-    name: "Multigrain sandwich loaf",
-    shortDescription: "Soft sandwich loaf with oats, flax and sunflower seeds.",
-    category: "breads",
-    basePricePaise: 16000,
-    priceUnit: "EACH",
-    ingredients: ["Whole wheat flour", "Wheat flour", "Oats", "Flax seeds", "Sunflower seeds", "Sesame seeds", "Yeast", "Salt"],
-    allergens: ["GLUTEN", "SESAME"],
-    defaultQuantity: 10,
-  },
-  {
-    slug: "butter-croissant",
-    name: "Butter croissant",
-    shortDescription: "Laminated with butter and baked golden every morning.",
-    category: "pastries",
-    basePricePaise: 9000,
-    priceUnit: "EACH",
-    ingredients: ["Wheat flour", "Butter", "Milk", "Sugar", "Yeast", "Salt"],
-    allergens: ["GLUTEN", "DAIRY"],
-    defaultQuantity: 24,
-  },
-  {
-    slug: "pain-au-chocolat",
-    name: "Pain au chocolat",
-    shortDescription: "Croissant dough rolled around two bars of dark chocolate.",
-    category: "pastries",
-    basePricePaise: 12000,
-    priceUnit: "EACH",
-    ingredients: ["Wheat flour", "Butter", "Dark chocolate", "Milk", "Sugar", "Yeast", "Salt"],
-    allergens: ["GLUTEN", "DAIRY", "SOY"],
-    defaultQuantity: 18,
-  },
-  {
-    slug: "brownie-box",
-    name: "Brownie box",
-    shortDescription: "Six fudgy dark-chocolate brownies with walnuts.",
-    category: "cakes",
-    basePricePaise: 32000,
-    priceUnit: "PER_BOX",
-    ingredients: ["Dark chocolate", "Butter", "Sugar", "Eggs", "Wheat flour", "Walnuts"],
-    allergens: ["GLUTEN", "DAIRY", "EGGS", "NUTS", "SOY"],
-    defaultQuantity: 8,
-  },
-  {
-    slug: "chocolate-truffle-cake",
-    name: "Chocolate truffle cake",
-    shortDescription: "Dark chocolate sponge layered with ganache.",
-    about: "Sold by the kilo. Put the message for the top in your order note.",
-    category: "cakes",
-    basePricePaise: 120000,
-    priceUnit: "PER_KG",
-    ingredients: ["Dark chocolate", "Cream", "Butter", "Sugar", "Eggs", "Wheat flour", "Cocoa"],
-    allergens: ["GLUTEN", "DAIRY", "EGGS", "SOY"],
-    defaultQuantity: 4,
-    noticeDays: 2,
-    bakeSeparately: true,
-    days: [SAT, SUN],
-  },
-  {
-    slug: "custom-birthday-cake",
-    name: "Custom birthday cake",
-    shortDescription: "Your flavour, size and message — talk it through with us on the phone.",
-    about: "Sold by the kilo, from 1 kg. Call us with the date, flavour and the message for the top.",
-    category: "cakes",
-    basePricePaise: 150000,
-    priceUnit: "PER_KG",
-    ingredients: ["Wheat flour", "Butter", "Sugar", "Eggs", "Cream"],
-    allergens: ["GLUTEN", "DAIRY", "EGGS"],
+    ingredients: [],
+    allergens: [],
     defaultQuantity: 1,
-    noticeDays: 3,
     orderable: false,
     bakeSeparately: true,
-    days: [],
-  },
-  {
-    slug: "chicken-puff",
-    name: "Chicken puff",
-    shortDescription: "Flaky puff pastry filled with spiced chicken and onion.",
-    category: "savoury",
-    basePricePaise: 6000,
-    priceUnit: "EACH",
-    ingredients: ["Wheat flour", "Butter", "Chicken", "Onion", "Spices"],
-    allergens: ["GLUTEN", "DAIRY"],
-    defaultQuantity: 30,
-  },
-  {
-    slug: "plum-cake",
-    name: "Rum and raisin plum cake",
-    shortDescription: "Dark, fruit-heavy plum cake, 500 g.",
-    category: "seasonal",
-    basePricePaise: 55000,
-    priceUnit: "EACH",
-    ingredients: ["Wheat flour", "Butter", "Sugar", "Eggs", "Raisins", "Candied peel", "Cashews", "Spices"],
-    allergens: ["GLUTEN", "DAIRY", "EGGS", "NUTS"],
-    defaultQuantity: 6,
-    days: [FRI, SAT, SUN],
   },
 ]
 
@@ -212,16 +202,15 @@ async function seed(prisma: PrismaClient) {
     await prisma.menuCategory.upsert({ where: { slug: category.slug }, update: {}, create: { ...category, sortOrder } })
   }
 
-  const items = []
-  for (const { days, override, ...item } of ITEMS) {
-    const row = await prisma.menuItem.upsert({ where: { slug: item.slug }, update: {}, create: item })
-    items.push({ row, days, override })
+  // Menu items only — the owner plans each day's counter-items in the Calendar.
+  for (const item of ITEMS) {
+    await prisma.menuItem.upsert({ where: { slug: item.slug }, update: {}, create: item })
   }
 
   const today = todayIn(settings.timezone)
   for (let offset = 0; offset < 7; offset++) {
     const date = addDays(today, offset)
-    const day = await prisma.menuDay.upsert({
+    await prisma.menuDay.upsert({
       where: { date: toDbDate(date) },
       update: {},
       create: {
@@ -233,30 +222,15 @@ async function seed(prisma: PrismaClient) {
         overbookLimit: settings.defaultOverbook,
       },
     })
-
-    for (const { row, days, override } of items) {
-      if (days && !days.includes(weekday(date))) continue
-      await prisma.menuDayItem.upsert({
-        where: { menuDayId_menuItemId: { menuDayId: day.id, menuItemId: row.id } },
-        update: {},
-        create: {
-          menuDayId: day.id,
-          menuItemId: row.id,
-          quantityAvailable: row.defaultQuantity,
-          priceOverridePaise: override?.day === weekday(date) ? override.pricePaise : null,
-        },
-      })
-    }
   }
 
-  const [staff, categories, menuItems, menuDays, menuDayItems] = await Promise.all([
+  const [staff, categories, menuItems, menuDays] = await Promise.all([
     prisma.staff.count({ where: { role: "OWNER" } }),
     prisma.menuCategory.count(),
     prisma.menuItem.count(),
     prisma.menuDay.count(),
-    prisma.menuDayItem.count(),
   ])
-  console.log(`Seeded: settings ✓, ${staff} owners, ${categories} categories, ${menuItems} items, ${menuDays} days, ${menuDayItems} day items`)
+  console.log(`Seeded: settings ✓, ${staff} owners, ${categories} categories, ${menuItems} items, ${menuDays} days`)
 }
 
 async function main() {

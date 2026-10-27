@@ -9,7 +9,7 @@ import { todayIn } from "@/lib/dates"
 import { getDictionary } from "@/lib/i18n"
 import { allergens } from "@/lib/menu/allergens"
 import { applySnapshot, archiveItems, duplicateItem, type MenuSnapshot, restoreItem, setItemsActive } from "@/lib/menu/changes"
-import { LIMITS, NOTICE, priceToPaise, QUANTITY, SLUG } from "@/lib/menu/form"
+import { LIMITS, NOTICE, priceOnRequest, priceToPaise, QUANTITY, SLUG } from "@/lib/menu/form"
 import { saveItem } from "@/lib/menu/save"
 import { priceUnits } from "@/lib/menu/units"
 import { getSettings } from "@/lib/settings/row"
@@ -136,7 +136,7 @@ export async function saveMenuItem(input: z.input<typeof saveInput>): Promise<Sa
   const parsed = saveInput.safeParse(input)
   if (!parsed.success) return { ok: false, reason: "INVALID" }
   const { id: itemId, price, ...rest } = parsed.data
-  const basePricePaise = priceToPaise(price)
+  const basePricePaise = priceOnRequest(rest.orderable, price) ? 0 : priceToPaise(price)
   if (basePricePaise === null) return { ok: false, reason: "INVALID" }
 
   const outcome = await saveItem(itemId, {

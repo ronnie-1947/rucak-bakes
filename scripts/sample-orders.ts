@@ -4,7 +4,7 @@
  * have something to show. Needs the seed.
  *
  * Every order is "placed" a few hours before its own deadline — the day's cutoff, or earlier when a line needs more
- * notice (orders/deadline.ts) — so a 2-day cake for today really was ordered two days ago.
+ * notice (orders/deadline.ts) — so a cake for today really was ordered the day before.
  *
  * Re-running is safe: the idempotency keys carry today's date, so a second run the same day replays instead of creating
  * (and transitions that already happened are skipped); a run on a later day adds that day's spread. Today and tomorrow
@@ -33,27 +33,27 @@ type Sample = {
 }
 
 const SAMPLES: Sample[] = [
-  { key: "s01", day: 0, name: "Meera Iyer", phone: "98201 44718", items: [["sourdough-loaf", 2], ["brownie-box", 1], ["butter-croissant", 1]], pickupTime: "11:30", note: "Nut allergy in the family — please keep the brownies away from the other bread." },
-  { key: "s02", day: 0, name: "Rohan Mehta", phone: "98765 43210", items: [["multigrain-loaf", 1], ["butter-croissant", 2]], pickupTime: "10:00" },
-  { key: "s03", day: 0, name: "Anita Rao", phone: "99001 23456", items: [["sourdough-loaf", 1]], pickupTime: "09:00", steps: ["verify"] },
-  { key: "s04", day: 0, name: "Farah Khan", phone: "98450 11223", items: [["pain-au-chocolat", 4]], pickupTime: "08:30", note: "Please box them in two.", steps: ["verify"] },
-  { key: "s05", day: 0, name: "Vikram Shah", phone: "97311 80045", items: [["multigrain-loaf", 1], ["butter-croissant", 3]], pickupTime: "08:00", steps: ["verify", "ready"] },
-  { key: "s06", day: 0, name: "Leela George", phone: "99450 67781", items: [["sourdough-loaf", 2]], pickupTime: "07:30", steps: ["verify", "ready", "complete"] },
-  { key: "s07", day: 0, name: "Kiran Rao", phone: "98440 22019", items: [["butter-croissant", 6]], pickupTime: "07:45", steps: ["verify", "ready", "complete"] },
-  { key: "s08", day: 0, name: "Nikhil Jain", phone: "90080 33415", items: [["chicken-puff", 4]], pickupTime: "10:30", steps: ["cancel"] },
-  { key: "s09", day: 0, name: "Divya Menon", phone: "98860 55012", items: [["chicken-puff", 6], ["brownie-box", 1]], pickupTime: "09:30", steps: ["verify", "ready", "noshow"] },
-  // Made to order: the truffle cake bakes separately and needs 2 days' notice.
-  { key: "s10", day: 0, name: "Sunita Reddy", phone: "98455 61290", items: [["chocolate-truffle-cake", 1]], pickupTime: "12:00", note: "Write “Happy 6th Asha” on top — no nuts please.", steps: ["verify"] },
-  { key: "s11", day: 1, name: "Sanjay Pillai", phone: "98451 90876", items: [["sourdough-loaf", 1], ["pain-au-chocolat", 2]], pickupTime: "09:30" },
-  { key: "s12", day: 1, name: "Kavya Nair", phone: "99020 11873", items: [["multigrain-loaf", 1]], pickupTime: "10:30", steps: ["verify"] },
-  { key: "s13", day: 1, name: "Priya Menon", phone: "97400 12398", items: [["butter-croissant", 2], ["chicken-puff", 2]], pickupTime: "08:00", note: "My son will collect.", steps: ["verify"] },
-  { key: "s14", day: 1, name: "Meera Iyer", phone: "98201 44718", items: [["chicken-puff", 3]], pickupTime: "12:00" },
-  // 30 croissants for a party.
-  { key: "s15", day: 1, name: "Ravi Kumar", phone: "98800 41126", items: [["butter-croissant", 30], ["plum-cake", 1]], pickupTime: "14:00", note: "For a party at 4pm.", steps: ["verify"] },
-  { key: "s16", day: 2, name: "Anita Rao", phone: "99001 23456", items: [["brownie-box", 2]], pickupTime: "11:00" },
-  { key: "s17", day: 2, name: "Farhan Ali", phone: "98861 70345", items: [["chocolate-truffle-cake", 2]], pickupTime: "17:00", note: "Two boxes, “Congratulations Zoya” on one." },
-  { key: "s18", day: 3, name: "Kavya Nair", phone: "99020 11873", items: [["chocolate-truffle-cake", 1], ["butter-croissant", 12]], pickupTime: "10:00", steps: ["verify"] },
-  { key: "s19", day: 5, name: "Rohan Mehta", phone: "98765 43210", items: [["sourdough-loaf", 2]], pickupTime: "09:00" },
+  { key: "s01", day: 0, name: "Meera Iyer", phone: "98201 44718", items: [["black-forest-pastry", 2], ["coconut-ladoo", 1], ["chocolate-muffin", 1]], pickupTime: "11:30", note: "Nut allergy in the family — please pack the ladoos separately." },
+  { key: "s02", day: 0, name: "Rohan Mehta", phone: "98765 43210", items: [["besan-ladoo", 1], ["chocolate-muffin", 2]], pickupTime: "10:00" },
+  { key: "s03", day: 0, name: "Anita Rao", phone: "99001 23456", items: [["black-forest-pastry", 1]], pickupTime: "09:00", steps: ["verify"] },
+  { key: "s04", day: 0, name: "Farah Khan", phone: "98450 11223", items: [["mango-custard", 4]], pickupTime: "08:30", note: "Please box them in two.", steps: ["verify"] },
+  { key: "s05", day: 0, name: "Vikram Shah", phone: "97311 80045", items: [["besan-ladoo", 1], ["chocolate-muffin", 3]], pickupTime: "08:00", steps: ["verify", "ready"] },
+  { key: "s06", day: 0, name: "Leela George", phone: "99450 67781", items: [["black-forest-pastry", 2]], pickupTime: "07:30", steps: ["verify", "ready", "complete"] },
+  { key: "s07", day: 0, name: "Kiran Rao", phone: "98440 22019", items: [["chocolate-muffin", 6]], pickupTime: "07:45", steps: ["verify", "ready", "complete"] },
+  { key: "s08", day: 0, name: "Nikhil Jain", phone: "90080 33415", items: [["cheese-pastry", 4]], pickupTime: "10:30", steps: ["cancel"] },
+  { key: "s09", day: 0, name: "Divya Menon", phone: "98860 55012", items: [["cheese-pastry", 6], ["coconut-ladoo", 1]], pickupTime: "09:30", steps: ["verify", "ready", "noshow"] },
+  // Made to order: the chocolate cake bakes separately.
+  { key: "s10", day: 0, name: "Sunita Reddy", phone: "98455 61290", items: [["chocolate-cake", 1]], pickupTime: "12:00", note: "Write “Happy 6th Asha” on top — no nuts please.", steps: ["verify"] },
+  { key: "s11", day: 1, name: "Sanjay Pillai", phone: "98451 90876", items: [["black-forest-pastry", 1], ["mango-custard", 2]], pickupTime: "09:30" },
+  { key: "s12", day: 1, name: "Kavya Nair", phone: "99020 11873", items: [["besan-ladoo", 1]], pickupTime: "10:30", steps: ["verify"] },
+  { key: "s13", day: 1, name: "Priya Menon", phone: "97400 12398", items: [["chocolate-muffin", 2], ["cheese-pastry", 2]], pickupTime: "08:00", note: "My son will collect.", steps: ["verify"] },
+  { key: "s14", day: 1, name: "Meera Iyer", phone: "98201 44718", items: [["cheese-pastry", 3]], pickupTime: "12:00" },
+  // 30 muffins for a party.
+  { key: "s15", day: 1, name: "Ravi Kumar", phone: "98800 41126", items: [["chocolate-muffin", 30], ["strawberry-bento-cake", 1]], pickupTime: "14:00", note: "For a party at 4pm.", steps: ["verify"] },
+  { key: "s16", day: 2, name: "Anita Rao", phone: "99001 23456", items: [["coconut-ladoo", 2]], pickupTime: "11:00" },
+  { key: "s17", day: 2, name: "Farhan Ali", phone: "98861 70345", items: [["chocolate-cake", 2]], pickupTime: "17:00", note: "Two boxes, “Congratulations Zoya” on one." },
+  { key: "s18", day: 3, name: "Kavya Nair", phone: "99020 11873", items: [["chocolate-cake", 1], ["chocolate-muffin", 12]], pickupTime: "10:00", steps: ["verify"] },
+  { key: "s19", day: 5, name: "Rohan Mehta", phone: "98765 43210", items: [["black-forest-pastry", 2]], pickupTime: "09:00" },
 ]
 
 /** Customer flags set BEFORE ordering — a blocked number's orders are accepted and flagged. */
@@ -70,9 +70,9 @@ const HISTORY: Record<string, { completedCount: number; totalSpentPaise: number 
 
 /** What the counter gets today and tomorrow when nobody planned any: [slug, quantity made]. */
 const COUNTER: [slug: string, quantity: number][] = [
-  ["butter-croissant", 24],
-  ["pain-au-chocolat", 18],
-  ["sourdough-loaf", 8],
+  ["chocolate-muffin", 12],
+  ["mango-custard", 10],
+  ["black-forest-pastry", 12],
 ]
 
 /** How long before its deadline each sample order goes in. */

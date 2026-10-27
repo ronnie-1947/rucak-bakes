@@ -29,11 +29,15 @@ export type CardAction =
   | { look: "add"; dates: IsoDate[]; today: IsoDate; copy: AddCopy }
   | { look: "call"; label: string; ariaLabel: string; phone: string }
 
-/** "₹240" and, when it isn't per piece, "per box". A call-only item reads "from ₹1,500" — the base is where it starts. */
+/**
+ * "₹240" and, when it isn't per piece, "per box". A call-only item reads "from ₹1,500" — the base is where it starts —
+ * or "Price on request" when it has none (0).
+ */
 export function priceParts(
   item: Pick<StoreItem, "pricePaise" | "priceUnit" | "orderable">,
   dict: Dict["store"]["item"],
 ): { price: string; unit: string } {
+  if (!item.orderable && item.pricePaise === 0) return { price: dict.onRequest, unit: "" }
   const price = formatPaise(item.pricePaise)
   return { price: item.orderable ? price : fill(dict.from, { price }), unit: dict.units[item.priceUnit] }
 }

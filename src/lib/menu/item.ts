@@ -135,7 +135,7 @@ export async function loadMenuItemPage(id: string | null): Promise<MenuItemPage 
     slug: item.slug,
     shortDescription: item.shortDescription,
     category: item.category ? { slug: item.category } : null,
-    price: paiseToPrice(item.basePricePaise),
+    price: item.basePricePaise > 0 ? paiseToPrice(item.basePricePaise) : "",
     priceUnit: asPriceUnit(item.priceUnit),
     isActive: item.isActive,
     photos: item.images.map((publicId, index) => ({ publicId, alt: item.imageAlts[index] ?? "" })),

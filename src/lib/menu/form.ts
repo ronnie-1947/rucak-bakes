@@ -86,6 +86,11 @@ export function priceToPaise(price: string): number | null {
   return paise > 0 ? paise : null
 }
 
+/** A call-only item may leave its price blank — stored as 0, it reads "Price on request". */
+export function priceOnRequest(orderable: boolean, price: string): boolean {
+  return !orderable && !price.trim()
+}
+
 /** 24050 → "240.50", 24000 → "240". */
 export function paiseToPrice(paise: number): string {
   return paise % 100 === 0 ? String(paise / 100) : (paise / 100).toFixed(2)
@@ -114,7 +119,7 @@ export function validate(values: MenuItemValues): Partial<Record<"name" | "slug"
   if (!values.shortDescription.trim()) errors.shortDescription = "descriptionMissing"
   else if (values.shortDescription.trim().length > LIMITS.shortDescription) errors.shortDescription = "descriptionLong"
   if (!values.category) errors.category = "categoryMissing"
-  if (priceToPaise(values.price) === null) errors.price = "priceInvalid"
+  if (!priceOnRequest(values.orderable, values.price) && priceToPaise(values.price) === null) errors.price = "priceInvalid"
   return errors
 }
 
