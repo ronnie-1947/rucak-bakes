@@ -7,21 +7,22 @@ import { Button } from "@/components/ui/Button"
 import { ButtonLink } from "@/components/ui/ButtonLink"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { Notice } from "@/components/ui/Notice"
-import { Spinner } from "@/components/ui/Spinner"
+import { Skeleton } from "@/components/ui/Skeleton"
 import { useCart } from "@/hooks/useCart"
 import { usePageBack } from "@/hooks/usePageTitle"
+import { useStoreInfo } from "@/hooks/useStoreInfo"
 import { type CartLine, MAX_LINE_QTY } from "@/lib/cart/cart"
 import { type CartDayStatus, type CartCheck, type LineNote, lineNotice, reconcile, sheetDays, viewCartDay } from "@/lib/cart/check"
 import { readCustomer, saveCustomer } from "@/lib/cart/customer"
 import { getCart } from "@/lib/cart/store"
-import { formatLongDayLabel, type IsoDate } from "@/lib/dates"
+import { formatLongDayLabel, type IsoDate, todayIn } from "@/lib/dates"
 import { formatPaise } from "@/lib/money"
 import { type CheckoutRefusal, type DetailsField, type DetailsValues, detailsProblems, type PlacedSummary } from "@/lib/orders/checkout"
 import type { BookingWindow } from "@/lib/orders/deadline"
-import type { CartPageData } from "@/lib/storefront/cart"
 import { noticeChip, noticeLength } from "@/lib/storefront/words"
 import { fill } from "@/lib/template"
 import { CartHeading } from "./CartHeading"
+import { CartSkeleton } from "./CartSkeleton"
 import { CartStep } from "./CartStep"
 import { CartSummary } from "./CartSummary"
 import { ClearConfirm } from "./ClearConfirm"
@@ -37,7 +38,6 @@ import { PlaceButton } from "./PlaceButton"
 import { ProblemAlert } from "./ProblemAlert"
 
 type CartFlowProps = {
-  data: CartPageData
   copy: CartPageCopy
 }
 
@@ -63,11 +63,13 @@ const neverChanges = () => () => {}
  * ordered online any more go, prices and notices are refreshed, and the cart's day is judged with the deadline rule —
  * lines whose notice makes it too soon are flagged with Move to <the earliest date for every line>. Place order sends one
  * idempotency key per attempt (a resend after a dropped connection can't order twice); a refusal keeps the cart and the
- * details and names the way forward. The header's Back steps from details to the cart.
+ * details and names the way forward. The header's Back steps from details to the cart. The page is static: pickup, delivery
+ * and the phone come with the store shell (useStoreInfo), the booking window with the check — the only request it makes.
  */
-export function CartFlow({ data, copy }: CartFlowProps) {
+export function CartFlow({ copy }: CartFlowProps) {
   const c = copy.cart
   const router = useRouter()
+  const info = useStoreInfo()
   const { cart, count, subtotalPaise, setQuantity, replace, clear } = useCart()
   // The cart lives in localStorage: until the browser has read it, show neither the lines nor "empty".
   const hydrated = useSyncExternalStore(
@@ -81,12 +83,13 @@ export function CartFlow({ data, copy }: CartFlowProps) {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [clearAsk, setClearAsk] = useState(false)
   const [note, setNote] = useState("")
+  const [checkFailed, setCheckFailed] = useState(false)
   // Read once on the client; the details form isn't on screen at hydration, so the server's empty values never show.
   const [saved] = useState(() => (typeof window === "undefined" ? null : readCustomer()))
   const [details, setDetails] = useState<DetailsValues>(() => ({
     name: saved?.name ?? "",
     phone: saved?.phone ?? "",
-    type: data.pickup.enabled || !data.delivery.enabled ? "PICKUP" : "DELIVERY",
+    type: info.pickup.enabled || !info.delivery.enabled ? "PICKUP" : "DELIVERY",
     address: saved?.address ?? "",
   }))
   const [errors, setErrors] = useState<DetailsField[]>([])
@@ -97,23 +100,26 @@ export function CartFlow({ data, copy }: CartFlowProps) {
   const attempt = useRef<string | null>(null)
   const checkedIds = useRef(new Set<string>())
 
-  /** Asks the server about the cart's lines and the window, and applies the answer. Offline, the cart stays as it is. */
+  /**
+   * Asks the server about the cart's lines and the window, and applies the answer. Offline, the cart stays as it is — once a
+   * window has come, Place order checks everything again; before that, `checkFailed` offers Try again.
+   */
   const recheck = useCallback(() => {
     const ids = getCart()?.items.map((line) => line.menuItemId) ?? []
     if (ids.length === 0) return
     ids.forEach((id) => checkedIds.current.add(id))
     checkCart({ ids })
       .then((result) => applyCheck(result))
-      .catch(() => {
-        // Place order checks everything again.
-      })
+      .catch(() => setCheckFailed(true))
 
     function applyCheck(result: CartCheck | null) {
       const current = getCart()
+      if (!result) setCheckFailed(true)
       if (!result || !current) return
       const outcome = reconcile(current, result, Date.now())
       if (outcome.cart !== current) replace(outcome.cart)
       setChecked({ notes: outcome.notes, removed: outcome.removed, window: result.window })
+      setCheckFailed(false)
       setRefusedDay(null)
     }
   }, [replace])
@@ -150,24 +156,17 @@ export function CartFlow({ data, copy }: CartFlowProps) {
   const toCart = useCallback(() => goTo("cart"), [goTo])
   usePageBack(step === "details" && cart && !pending ? toCart : null)
 
-  // The window as the last check saw it, else as the page was rendered. Never `window` — that's the browser's.
-  const booking = checked?.window ?? data.window
-  const today = booking.today
+  // The window as the last check saw it — null until the first answers. Never `window` — that's the browser's.
+  const booking = checked?.window ?? null
+  const today = booking?.today ?? todayIn(info.timeZone)
 
-  if (!hydrated) {
-    return (
-      <div role="status" className="flex min-h-40 items-center justify-center">
-        <Spinner size="lg" />
-        <span className="sr-only">{c.loading}</span>
-      </div>
-    )
-  }
+  if (!hydrated) return <CartSkeleton label={c.loading} />
 
   if (step === "done" && placed) {
     return (
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
         <CartHeading id={TITLE_ID} title={c.titles.done} />
-        <Confirmed order={placed} today={today} pickup={data.pickup} phone={data.phone} copy={copy} />
+        <Confirmed order={placed} today={today} pickup={info.pickup} phone={info.phone} copy={copy} />
       </div>
     )
   }
@@ -192,14 +191,9 @@ export function CartFlow({ data, copy }: CartFlowProps) {
     )
   }
 
-  const view = viewCartDay(cart, booking)
-  const status: CartDayStatus = refusedDay?.date === date ? refusedDay.status : view.status
-  const notes = checked?.notes ?? {}
-  const rows = sheetDays(cart, booking)
   const type: Fulfilment = details.type
-  const feePaise = type === "DELIVERY" ? data.delivery.feePaise : 0
-  const title = dayTitle(date, today, copy)
-  const problemTitle = dayProblem(status, date, view, booking, copy)
+  const items = { label: c.itemsRow, value: String(count) }
+  const noticeOf = (line: CartLine) => (line.noticeDays === undefined ? null : noticeChip(line.noticeDays, true, copy.notice))
 
   const changeLine = (line: CartLine, qty: number) => {
     setQuantity(
@@ -218,6 +212,55 @@ export function CartFlow({ data, copy }: CartFlowProps) {
     if (qty === 0 && problem?.kind === "tooSoon") setProblem(null)
     if (qty === 0 && cart.items.length === 1) goTo("cart")
   }
+
+  // Until the first check answers there's no window to judge the day by: the lines show, the day card waits, Continue waits.
+  if (!booking) {
+    return (
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 lg:max-w-5xl">
+        <CartHeading id={TITLE_ID} title={c.titles.cart} />
+        <CartStep
+          cart={cart}
+          lineInfo={(line) => ({ note: undefined, notice: noticeOf(line), flag: null })}
+          onLine={changeLine}
+          alerts={
+            checkFailed ? (
+              <ProblemAlert
+                title={c.checkFailed}
+                action={
+                  <Button
+                    size="lg"
+                    className="w-full font-semibold"
+                    onClick={() => {
+                      setCheckFailed(false)
+                      recheck()
+                    }}
+                  >
+                    {c.retry}
+                  </Button>
+                }
+              />
+            ) : null
+          }
+          dayCard={<Skeleton tone="warm" className="h-24 rounded-card" />}
+          summary={<CartSummary rows={[items]} totalLabel={c.subtotal} total={formatPaise(subtotalPaise)} pay={c.payLater[type]} />}
+          note={note}
+          onNote={setNote}
+          blocked=""
+          onContinue={() => {}}
+          subtotal={formatPaise(subtotalPaise)}
+          copy={copy}
+        />
+      </div>
+    )
+  }
+
+  const view = viewCartDay(cart, booking)
+  const status: CartDayStatus = refusedDay?.date === date ? refusedDay.status : view.status
+  const notes = checked?.notes ?? {}
+  const rows = sheetDays(cart, booking)
+  const feePaise = type === "DELIVERY" ? info.delivery.feePaise : 0
+  const title = dayTitle(date, today, copy)
+  const problemTitle = dayProblem(status, date, view, booking, copy)
 
   const refused = (refusal: CheckoutRefusal) => {
     switch (refusal.reason) {
@@ -251,6 +294,7 @@ export function CartFlow({ data, copy }: CartFlowProps) {
         return
       case "FULFILMENT_UNAVAILABLE":
         setProblem({ kind: "fulfilment" })
+        // Pickup and delivery come with the shell, which the settings actions revalidate.
         router.refresh()
         return
       case "RATE_LIMITED":
@@ -322,13 +366,13 @@ export function CartFlow({ data, copy }: CartFlowProps) {
     />
   ) : null
   const problemAlert = problem ? (
-    <OrderProblem problem={problem} phone={data.phone} today={today} onMove={moveTo} onChooseDay={() => setSheetOpen(true)} copy={copy} />
+    <OrderProblem problem={problem} phone={info.phone} today={today} onMove={moveTo} onChooseDay={() => setSheetOpen(true)} copy={copy} />
   ) : null
 
   const tooSoon = new Set(view.tooSoon.map((line) => line.menuItemId))
   const lineInfo = (line: CartLine) => ({
     note: notes[line.menuItemId],
-    notice: line.noticeDays === undefined ? null : noticeChip(line.noticeDays, true, copy.notice),
+    notice: noticeOf(line),
     flag: tooSoon.has(line.menuItemId)
       ? {
           text: fill(c.flag, { notice: noticeLength(lineNotice(line), copy.notice), day: dayName(date, today, copy) }),
@@ -346,7 +390,6 @@ export function CartFlow({ data, copy }: CartFlowProps) {
       change={change && rows.length > 1 ? { label: c.changeDay, onClick: () => setSheetOpen(true) } : undefined}
     />
   )
-  const items = { label: c.itemsRow, value: String(count) }
   const sheet = (
     <DaySheet
       open={sheetOpen}
@@ -363,21 +406,21 @@ export function CartFlow({ data, copy }: CartFlowProps) {
   if (step === "details") {
     const totalPaise = subtotalPaise + feePaise
     const options = [
-      data.pickup.enabled
+      info.pickup.enabled
         ? {
             type: "PICKUP" as const,
             title: c.details.PICKUP,
-            sub: [data.pickup.address[0] ?? null, pickupHours(data.pickup.hours, date, copy)].filter(Boolean).join(", ") || null,
+            sub: [info.pickup.address[0] ?? null, pickupHours(info.pickup.hours, date, copy)].filter(Boolean).join(", ") || null,
           }
         : null,
-      data.delivery.enabled
+      info.delivery.enabled
         ? {
             type: "DELIVERY" as const,
             title: c.details.DELIVERY,
             sub:
               [
-                data.delivery.radiusKm ? fill(c.details.radius, { km: data.delivery.radiusKm }) : null,
-                data.delivery.feePaise > 0 ? fill(c.details.fee, { fee: formatPaise(data.delivery.feePaise) }) : null,
+                info.delivery.radiusKm ? fill(c.details.radius, { km: info.delivery.radiusKm }) : null,
+                info.delivery.feePaise > 0 ? fill(c.details.fee, { fee: formatPaise(info.delivery.feePaise) }) : null,
               ]
                 .filter(Boolean)
                 .join(" · ") || null,

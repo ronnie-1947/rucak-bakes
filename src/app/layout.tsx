@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { Fraunces, Inter } from "next/font/google"
 import { defaultLocale, getDictionary } from "@/lib/i18n"
+import { siteUrl } from "@/lib/site"
 import "./globals.css"
 
 /** Headings only, at the one weight the design system allows. */
@@ -19,8 +20,11 @@ const inter = Inter({
 export async function generateMetadata(): Promise<Metadata> {
   const dict = await getDictionary(defaultLocale)
   return {
+    // Relative canonical and Open Graph URLs resolve against it.
+    metadataBase: siteUrl(),
     title: dict.meta.home.title,
     description: dict.meta.home.description,
+    openGraph: { type: "website", siteName: dict.meta.home.title, locale: "en_IN", title: dict.meta.home.title, description: dict.meta.home.description },
     // favicon.ico is the app/ file convention (Next lists it first); the rest live in public/favicon/.
     icons: {
       icon: [

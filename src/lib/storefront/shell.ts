@@ -1,6 +1,6 @@
-import { todayIn, type IsoDate } from "@/lib/dates"
+import { parseOpeningHours } from "@/lib/settings/hours"
 import { getSettings } from "@/lib/settings/row"
-import type { StoreBanner } from "./types"
+import type { StoreBanner, StoreInfo } from "./types"
 
 /** Read model for the frame around every customer screen (src/components/store-shell/). */
 
@@ -9,8 +9,8 @@ export type StoreShellData = {
   /** The first line of the pickup address — "Pickup at …" under the name. */
   place: string | null
   banner: StoreBanner | null
-  /** Bakery-local — the cart is cleared once its day is before this. */
-  today: IsoDate
+  /** Pickup, delivery, the phone and the timezone — the cart reads them from the shell (hooks/useStoreInfo). */
+  info: StoreInfo
 }
 
 export function firstLine(text: string | null): string | null {
@@ -24,12 +24,24 @@ export function storeBanner(settings: { orderingPaused: boolean; orderingPausedR
 }
 
 export async function loadStoreShell(): Promise<StoreShellData> {
-  // Static on / (the settings actions revalidate it); the item page and the cart render per request through their own read models.
+  // Prerendered with every store page; the settings actions revalidate it. Nothing here moves with the clock or with orders.
   const settings = await getSettings()
   return {
     bakeryName: settings.bakeryName,
     place: firstLine(settings.pickupAddress),
     banner: storeBanner(settings),
-    today: todayIn(settings.timezone),
+    info: {
+      timeZone: settings.timezone,
+      pickup: {
+        enabled: settings.pickupEnabled,
+        address: (settings.pickupAddress ?? "")
+          .split("\n")
+          .map((line) => line.trim())
+          .filter(Boolean),
+        hours: parseOpeningHours(settings.openingHours),
+      },
+      delivery: { enabled: settings.deliveryEnabled, feePaise: settings.deliveryFeePaise, radiusKm: settings.deliveryRadiusKm },
+      phone: settings.publicPhone,
+    },
   }
 }

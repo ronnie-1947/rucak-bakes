@@ -4,13 +4,13 @@ import { type ReactNode, useEffect, useMemo, useState, useSyncExternalStore } fr
 import { CartContext, type CartApi } from "@/hooks/useCart"
 import { type AddTarget, cartCount, cartSubtotal, conflictsWith, isStale, quantityOf, withQuantity } from "@/lib/cart/cart"
 import { getCart, getServerCart, subscribeCart, writeCart } from "@/lib/cart/store"
-import type { IsoDate } from "@/lib/dates"
+import { todayIn } from "@/lib/dates"
 import type { CartCopy } from "./copy"
 import { SwitchDayDialog } from "./SwitchDayDialog"
 
 type CartProviderProps = {
-  /** Bakery-local — a cart for an earlier day is dropped. */
-  today: IsoDate
+  /** The bakery's — a cart for a day before its today is dropped. Today is worked out here: the shell is prerendered. */
+  timeZone: string
   dict: CartCopy
   children: ReactNode
 }
@@ -19,7 +19,8 @@ type CartProviderProps = {
  * The cart for every customer screen: localStorage through an external store, so other tabs stay in step. On
  * mount it drops a cart that is over a day old or for a day that has gone. Owns the one "Switch to …?" dialog.
  */
-export function CartProvider({ today, dict, children }: CartProviderProps) {
+export function CartProvider({ timeZone, dict, children }: CartProviderProps) {
+  const today = todayIn(timeZone)
   const cart = useSyncExternalStore(subscribeCart, getCart, getServerCart)
   const [pending, setPending] = useState<{ target: AddTarget; qty: number } | null>(null)
 

@@ -2,7 +2,6 @@ import type { Metadata } from "next"
 import { Cart } from "@/components/cart/Cart"
 import { htmlLang } from "@/lib/content"
 import { getDictionary, type Locale } from "@/lib/i18n"
-import { loadCartPage } from "@/lib/storefront/cart"
 import { fill } from "@/lib/template"
 
 const locale: Locale = "en"
@@ -12,13 +11,13 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: fill(dict.store.cart.metaTitle, { bakery: dict.meta.home.title }), robots: { index: false } }
 }
 
-/** Rendered per request — the days' capacity moves with every order. The cart's own lines are checked from the browser. */
+/** Static — the shell (with pickup, delivery and the phone) and a skeleton. The days' capacity moves with every order: the browser's checkCart brings it. */
 export default async function CartPage() {
-  const [dict, data] = await Promise.all([getDictionary(locale), loadCartPage()])
+  const dict = await getDictionary(locale)
 
   return (
     <div lang={htmlLang(locale)} className="contents">
-      <Cart data={data} dict={dict.store} />
+      <Cart dict={dict.store} />
     </div>
   )
 }

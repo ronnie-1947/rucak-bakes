@@ -28,9 +28,10 @@ async function today() {
   return todayIn((await getSettings()).timezone)
 }
 
-/** Menu changes show on the admin list and on every customer page that lists items. */
+/** Menu changes show on the admin list, on every customer page that lists items, and in the sitemap. */
 function refresh() {
   revalidatePath("/", "layout")
+  revalidatePath("/sitemap.xml")
 }
 
 const activeInput = z.object({ ids, active: z.boolean(), removeFromDays: z.boolean().default(false) })

@@ -5,7 +5,7 @@ import type { IsoDate } from "@/lib/dates"
 import { formatPaise } from "@/lib/money"
 import type { PlacedSummary } from "@/lib/orders/checkout"
 import { formatForDisplay } from "@/lib/phone"
-import type { CartPageData } from "@/lib/storefront/cart"
+import type { StoreInfo } from "@/lib/storefront/types"
 import { fill } from "@/lib/template"
 import { ActionBar } from "./ActionBar"
 import { ConfirmedRow } from "./ConfirmedRow"
@@ -15,7 +15,7 @@ import { NextStep } from "./NextStep"
 type ConfirmedProps = {
   order: PlacedSummary
   today: IsoDate
-  pickup: CartPageData["pickup"]
+  pickup: StoreInfo["pickup"]
   /** The bakery's E.164 number, or null — Call the bakery is left out without one. */
   phone: string | null
   copy: CartPageCopy

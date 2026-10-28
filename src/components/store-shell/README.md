@@ -11,7 +11,8 @@ and `Menu-slug.dc.html` (the Back · title · cart header). Read model:
 
 ```
 store-shell/
-  StoreShell.tsx        entry (server) — CartProvider + PageTitleProvider around banner, header, <main> Container, CartBar
+  StoreShell.tsx        entry (server) — StoreInfoProvider + CartProvider + PageTitleProvider around banner, header, <main> Container, CartBar
+  StoreInfoProvider.tsx "use client" — the bakery's StoreInfo (pickup, delivery, phone, timezone) for every screen (context: hooks/useStoreInfo)
   CartProvider.tsx      "use client" — the cart over localStorage (useSyncExternalStore), stale-cart drop, the switch-day dialog (context: hooks/useCart)
   PageTitleProvider.tsx "use client" — holds the sub-page header's title and the page's own Back, set by the page below (context: hooks/usePageTitle)
   SwitchDayDialog.tsx   "use client" — "Switch to Saturday?" before a cart for another day is cleared
@@ -30,7 +31,7 @@ store-shell/
 
 ```
 StoreShell data=StoreShellData dict=dict.store
-└─ CartProvider today dict={ shell, switchDay, days }
+└─ StoreInfoProvider info > CartProvider timeZone dict={ shell, switchDay, days }
    ├─ PageTitleProvider
    │  ├─ StoreBannerStrip banner                   (only when paused or an announcement is on)
    │  ├─ StoreHeader bakeryName place dict.shell   <header> sticky
@@ -45,8 +46,10 @@ StoreShell data=StoreShellData dict=dict.store
 
 | Import | Purpose |
 |---|---|
-| `@/lib/storefront/shell` | `StoreShellData` (name, place, banner, today) |
-| `@/lib/storefront/types` | `StoreBanner` |
+| `@/lib/storefront/shell` | `StoreShellData` (name, place, banner, info) |
+| `@/lib/storefront/types` | `StoreBanner`, `StoreInfo` |
+| `@/hooks/useStoreInfo` | `StoreInfoContext` — the cart reads it with `useStoreInfo` |
+| `@/lib/dates` | `todayIn` — the provider's today, from the bakery's timezone |
 | `@/lib/storefront/words` | `relativeDay` — "today" / "tomorrow" / weekday in the dialog |
 | `@/lib/cart/cart` | pure cart model: `withQuantity`, `conflictsWith`, `isStale`, `cartCount`, `cartSubtotal`, `quantityOf`, `AddTarget` |
 | `@/lib/cart/store` | the external store: `subscribeCart`, `getCart`, `getServerCart`, `writeCart` |
@@ -64,7 +67,8 @@ External: `next/link`, `next/image` (`/logo.png`), `next/navigation` (`usePathna
 
 ```ts
 StoreShell       { data: StoreShellData; dict: Dict["store"]; children }
-CartProvider     { today: IsoDate; dict: CartCopy; children }
+StoreInfoProvider { info: StoreInfo; children }
+CartProvider     { timeZone: string; dict: CartCopy; children }
 PageTitleProvider { children }
 SwitchDayDialog  { request: { from; to; count } | null; today; onConfirm; onClose; dict: CartCopy }
 StoreBannerStrip { banner: StoreBanner; dict: StoreCopy["shell"] }
@@ -83,7 +87,7 @@ CartBar          { dict: StoreCopy["shell"] }
   fulfilmentDate, updatedAt }` (runbook 6.3). `src/lib/cart/store.ts` keeps one parsed snapshot and re-reads on the `storage` event, so
   two tabs agree. The server (and the first client render) sees an empty cart; the real one appears right after hydration — the badge
   and bar come in then, never mismatched. Storage that throws (private mode) leaves a page-lifetime cart.
-- **Stale carts** — on mount the provider drops a cart whose day is before `today` (bakery-local, from the server) or that hasn't
+- **Stale carts** — on mount the provider drops a cart whose day is before `today` (bakery-local — worked out in the browser from the timezone, since the shell is prerendered) or that hasn't
   been touched in 24 hours.
 - **One day per cart** — `setQuantity` for a day other than the cart's opens `SwitchDayDialog` ("Switch to tomorrow? Your cart has
   3 items for today…"); only Clear cart and add replaces it. Keep my cart, Escape or the scrim leave everything as it was.

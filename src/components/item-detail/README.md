@@ -4,7 +4,10 @@ The customer item page, `/menu/[slug]` — [src/app/(store)/menu/[slug]/page.tsx
 price and notice, "On the counter today" when it is, the pickup-date strip and Add to cart (or a Call block), then About / Details /
 Ingredients / Allergens and "You might also like". Imported from `Menu-slug.dc.html` (revised for order ahead, §10R). It renders inside
 the store shell ([store-shell](../store-shell/)), which brings the header (here its Back · title · cart row), the banner, the cart and the
-one `Container`. Read model: [src/lib/storefront/item.ts](../../lib/storefront/item.ts); each date is judged by the deadline rule
+one `Container`. The page is SSG — every active item prerendered at build (`● /menu/<slug>`), rendered on the server whole, for
+crawlers and link previews; only the order area's dates and today's counter come from the browser. Read models:
+[src/lib/storefront/item.ts](../../lib/storefront/item.ts) — `loadItemPage` for the page, `loadItemLive` behind
+[src/app/api/menu/[slug]/route.ts](<../../app/api/menu/[slug]/route.ts>); each date is judged by the deadline rule
 ([src/lib/orders/deadline.ts](../../lib/orders/deadline.ts)) in [availability.ts](availability.ts) — the same functions `placeOrder` and
 the cart use.
 
@@ -12,8 +15,12 @@ the cart use.
 
 ```
 item-detail/
-  ItemDetail.tsx        entry (server) — the photo | panel split, the panel's mode (order / call), the info grid, related, the phone bar's spacer
-  availability.ts       DateOption / DateLook / OrderCopy, dateOptions, initialDate, soonText, cutoffPhrase, orderCopy — client-safe, pure
+  ItemDetail.tsx        entry (server) — the photo | panel split, ItemOrder under Suspense, the info grid, related, JSON-LD, the phone bar's spacer
+  ItemJsonLd.tsx        the item as a schema.org Product (+ an INR Offer with the bakery as seller when it's orderable at a set price)
+  ItemOrder.tsx         "use client" — the live part: fetches GET /api/menu/[slug], reads ?day=; CounterBlock + OrderPanel or CallBlock;
+                        OrderSkeleton until it answers, Try again if it fails
+  OrderSkeleton.tsx     the date strip and Add to cart in Skeleton blocks — in the static HTML
+  availability.ts       ItemCopy (the store strings the page gets) / DateOption / DateLook / OrderCopy, dateOptions, initialDate, soonText, cutoffPhrase, orderCopy — client-safe, pure
   TitleSync.tsx         "use client" — hands the item's name to the store header (hooks/usePageTitle); renders nothing
   ItemGallery.tsx       "use client" — 4:3 snap carousel; dots below 1024px, the rail from 1024px; never greyed
   GalleryRail.tsx       "use client" — square thumbnails beside the photo (1024px+), keeps the current one in view
@@ -40,7 +47,8 @@ item-detail/
 ## Component tree
 
 ```
-ItemDetail data=ItemPageData day=?day= dict=dict.store
+ItemDetail data=ItemPageData dict=dict.store      (server — all of it in the static HTML but ItemOrder's inside)
+├─ ItemJsonLd data                           script[type=application/ld+json]
 ├─ TitleSync text=name target="item-title"
 ├─ div grid  (1 col · md 2 cols · lg 3/5 + 2/5)
 │  ├─ ItemGallery photos
@@ -49,6 +57,10 @@ ItemDetail data=ItemPageData day=?day= dict=dict.store
 │  │  └─ GalleryDots                         <lg, when 2+ photos
 │  └─ div md:sticky
 │     ├─ ItemTitle · ItemPrice > Tag (ui)
+│     └─ Suspense fallback=<OrderSkeleton/>
+│        └─ ItemOrder item orderable defaultCutoff phone dict=ItemCopy   GET /api/menu/[slug] → ItemLive
+│     │  ├─ OrderSkeleton                     until it answers (a call-only item shows its CallBlock at once)
+│     │  ├─ EmptyState → Try again            the fetch failed
 │     ├─ CounterBlock > CallLink (ui)        on today's counter, not sold out
 │     └─ OrderPanel legend=<DateLegend/>     an orderable item with an open date
 │        ├─ DateStrip                         div[role=listbox] → button[role=option] × 8
@@ -58,14 +70,18 @@ ItemDetail data=ItemPageData day=?day= dict=dict.store
 │        or CallBlock > CallLink (ui)         call only · no date open (paused included)
 ├─ div grid  About (md:order-1) · Ingredients (3) · Allergens (4) · Details (2)
 ├─ RelatedItems → ItemCard × ≤4              (no button)
-└─ div h-24 md:hidden                        room for the phone bar (order mode only)
+└─ div h-24 md:hidden                        room for the phone bar (orderable items)
 ```
 
 ## Dependencies
 
 | Import | Purpose |
 |---|---|
-| `@/lib/storefront/item` | `ItemPageData` |
+| `/api/menu/[slug]` | `ItemLive` as JSON (`null` + 404 for an inactive slug) — ItemOrder's fetch (`no-store`) |
+| `@/lib/storefront/item` | `ItemPageData`, `ItemLive` |
+| `@/lib/site` · `@/lib/cloudinary` | `absoluteUrl`, `imageUrl` — the structured data's URLs |
+| `@/lib/storefront/routes` | `DAY_PARAM`, `itemApi` |
+| `@/components/ui/*` (order area) | `Skeleton`, `EmptyState`, `Button` |
 | `@/lib/orders/deadline` | `BookingWindow`, `dayAvailability`, `deadlineFor`, `ordersLeft`, `FEW_ORDERS_LEFT` |
 | `@/lib/storefront/words` | `relativeDay`, `noticeLength` |
 | `@/lib/menu/about` | `parseAbout`, `AboutSpan` |
@@ -86,7 +102,10 @@ External: `next/image` (loaders, `fill`, `sizes`). Tokens: `rounded-card`, `roun
 ## Props
 
 ```ts
-ItemDetail       { data: ItemPageData; day: string | undefined; dict: Dict["store"] }
+ItemDetail       { data: ItemPageData; dict: Dict["store"] }
+ItemJsonLd       { data: ItemPageData }
+ItemOrder        { item: ItemIdentity; orderable; defaultCutoff: CutoffDefault; phone: string | null; callLabel: string; dict: ItemCopy }
+OrderSkeleton    { label: string }
 ItemGallery      { photos: Photo[]; name: string; dict: { photos; photo; showPhoto } }
 GalleryRail      { photos: Photo[]; index: number; onShow: (index) => void; label: string }
 GalleryDots      { count: number; index: number }
@@ -117,7 +136,7 @@ The client components get `OrderCopy` (seven strings) and per-date data, never t
 ```json
 "store": {
   "itemPage": {
-    "metaTitle", "photos", "photo", "showPhoto", "needs": "Needs {notice}", "chooseDate": "Choose a pickup date",
+    "metaTitle", "loading", "loadFailed", "retry", "photos", "photo", "showPhoto", "needs": "Needs {notice}", "chooseDate": "Choose a pickup date",
     "dateLabel": "{date}, {status}", "dateStatus": { "open", "left", "leftOne", "soon": "Too soon — needs {notice}",
     "soonCutoff": "Too soon — orders close {cutoff}", "closed", "full" },
     "cutoff": { "sameDay", "dayBefore", "daysBefore" }, "refusal": "{date} · {status}",
@@ -135,9 +154,16 @@ Also reads `store.notice` (the notice words), `store.item` (`units`, `from`, `de
 
 ## How it works
 
-- **Rendered per request** — `loadItem` calls `connection()` (the store layout doesn't — `/` is prerendered): orders taken and every deadline move with the
-  clock. Inactive and archived items are a 404 — they can't be ordered. `loadItem` is wrapped in `cache()`, so `generateMetadata` and
-  the page share one read.
+- **SSG, rendered on the server** — `generateStaticParams` lists every active item, so each page is built with the deploy; one
+  added later is rendered on its first visit and cached. The menu actions' `revalidatePath("/", "layout")` and the settings actions
+  re-render them after a change — the next visit renders fresh. `loadItemPage` (the item, related, phone, default cutoff — `cache()`d,
+  shared with `generateMetadata`) is everything but what moves with orders and the clock, so crawlers and link previews get the
+  whole item: the h1, photos, price, About, ingredients, allergens, details, related. An inactive or archived slug is a real 404.
+- **SEO** — the metadata has a canonical URL, Open Graph (the cover at 1200×628, 1.91:1 — WhatsApp and other link previews) and a
+  Twitter card; `ItemJsonLd` adds a schema.org Product. Relative URLs resolve against `metadataBase` (`src/lib/site.ts`, `SITE_URL`).
+- **The live part** — `ItemOrder` fetches `loadItemLive` (the booking window, today's counter; `connection()`, never cached) from
+  `GET /api/menu/[slug]` and shows `OrderSkeleton` until then. `?day=` is read with `useSearchParams` under Suspense, which keeps the
+  page static. A 404 from the API (off the menu since the page was built) shows the "no dates" Call block; a failed fetch, Try again.
 - **The dates** — the booking window, today … today + `orderAheadDays` (8 chips), from `loadBookingWindow` (unplanned dates take the
   Settings defaults and the opening hours). `dateOptions` judges each with `dayAvailability(day, [noticeDays], window)`:
   - **open** — white; picked: the o500 fill with ink. Title "Open", or "Only 2 orders left" when three or fewer remain.
@@ -195,7 +221,7 @@ Test at `xxxs` (320px) and `3xl` (1920px+) any time you touch this component.
 | How a date is judged | `dayAvailability` / `deadlineFor` in [src/lib/orders/deadline.ts](../../lib/orders/deadline.ts) — shared with the cart and placeOrder |
 | What a chip / line says, which date opens | `dateOptions`, `initialDate` in [availability.ts](availability.ts) |
 | Chip looks | `chips` in [DateStrip.tsx](DateStrip.tsx) |
-| Related ranking, the counter check | `loadItem` in [src/lib/storefront/item.ts](../../lib/storefront/item.ts) |
+| Related ranking (`loadItemPage`), the counter check (`loadItemLive`) | in [src/lib/storefront/item.ts](../../lib/storefront/item.ts) |
 | About formatting | [src/lib/menu/about.ts](../../lib/menu/about.ts) (and the form's `AboutField`) |
 | Photo sizes / crops | [photos.ts](photos.ts) and the `sizes` in [ItemGallery.tsx](ItemGallery.tsx) |
 | The phone bar | `bar` in [OrderBar.tsx](OrderBar.tsx); the shell's `CartBar` hides on `/menu/*` |

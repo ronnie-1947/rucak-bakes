@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { FreshToday } from "@/app/sections/landing/fresh-today/FreshToday"
 import { Hero } from "@/app/sections/landing/hero/Hero"
 import { Menu } from "@/app/sections/landing/menu/Menu"
@@ -7,6 +8,8 @@ import { getDictionary, type Locale } from "@/lib/i18n"
 import { loadLanding } from "@/lib/storefront/landing"
 
 const locale: Locale = "en"
+
+export const metadata: Metadata = { alternates: { canonical: "/" } }
 
 /** Prerendered, and only re-rendered when a menu, calendar, settings or order write revalidates "/". The cart and placeOrder check again. */
 export default async function Home() {

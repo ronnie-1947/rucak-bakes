@@ -1,5 +1,6 @@
 import type { IsoDate } from "@/lib/dates"
 import type { PriceUnit } from "@/lib/menu/units"
+import type { OpeningHours } from "@/lib/settings/hours"
 
 /**
  * What the customer screens are shown about menu items and today's counter (§10R). Client-safe — the read models that
@@ -51,3 +52,19 @@ export type FreshToday = {
 
 /** The strip across the top of every customer screen. Pause beats the announcement. */
 export type StoreBanner = { kind: "paused"; reason: string | null } | { kind: "note"; text: string }
+
+/** The bakery's settings every customer screen may need — in the static store shell, revalidated when the owner saves them. */
+export type StoreInfo = {
+  /** IANA — "today" is worked out in the browser from it, since the shell is prerendered. */
+  timeZone: string
+  pickup: {
+    enabled: boolean
+    /** The pickup address, one entry per line. */
+    address: string[]
+    /** Null until the owner first saves them. */
+    hours: OpeningHours | null
+  }
+  delivery: { enabled: boolean; feePaise: number; radiusKm: number | null }
+  /** E.164, or null when the owner hasn't given one. */
+  phone: string | null
+}

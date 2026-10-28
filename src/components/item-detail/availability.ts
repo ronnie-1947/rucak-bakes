@@ -12,7 +12,10 @@ import { fill } from "@/lib/template"
  * one entry per chip. Client-safe, pure.
  */
 
-type StoreCopy = Dict["store"]
+/** The store strings the item page uses — all the browser gets of `dict.store`. */
+export type ItemCopy = Pick<Dict["store"], "itemPage" | "item" | "notice" | "allergens" | "days">
+
+type StoreCopy = ItemCopy
 
 /** `open` takes the order · `soon` the item's notice (or the day's cutoff) has passed · `closed` · `full` fully booked. */
 export type DateLook = "open" | "soon" | "closed" | "full"
@@ -50,7 +53,7 @@ export type OrderCopy = {
   increase: string
 }
 
-type ItemIdentity = { id: string; slug: string; name: string; image: string | null; pricePaise: number; noticeDays: number }
+export type ItemIdentity = { id: string; slug: string; name: string; image: string | null; pricePaise: number; noticeDays: number }
 
 export type CutoffDefault = { time: string; daysBefore: number }
 

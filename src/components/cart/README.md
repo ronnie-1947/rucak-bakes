@@ -2,8 +2,9 @@
 
 The cart (`/cart`): **cart → your details → order sent**, three states in one route with no navigation between them (runbook 6.3,
 reworked by §10R — every order is an order-ahead order, judged by the one deadline rule in `src/lib/orders/deadline.ts`).
-Imported from `Cart.dc.html` (revised 4 Oct). Route: [src/app/(store)/cart/page.tsx](<../../app/(store)/cart/page.tsx>), inside the store shell. Read model:
-[src/lib/storefront/cart.ts](../../lib/storefront/cart.ts); actions: [src/app/actions/checkout.ts](../../app/actions/checkout.ts) (`checkCart`,
+Imported from `Cart.dc.html` (revised 4 Oct). Route: [src/app/(store)/cart/page.tsx](<../../app/(store)/cart/page.tsx>), inside the store shell —
+static (build shows `○ /cart`). Pickup, delivery and the phone come with the store shell (`useStoreInfo`); the booking window with
+`checkCart` (read model `checkLines` in [src/lib/storefront/cart.ts](../../lib/storefront/cart.ts)); actions: [src/app/actions/checkout.ts](../../app/actions/checkout.ts) (`checkCart`,
 `createOrder`); cart model: [src/lib/cart/](../../lib/cart/); checkout rules and results: [src/lib/orders/checkout.ts](../../lib/orders/checkout.ts).
 
 ## Files in this folder
@@ -11,6 +12,7 @@ Imported from `Cart.dc.html` (revised 4 Oct). Route: [src/app/(store)/cart/page.
 ```
 cart/
   Cart.tsx             entry (server) — picks the strings the browser needs, renders CartFlow
+  CartSkeleton.tsx     the cart step's shape in Skeleton blocks (heading, day card, two lines, side card) — the static HTML, until hydration
   CartFlow.tsx         "use client" — the state machine: step, live-menu check, move day, details, Place order, refusals
   CartHeading.tsx      "use client" — the step's h1 (focus target on step change), handed to the store header (usePageTitle)
   CartStep.tsx         state 1 — day card, lines, Add more items, note, summary; Continue in the side card / phone bar
@@ -43,23 +45,25 @@ cart/
 ## Component tree
 
 ```
-Cart data dict.store
-└─ CartFlow data copy
-   ├─ (before the browser has read the cart)  Spinner, "Opening your cart…"
-   ├─ empty:     CartHeading · Notice (what the check took out) · EmptyState → Browse the menu
-   ├─ cart:      CartHeading + Clear
-   │             CartStep
-   │             ├─ ClearConfirm · Notice (taken out: no longer on the menu) · ProblemAlert (day can't take it → Move to …) · OrderProblem
-   │             ├─ DayCard (phones/tablets) · ul > CartLineRow (+ TooSoonFlag) × n · Add more items · NoteField · CartSummary
-   │             ├─ StepLayout side (lg): DayCard · CartSummary · Continue
-   │             └─ ActionBar (<lg): Subtotal · Continue
-   ├─ details:   CartHeading
-   │             DetailsStep (fieldset, locked while sending)
-   │             ├─ SummaryRow · ProblemAlert / OrderProblem · DetailsForm (FulfilmentChoice) · CartSummary · Expectation
-   │             ├─ side (lg): DayCard · CartSummary · Expectation · PlaceButton
-   │             └─ ActionBar (<lg): PlaceButton, or "Choose a new day…" + disabled
-   ├─ done:      CartHeading · Confirmed (ConfirmedRow × n, NextStep × 3, ActionBar)
-   └─ DaySheet (DayChoice × days)
+Cart dict.store
+└─ CartFlow copy                                (pickup / delivery / phone: useStoreInfo)
+      ├─ (before hydration)  CartSkeleton — sr-only "Opening your cart…"
+      ├─ empty:     CartHeading · Notice (what the check took out) · EmptyState → Browse the menu
+      ├─ checking:  CartHeading · CartStep — the lines, a warm Skeleton for the day card, Continue disabled
+      │             └─ ProblemAlert "We couldn’t check your cart…" → Try again   (the first check failed)
+      ├─ cart:      CartHeading + Clear
+      │             CartStep
+      │             ├─ ClearConfirm · Notice (taken out: no longer on the menu) · ProblemAlert (day can't take it → Move to …) · OrderProblem
+      │             ├─ DayCard (phones/tablets) · ul > CartLineRow (+ TooSoonFlag) × n · Add more items · NoteField · CartSummary
+      │             ├─ StepLayout side (lg): DayCard · CartSummary · Continue
+      │             └─ ActionBar (<lg): Subtotal · Continue
+      ├─ details:   CartHeading
+      │             DetailsStep (fieldset, locked while sending)
+      │             ├─ SummaryRow · ProblemAlert / OrderProblem · DetailsForm (FulfilmentChoice) · CartSummary · Expectation
+      │             ├─ side (lg): DayCard · CartSummary · Expectation · PlaceButton
+      │             └─ ActionBar (<lg): PlaceButton, or "Choose a new day…" + disabled
+      ├─ done:      CartHeading · Confirmed (ConfirmedRow × n, NextStep × 3, ActionBar)
+      └─ DaySheet (DayChoice × days)
 ```
 
 ## Dependencies
@@ -72,9 +76,10 @@ Cart data dict.store
 | `@/lib/cart/*` | `reconcile`, `viewCartDay`, `sheetDays` + `CartCheck` / `LineNote` / `CartDayStatus` (check.ts), `readCustomer` / `saveCustomer` (customer.ts), `getCart` (store.ts) |
 | `@/lib/orders/deadline` | `BookingWindow`, `FEW_ORDERS_LEFT`, `ordersLeft` — the deadline rule (check.ts applies it) |
 | `@/lib/orders/checkout` | `detailsProblems`, `CheckoutRefusal`, `PlacedSummary`, field limits |
-| `@/lib/storefront/*` | `CartPageData` (cart.ts), `relativeDay` / `noticeChip` / `noticeLength` (words.ts), `itemHref` |
+| `@/hooks/useStoreInfo` | `StoreInfo` from the store shell — pickup (address, hours), delivery (fee, radius), phone, timezone |
+| `@/lib/storefront/*` | `StoreInfo` (types.ts), `relativeDay` / `noticeChip` / `noticeLength` (words.ts), `itemHref` |
 | `@/lib/settings/hours` · `@/lib/calendar/cutoffs` | `weekdayKey` for pickup hours, `formatClock` |
-| `@/components/ui/*` | `Button` (`underline`, `quiet`), `ButtonLink`, `Dialog`, `EmptyState`, `Field`, `TextInput` (`inputClasses`, `inputShellClasses`), `Icon` (`close`, `flame`, `bag`), `ItemThumb`, `Notice`, `Spinner` (`tone="inverse"`), `Stepper`, `Tag` |
+| `@/components/ui/*` | `Button` (`underline`, `quiet`), `ButtonLink`, `Dialog`, `EmptyState`, `Field`, `TextInput` (`inputClasses`, `inputShellClasses`), `Icon` (`close`, `flame`, `bag`), `ItemThumb`, `Notice`, `Skeleton` (`warm` for the day card), `Spinner` (`tone="inverse"`), `Stepper`, `Tag` |
 
 Tokens: `bg-o500`, `bg-o50`, `text-o700`, `bg-red-soft`, `text-red`, `bg-green-soft`, `text-green`, `border-border(-strong)`, `rounded-card`,
 `rounded-button`, `rounded-panel`, `text-glance`, `text-h1`, `text-h2`, `text-small`, `text-micro`, `font-display`, `shadow-raised`, utility
@@ -83,11 +88,12 @@ Tokens: `bg-o500`, `bg-o50`, `text-o700`, `bg-red-soft`, `text-red`, `bg-green-s
 ## Props
 
 ```ts
-Cart        { data: CartPageData; dict: Dict["store"] }
-CartFlow    { data: CartPageData; copy: CartPageCopy }
+Cart        { dict: Dict["store"] }
+CartSkeleton { label: string }
+CartFlow    { copy: CartPageCopy }
 CartStep    { cart; lineInfo: (line) => { note; notice; flag }; onLine; alerts; dayCard; summary; note; onNote; blocked: string | null; onContinue; subtotal; copy }
 DetailsStep { summaryText; editLabel; onEdit; alerts; form; dayCard; summary; expectation; action; busy }
-Confirmed   { order: PlacedSummary; today; pickup: CartPageData["pickup"]; phone: string | null; copy }
+Confirmed   { order: PlacedSummary; today; pickup: StoreInfo["pickup"]; phone: string | null; copy }
 DaySheet    { open; onClose; current; rows: SheetDay[]; booking: BookingWindow; type; onPick; copy }
 DetailsForm { values: DetailsValues; onChange; errors: DetailsField[]; welcome; options; copy }
 ```
@@ -96,7 +102,7 @@ DetailsForm { values: DetailsValues; onChange; errors: DetailsField[]; welcome; 
 
 ## Dictionary contract
 
-`store.cart` in `src/content/en.json`: `titles`, Clear (`clear*`), `empty` / `browse` / `loading`, the day card (`labels`, `dayLabel`,
+`store.cart` in `src/content/en.json`: `titles`, Clear (`clear*`), `empty` / `browse` / `loading` / `checkFailed` / `retry`, the day card (`labels`, `dayLabel`,
 `dayTitle`, `orderBy` / `orderByToday`, `ordersLeft*`, `tooSoonAll`, `changeDay`), lines (`each`, `notes`, `flag`, `chooseDay`, `remove*`,
 `addMore`), `note*`, money (`itemsRow`, `subtotal`, `deliveryFee`, `total`, `payLater`), `continue`, `removed`, `move` / `moving`, `sheet.*`,
 `details.*`, `problems.*` (7.2's customer copy + `tooSoon*`), `done.*`. Also `store.days`, `store.notice` (the notice chip and "3 days’
@@ -104,8 +110,13 @@ notice", shared with the menu cards), `store.shell.items*`, `store.item.decrease
 
 ## How it works
 
-- **Hydration.** The cart is in localStorage, so the server renders a spinner and the browser renders the real state — never a flash of
-  "Your cart is empty". The saved customer (`bakery.customer`) is read in a lazy `useState`; the form isn't on screen at hydration.
+- **Static page, one request.** `/cart` is prerendered: the shell and `CartSkeleton` are in the HTML until hydration, so it paints at
+  once and never flashes "Your cart is empty". Pickup, delivery and the phone are settings — they come with the store shell
+  (`StoreInfo`, `useStoreInfo`), which the settings actions revalidate, so FULFILMENT_UNAVAILABLE is a `router.refresh()`. The booking
+  window moves with every order and the clock, so it isn't kept anywhere: it comes with `checkCart`. An empty cart makes no request;
+  a cart with lines shows them at once and holds the day card (a warm Skeleton) and Continue until the first check answers — if it
+  fails, Try again. `today` is the window's, else worked out in the browser from the bakery's timezone. The saved customer
+  (`bakery.customer`) is read in a lazy `useState`.
 - **Revalidate on mount.** `checkCart(ids)` returns each line as the menu has it (orderable, price, notice) and the booking window
   (`BookingWindow`: today … today + orderAheadDays, planned or from the defaults, with orders taken). `reconcile` removes lines that can't be
   ordered online any more (one warm notice names them), refreshes prices ("Price updated"), names, photos and notices. There is no stock: no

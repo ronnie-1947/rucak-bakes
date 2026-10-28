@@ -1691,6 +1691,9 @@
       "soldOut": "Sold out"
     },
     "itemPage": {
+      "loading": "Loading pickup dates…",
+      "loadFailed": "We couldn’t load the pickup dates. Check your connection and try again.",
+      "retry": "Try again",
       "metaTitle": "{name} · {bakery}",
       "photos": "Photos of {name}",
       "photo": "Photo {index} of {count}",
@@ -1766,6 +1769,8 @@
       "clearKeep": "Keep",
       "clearDo": "Clear order",
       "loading": "Opening your cart…",
+      "checkFailed": "We couldn’t check your cart against the menu. Check your connection and try again.",
+      "retry": "Try again",
       "empty": "Your cart is empty",
       "browse": "Browse the menu",
       "labels": {
