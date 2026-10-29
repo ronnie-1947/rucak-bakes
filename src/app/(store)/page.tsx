@@ -3,7 +3,6 @@ import { Credit } from "@/app/sections/landing/credit/Credit"
 import { FreshToday } from "@/app/sections/landing/fresh-today/FreshToday"
 import { Hero } from "@/app/sections/landing/hero/Hero"
 import { Menu } from "@/app/sections/landing/menu/Menu"
-import { ReachUs } from "@/app/sections/landing/reach-us/ReachUs"
 import { VisitUs } from "@/app/sections/landing/visit-us/VisitUs"
 import { htmlLang } from "@/lib/content"
 import { getDictionary, type Locale } from "@/lib/i18n"
@@ -19,8 +18,7 @@ export default async function Home() {
 
   return (
     <div lang={htmlLang(locale)} className="contents">
-      <Hero hero={data.hero} dict={dict.landing.hero} />
-      <ReachUs phone={data.visit.phone} social={data.social} dict={dict.landing.reachUs} />
+      <Hero hero={data.hero} phone={data.visit.phone} dict={dict.landing.hero} />
       {data.fresh ? <FreshToday fresh={data.fresh} hasPhone={Boolean(data.visit.phone)} dict={dict.landing.freshToday} store={dict.store} /> : null}
       <Menu
         catalogue={data.catalogue}

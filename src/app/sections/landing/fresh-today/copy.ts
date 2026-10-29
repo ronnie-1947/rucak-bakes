@@ -21,7 +21,7 @@ export function freshPill(fresh: FreshToday, dict: FreshCopy): { text: string; t
   return { text, tone: tones[fresh.state] }
 }
 
-/** Above the cards: how to get them, or that they're gone. "Call" means the Call button under the hero. */
+/** Above the cards: how to get them, or that they're gone. "Call" means the header's Call square. */
 export function freshLine(fresh: FreshToday, hasPhone: boolean, dict: FreshCopy): string {
   if (fresh.state === "soldOut") return dict.soldOut
   if (hasPhone) return dict.walkIn

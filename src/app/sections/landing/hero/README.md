@@ -1,12 +1,13 @@
 # hero
 
-The top band of `/`: the owner's hero photo (Settings → Appearance) with the tagline on a warm `o500` band — under the photo on a phone, across its foot from `md`.
+The top band of `/`: the owner's hero photo (Settings → Appearance) with the tagline on a warm `o500` band — under the photo on a phone, across its foot from `md` —
+and a small Call button just below it (only with a public phone).
 
 ## Files in this folder
 
 ```
 hero/
-  Hero.tsx       entry (server) — photo layer, tagline band
+  Hero.tsx       entry (server) — photo layer, tagline band, the Call button under them
   HeroPhoto.tsx  the photo (client) — next/image with a Cloudinary loader, so the srcset is sized per screen
   README.md
 ```
@@ -14,12 +15,14 @@ hero/
 ## Component tree
 
 ```
-section.relative.isolate (rounded-sheet, bg-sunken)   flex column → md:block
-├─ div  photo frame                                 4:3 → sm 16:9 → md fills the section
-│  └─ HeroPhoto → Image fill preload (-z-10, cover) only when hero.image is set
-└─ div  bg-o500                                     in flow below md, pinned to the bottom from md
-   ├─ h1  hero.tagline ?? dict.fallback             text-glance → lg:text-glance-lg
-   └─ p   dict.sub                                  "Order ahead, then pay when you collect."
+div.flex-col.items-start.gap-3
+├─ section.relative.isolate (rounded-sheet, bg-sunken)   flex column → md:block
+│  ├─ div  photo frame                                 4:3 → sm 16:9 → md fills the section
+│  │  └─ HeroPhoto → Image fill preload (-z-10, cover) only when hero.image is set
+│  └─ div  bg-o500                                     in flow below md, pinned to the bottom from md
+│     ├─ h1  hero.tagline ?? dict.fallback             text-glance → lg:text-glance-lg
+│     └─ p   dict.sub                                  "Order ahead, then pay when you collect."
+└─ CallLink (ui) variant=primary size=sm               "Call +91 94357 09287" — its own width, no card; only with a phone
 ```
 
 ## Dependencies
@@ -28,6 +31,8 @@ section.relative.isolate (rounded-sheet, bg-sunken)   flex column → md:block
 |---|---|
 | `@/lib/storefront/landing` | `LandingData["hero"]` — `{ image, tagline }` |
 | `./HeroPhoto` | the photo layer |
+| `@/components/ui/CallLink` | the Call button (44px, `sm`) |
+| `@/lib/phone` | `formatForDisplay` |
 | `@/lib/cloudinary` | `imageUrl` — HeroPhoto's loader, uncropped, each srcset width capped at 2560px |
 
 External: `next/image` (`fill`, `preload`, `loader`, `sizes`). Tokens: `rounded-sheet` (24px hero), `bg-sunken`, `bg-o500`,
@@ -36,13 +41,13 @@ External: `next/image` (`fill`, `preload`, `loader`, `sizes`). Tokens: `rounded-
 ## Props
 
 ```ts
-Hero { hero: { image: string | null; tagline: string | null }; dict: Dict["landing"]["hero"] }
+Hero { hero: { image: string | null; tagline: string | null }; phone: string | null; dict: Dict["landing"]["hero"] }
 ```
 
 ## Dictionary contract
 
 ```json
-"hero": { "fallback": "…shown when Settings has no tagline", "sub": "…the line under the tagline" }
+"hero": { "fallback": "…shown when Settings has no tagline", "sub": "…the line under the tagline", "call": "Call {phone}" }
 ```
 
 ## How it works

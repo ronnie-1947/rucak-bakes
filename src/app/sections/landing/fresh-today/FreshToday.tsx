@@ -6,7 +6,7 @@ import { freshLine, freshPill } from "./copy"
 
 type FreshTodayProps = {
   fresh: FreshTodayData
-  /** The walk-in line mentions calling only when the bakery has a public phone (the Call button sits under the hero). */
+  /** The walk-in line mentions calling only when the bakery has a public phone (the Call square sits in the header). */
   hasPhone: boolean
   dict: Dict["landing"]["freshToday"]
   store: Dict["store"]

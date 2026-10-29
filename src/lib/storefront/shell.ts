@@ -1,6 +1,7 @@
 import { parseOpeningHours } from "@/lib/settings/hours"
 import { getSettings } from "@/lib/settings/row"
-import type { StoreBanner, StoreInfo } from "./types"
+import { socialUrl } from "@/lib/settings/social"
+import type { StoreBanner, StoreInfo, StoreSocial } from "./types"
 
 /** Read model for the frame around every customer screen (src/components/store-shell/). */
 
@@ -11,6 +12,8 @@ export type StoreShellData = {
   banner: StoreBanner | null
   /** Pickup, delivery, the phone and the timezone — the cart reads them from the shell (hooks/useStoreInfo). */
   info: StoreInfo
+  /** Instagram and Facebook for the header's contact squares. */
+  social: StoreSocial
 }
 
 export function firstLine(text: string | null): string | null {
@@ -43,5 +46,6 @@ export async function loadStoreShell(): Promise<StoreShellData> {
       delivery: { enabled: settings.deliveryEnabled, feePaise: settings.deliveryFeePaise, radiusKm: settings.deliveryRadiusKm },
       phone: settings.publicPhone,
     },
+    social: { instagram: socialUrl("instagram", settings.instagram), facebook: socialUrl("facebook", settings.facebook) },
   }
 }

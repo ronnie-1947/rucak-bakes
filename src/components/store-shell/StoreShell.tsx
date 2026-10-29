@@ -1,6 +1,7 @@
 import type { ReactNode } from "react"
 import { Container } from "@/components/ui/Container"
 import type { StoreShellData } from "@/lib/storefront/shell"
+import { headerCall } from "./call"
 import { CartBar } from "./CartBar"
 import { CartProvider } from "./CartProvider"
 import type { StoreCopy } from "./copy"
@@ -26,7 +27,13 @@ export function StoreShell({ data, dict, children }: StoreShellProps) {
       <CartProvider timeZone={data.info.timeZone} dict={{ shell: dict.shell, switchDay: dict.switchDay, days: dict.days }}>
         <PageTitleProvider>
           {data.banner ? <StoreBannerStrip banner={data.banner} dict={dict.shell} /> : null}
-          <StoreHeader bakeryName={data.bakeryName} place={data.place} dict={dict.shell} />
+          <StoreHeader
+            bakeryName={data.bakeryName}
+            place={data.place}
+            call={headerCall(data.info.phone, dict.shell)}
+            social={data.social}
+            dict={dict.shell}
+          />
           <Container as="main" className="flex flex-1 flex-col gap-8 pt-4 pb-8 md:gap-12 md:pt-6 md:pb-12 lg:pt-8">
             {children}
           </Container>

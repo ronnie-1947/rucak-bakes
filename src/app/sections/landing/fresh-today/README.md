@@ -3,7 +3,7 @@
 "Fresh today" on `/` (§10R): today's **counter-items** only — what the bakery baked for the counter this morning, which customers
 walk in for (or call to have kept aside) and can't order online. Orders booked for today never appear here. Imported from
 `Bakery Order Landing.dc.html`. Shown only on a day with something on the counter: `loadLanding` returns `fresh: null` otherwise
-(orders only, or closed), and the page leaves the band out. The Call button lives in [reach-us/](../reach-us/), under the hero.
+(orders only, or closed), and the page leaves the band out. The Call button lives in the store header (store-shell `ContactLinks`), left of the cart.
 
 ## Files in this folder
 

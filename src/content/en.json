@@ -1669,7 +1669,10 @@
       "items": "{count} items",
       "itemsOne": "1 item",
       "viewCart": "View cart",
-      "back": "Back"
+      "back": "Back",
+      "call": "Call {phone}",
+      "instagram": "Instagram",
+      "facebook": "Facebook"
     },
     "switchDay": {
       "title": "Switch to {day}?",
@@ -1938,15 +1941,8 @@
   "landing": {
     "hero": {
       "fallback": "Baked this morning, just round the corner",
-      "sub": "Order ahead, then pay when you collect."
-    },
-    "reachUs": {
-      "label": "Call or follow us",
-      "callLine": "A custom cake, a big order, or some kept aside? Give us a call.",
-      "followLine": "Follow along for what’s coming out of the oven.",
-      "call": "Call {phone}",
-      "instagram": "Instagram",
-      "facebook": "Facebook"
+      "sub": "Order ahead, then pay when you collect.",
+      "call": "Call {phone}"
     },
     "freshToday": {
       "title": "Fresh today",

@@ -6,8 +6,11 @@ import { useRouter } from "next/navigation"
 import { Container } from "@/components/ui/Container"
 import { Icon } from "@/components/ui/icons/Icon"
 import { usePageTitleState } from "@/hooks/usePageTitle"
+import type { StoreSocial } from "@/lib/storefront/types"
+import type { HeaderCall } from "./call"
 import { fill } from "@/lib/template"
 import { CartButton } from "./CartButton"
+import { ContactLinks } from "./ContactLinks"
 import type { StoreCopy } from "./copy"
 
 type PageBarProps = {
@@ -16,6 +19,9 @@ type PageBarProps = {
   canGoBack: boolean
   /** Off on /cart — the page is the cart. A 44px space keeps the row balanced. */
   showCart: boolean
+  /** The header's Call square, or null without a public phone. */
+  call: HeaderCall | null
+  social: StoreSocial
   dict: StoreCopy["shell"]
 }
 
@@ -32,11 +38,12 @@ const names: Record<"shown" | "hidden", string> = {
 
 /**
  * Every other customer screen's header row: Back, the logo and bakery's name (home link), the page's name once
- * its own heading has scrolled away (hooks/usePageTitle), and the cart. Back is a link to the menu, so it works
+ * its own heading has scrolled away (hooks/usePageTitle), Call / Instagram / Facebook from 768px (a phone's row has
+ * no room for them beside the title — the item page has its own Call), and the cart. Back is a link to the menu, so it works
  * before hydration and after a direct visit; within a visit it goes back instead, which keeps the menu's scroll
  * position. A page with steps of its own (the cart) can take Back over with usePageBack.
  */
-export function PageBar({ bakeryName, canGoBack, showCart, dict }: PageBarProps) {
+export function PageBar({ bakeryName, canGoBack, showCart, call, social, dict }: PageBarProps) {
   const { title, back } = usePageTitleState()
   const router = useRouter()
   const titleState = title?.shown ? "shown" : "hidden"
@@ -74,6 +81,7 @@ export function PageBar({ bakeryName, canGoBack, showCart, dict }: PageBarProps)
       >
         {title?.text}
       </span>
+      <ContactLinks call={call} social={social} dict={dict} className="hidden md:flex" />
       {showCart ? <CartButton dict={dict} /> : <span aria-hidden className="size-11 shrink-0" />}
     </Container>
   )

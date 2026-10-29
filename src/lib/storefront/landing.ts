@@ -4,10 +4,9 @@ import { loadBookingWindow } from "@/lib/orders/booking"
 import { dayAvailability } from "@/lib/orders/deadline"
 import { type OpeningHours, parseOpeningHours } from "@/lib/settings/hours"
 import { getSettings } from "@/lib/settings/row"
-import { socialUrl } from "@/lib/settings/social"
 import { catalogueOrder, storeItemSelect, toStoreItem } from "./catalogue"
 import { counterCloses, counterLines } from "./counter"
-import type { CatalogueItem, CounterItem, FreshToday, StoreSocial } from "./types"
+import type { CatalogueItem, CounterItem, FreshToday } from "./types"
 
 /** Read model for the landing page (/): today's counter, everything we bake, how to find us (§10R). */
 
@@ -28,7 +27,6 @@ export type LandingData = {
     /** Null until the owner first saves them. */
     hours: OpeningHours | null
   }
-  social: StoreSocial
 }
 
 export async function loadLanding(): Promise<LandingData> {
@@ -90,6 +88,5 @@ export async function loadLanding(): Promise<LandingData> {
       phone: settings.publicPhone,
       hours: parseOpeningHours(settings.openingHours),
     },
-    social: { instagram: socialUrl("instagram", settings.instagram), facebook: socialUrl("facebook", settings.facebook) },
   }
 }
