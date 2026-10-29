@@ -28,8 +28,9 @@ admin-settings/
   LiveMark.tsx           "SAVES INSTANTLY" tag + the mark
   InlinePreview.tsx      a sunken "Preview" box under the fields it shows — below 1280px only
   layout.ts              `fullRow` — the class for a field that takes the whole row
-  BakerySection.tsx      "use client" — name, tagline (60, counter), PhoneField, address (+ Open in Maps), HoursField; landing preview
+  BakerySection.tsx      "use client" — name, tagline (60, counter), PhoneField, SocialField × 2, address (+ Open in Maps), HoursField; landing preview
   PhoneField.tsx         +91 prefix, ten digits
+  SocialField.tsx        instagram.com/ or facebook.com/ prefix, then the handle — a pasted link or @handle saves as the bare handle
   HoursField.tsx         seven DayHoursRows, "Copy Monday's hours to every day", "not shown yet" until first saved, link to Ordering rules
   DayHoursRow.tsx        Open/Closed switch and from–to selects; one line once the box is 512px wide
   OrderingSection.tsx    "use client" — defaults note, max / overbook / cutoff / order-ahead, AutoVerifySwitch, FulfilmentField, delivery radius + fee, PauseZone
@@ -68,7 +69,7 @@ AdminSettings dict=dict.admin data=SettingsPageData
    └─ Container grid
       ├─ SectionList → SectionLink × 5 → GuardedLink, DirtyDot
       └─ pane: SectionHeader → GuardedLink · Notice (staff) · SettingsPane key=section
-         ├─ bakery:        FormFrame → SaveBar×2 · PaneGrid → fields, InlinePreview × 2, PhoneField, HoursField → DayHoursRow × 7 | LandingPreview
+         ├─ bakery:        FormFrame → SaveBar×2 · PaneGrid → fields, InlinePreview × 2, PhoneField, SocialField × 2, HoursField → DayHoursRow × 7 | LandingPreview
          ├─ ordering:      FormFrame · PaneGrid → Notice, StepperField × 3(+2), CutoffField, AutoVerifySwitch → LiveMark, FulfilmentField,
          │                 PauseZone → LiveMark, PauseDialog | OrderPagePreview
          ├─ notifications: PaneGrid → TelegramCard key=state → ConnectSteps, DisconnectDialog | TelegramPreview
@@ -116,6 +117,7 @@ SaveBar            { form: SaveControls; placement: "top" | "bottom"; dict }
 SaveStatus         { problemCount; changes; problem; dict }
 InlinePreview      { label; children; className? }
 PhoneField         { value; onChange; error?; dict }
+SocialField        { kind: "instagram" | "facebook"; value; onChange; error?; dict }
 HoursField         { hours; onChange; unsaved; error?; dict }
 DayHoursRow        { day; hours: DayHours; times; invalid; onChange; dict }
 StepperField       { id; label; hint; error?; value; min; max; step?; display?; onChange; decreaseLabel; increaseLabel; children?; className? }

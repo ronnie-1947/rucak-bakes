@@ -40,6 +40,8 @@ const paths = {
   bag: "M6 7h12l1 13H5L6 7ZM9 7a3 3 0 0 1 6 0",
   close: "M6 6l12 12M18 6 6 18",
   wifiOff: "M3 3l18 18M8.5 16.4a5 5 0 0 1 7 0M5 12.9a10 10 0 0 1 4.4-2.6M19 12.9a10 10 0 0 0-2.2-1.6M2 8.8a15 15 0 0 1 4.3-2.7M22 8.8A15 15 0 0 0 10.8 5M12 20h.01",
+  instagram: "M7 3h10a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM17.5 6.5h.01",
+  facebook: "M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z",
 } as const
 
 export type IconName = keyof typeof paths

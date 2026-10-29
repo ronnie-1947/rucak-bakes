@@ -15,6 +15,7 @@ import { LandingPreview } from "./LandingPreview"
 import { fullRow } from "./layout"
 import { PaneGrid } from "./PaneGrid"
 import { PhoneField } from "./PhoneField"
+import { SocialField } from "./SocialField"
 import type { SettingsCopy } from "./types"
 import { useSectionForm } from "./useSectionForm"
 
@@ -26,7 +27,7 @@ type BakerySectionProps = {
 const submit = (values: BakeryValues) => saveBakeryDetails(values)
 
 /**
- * Name, tagline, phone, pickup address and opening hours — what customers see about the shop. Below 1280px
+ * Name, tagline, phone, Instagram and Facebook, pickup address and opening hours — what customers see about the shop. Below 1280px
  * small previews sit under the fields they show; from 1280px the landing page preview has its own column.
  */
 export function BakerySection({ data, dict }: BakerySectionProps) {
@@ -105,6 +106,8 @@ export function BakerySection({ data, dict }: BakerySectionProps) {
           </span>
         </InlinePreview>
         <PhoneField value={values.phone} onChange={(phone) => set({ phone })} error={error("phone")} dict={d} />
+        <SocialField kind="instagram" value={values.instagram} onChange={(instagram) => set({ instagram })} error={error("instagram")} dict={d.social} />
+        <SocialField kind="facebook" value={values.facebook} onChange={(facebook) => set({ facebook })} error={error("facebook")} dict={d.social} />
         <Field id="bakery-address" label={d.address} hint={d.addressHint} error={error("pickupAddress")} className={fullRow}>
           <textarea
             id="bakery-address"

@@ -74,6 +74,8 @@ export async function loadSettingsPage(searchParams: Record<string, string | str
       phone: phoneField(settings.publicPhone),
       pickupAddress: settings.pickupAddress ?? "",
       hours: hours ?? DEFAULT_HOURS,
+      instagram: settings.instagram ?? "",
+      facebook: settings.facebook ?? "",
     },
     hoursSet: hours !== null,
     ordering: {

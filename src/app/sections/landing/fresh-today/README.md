@@ -2,14 +2,15 @@
 
 "Fresh today" on `/` (§10R): today's **counter-items** only — what the bakery baked for the counter this morning, which customers
 walk in for (or call to have kept aside) and can't order online. Orders booked for today never appear here. Imported from
-`Bakery Order Landing.dc.html`.
+`Bakery Order Landing.dc.html`. Shown only on a day with something on the counter: `loadLanding` returns `fresh: null` otherwise
+(orders only, or closed), and the page leaves the band out. The Call button lives in [reach-us/](../reach-us/), under the hero.
 
 ## Files in this folder
 
 ```
 fresh-today/
-  FreshToday.tsx   entry (server) — heading + status pill; the walk-in line, Call and the cards; or the sunken message
-  copy.ts          freshPill, freshLine, freshMessage — dict strings filled
+  FreshToday.tsx   entry (server) — heading + status pill; the walk-in line and the cards
+  copy.ts          freshPill, freshLine — dict strings filled
   README.md
 ```
 
@@ -18,10 +19,8 @@ fresh-today/
 ```
 section
 ├─ h2#fresh-today  dict.title  ·  Tag size=pill  freshPill()
-├─ (on / sold out)
-│  ├─ p freshLine()  ·  CallLink (ui) "Call +91 98765 43210"      only with a public phone
-│  └─ ul.grid → li × n → ItemCard (item-card)  chip "Sold out" + muted when the counter ran out
-└─ (orders only / closed)  p.bg-sunken freshMessage()
+├─ p freshLine()
+└─ ul.grid → li × n → ItemCard (item-card)  chip "Sold out" + muted when the counter ran out
 ```
 
 ## Dependencies
@@ -29,44 +28,40 @@ section
 | Import | Purpose |
 |---|---|
 | `@/lib/storefront/types` | `FreshToday`, `CounterItem` (via `loadLanding`) |
-| `@/lib/storefront/words` | `relativeDay` — "back tomorrow", "back Tuesday" |
 | `@/lib/calendar/cutoffs` | `formatClock` — "till 4pm" |
-| `@/lib/phone` | `formatForDisplay` |
 | `@/components/item-card/ItemCard` | the cards (no action — each opens its item page) |
-| `@/components/ui/*` | `CallLink`, `Tag` |
+| `@/components/ui/Tag` | the status pill |
 
-Tokens: `text-h2`, `bg-sunken`, `rounded-card`; Tag tones `green` / `red` / `quiet`; breakpoints `md`, `lg`.
+Tokens: `text-h2`; Tag tones `green` / `red`; breakpoints `md`, `lg`.
 
 ## Props
 
 ```ts
-FreshToday { fresh: FreshToday; today: IsoDate; phone: string | null; dict: Dict["landing"]["freshToday"]; store: Dict["store"] }
+FreshToday { fresh: FreshToday; hasPhone: boolean; dict: Dict["landing"]["freshToday"]; store: Dict["store"] }
 ```
 
 ## Dictionary contract
 
 ```json
 "freshToday": {
-  "title", "pill": { "on": "On the counter till {time}", "onAllDay", "soldOut", "none", "closed" },
-  "walkIn", "walkInUntil": "Walk in until {time}.", "walkInOnly", "soldOut", "none",
-  "closed": "Closed today — back {day}. …", "closedNoBack", "call": "Call {phone}"
+  "title", "pill": { "on": "On the counter till {time}", "onAllDay", "soldOut" },
+  "walkIn", "walkInUntil": "Walk in until {time}.", "walkInOnly", "soldOut"
 }
 ```
 
-Also `store.item` (card strings, "Sold out") and `store.days`.
+Also `store.item` (card strings, "Sold out").
 
 ## How it works
 
 | State (`fresh.state`) | Pill | Body |
 |---|---|---|
-| `on` — counter-items today | "On the counter till 4pm" (green; "On the counter today" without saved hours) | "Walk in, or call and we’ll keep some aside." + Call + the cards |
-| `soldOut` — every one sold out | "All sold out" (red) | "The counter’s empty for today — order ahead from the menu below." + Call + the faded cards |
-| `none` — open, no counter-items | "Orders only today" (quiet) | sunken "Nothing extra on the counter today — we’re baking orders. …" |
-| `closed` — closed today | "Closed today" (quiet) | sunken "Closed today — back {Tuesday}. …" (the next open date in the window, else without it) |
+| `on` — counter-items today | "On the counter till 4pm" (green; "On the counter today" without saved hours) | "Walk in, or call and we’ll keep some aside." + the cards |
+| `soldOut` — every one sold out | "All sold out" (red) | "The counter’s empty for today — order ahead from the menu below." + the faded cards |
+| — nothing on the counter, or closed | | no band (`fresh` is null) |
 
 - The cards are `ItemCard` without an action: photo, name, the counter's price for the day (override included). A sold-out one has
   the red "Sold out" chip and is faded — it still opens its page, where it can be ordered ahead.
-- No public phone → no Call button, and the line reads "Walk in until 4pm." (or "Walk in while we’re open." without hours).
+- No public phone → the line reads "Walk in until 4pm." (or "Walk in while we’re open." without hours), never "call".
 - "Till 4pm" is today's closing time from the opening hours (`counterCloses` in `src/lib/storefront/counter.ts`). Sold out is the
   Calendar's `soldOutAt`. Inactive and archived counter-items are left out. Server Component.
 
@@ -74,7 +69,7 @@ Also `store.item` (card strings, "Sold out") and `store.days`.
 
 | Width | Effect |
 |---|---|
-| base | heading and pill share a row (wrap at 320px); line above the Call button; 2 columns |
+| base | heading and pill share a row (wrap at 320px); the line; 2 columns |
 | `md` 768px | 3 columns |
 | `lg` 1024px | 4 columns |
 

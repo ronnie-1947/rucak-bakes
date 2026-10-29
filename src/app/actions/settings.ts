@@ -18,6 +18,7 @@ import {
   SETTINGS_LIMITS as L,
 } from "@/lib/settings/form"
 import { hoursProblem, openingHoursSchema, WEEK } from "@/lib/settings/hours"
+import { socialPath, socialValid } from "@/lib/settings/social"
 import { getSettings } from "@/lib/settings/row"
 import { SETTINGS_PATH } from "@/lib/settings/sections"
 import { acceptedCodes, recordDelivery } from "@/lib/settings/telegram"
@@ -66,6 +67,8 @@ const bakeryInput = z.object({
   phone: z.string().trim().max(20),
   pickupAddress: z.string().trim().max(L.pickupAddress),
   hours: openingHoursSchema.refine((hours) => !WEEK.some((day) => hoursProblem(hours[day]))),
+  instagram: z.string().max(200).refine((typed) => socialValid("instagram", typed)),
+  facebook: z.string().max(200).refine((typed) => socialValid("facebook", typed)),
 })
 
 export async function saveBakeryDetails(input: z.input<typeof bakeryInput>): Promise<SaveResult> {
@@ -75,7 +78,15 @@ export async function saveBakeryDetails(input: z.input<typeof bakeryInput>): Pro
   const { bakeryName, tagline, phone, pickupAddress, hours } = parsed.data
   const publicPhone = phone ? normalise(`+91${phoneDigits(phone)}`) : null
   if (phone && !publicPhone) return invalid
-  await writeBakery({ bakeryName, tagline: tagline || null, publicPhone, pickupAddress: pickupAddress || null, openingHours: hours })
+  await writeBakery({
+    bakeryName,
+    tagline: tagline || null,
+    publicPhone,
+    pickupAddress: pickupAddress || null,
+    openingHours: hours,
+    instagram: socialPath("instagram", parsed.data.instagram) || null,
+    facebook: socialPath("facebook", parsed.data.facebook) || null,
+  })
   refreshEverywhere()
   return { ok: true }
 }

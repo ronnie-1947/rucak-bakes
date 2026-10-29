@@ -1341,6 +1341,8 @@
         "phoneInvalid": "Enter a 10-digit number",
         "addressTooLong": "Keep the address to 200 characters",
         "hoursOrder": "Each open day has to close after it opens",
+        "instagramInvalid": "That isn’t an Instagram handle — letters, numbers, . and _ only",
+        "facebookInvalid": "Enter the part of your page’s link after facebook.com/",
         "overbookBelowMax": "Must be at least {max} — the same as your daily maximum. You’d be turning people away before the day is full.",
         "noFulfilment": "Turn on Pickup or Delivery — customers need at least one way to get their order.",
         "announcementRequired": "Write the announcement, or turn it off",
@@ -1356,6 +1358,11 @@
         "phonePrefix": "+91",
         "phonePlaceholder": "98450 55012",
         "phoneHint": "Shown on the landing page and the order confirmation. Leave it empty to hide it.",
+        "social": {
+          "hint": "Your handle, or paste the link. Leave it empty to hide the icon.",
+          "instagram": { "label": "Instagram", "prefix": "instagram.com/", "placeholder": "sabihabakery" },
+          "facebook": { "label": "Facebook", "prefix": "facebook.com/", "placeholder": "sabihabakery" }
+        },
         "address": "Pickup address",
         "addressHint": "Customers see this when they choose pickup.",
         "preview": "Preview",
@@ -1933,23 +1940,25 @@
       "fallback": "Baked this morning, just round the corner",
       "sub": "Order ahead, then pay when you collect."
     },
+    "reachUs": {
+      "label": "Call or follow us",
+      "callLine": "A custom cake, a big order, or some kept aside? Give us a call.",
+      "followLine": "Follow along for what’s coming out of the oven.",
+      "call": "Call {phone}",
+      "instagram": "Instagram",
+      "facebook": "Facebook"
+    },
     "freshToday": {
       "title": "Fresh today",
       "pill": {
         "on": "On the counter till {time}",
         "onAllDay": "On the counter today",
-        "soldOut": "All sold out",
-        "none": "Orders only today",
-        "closed": "Closed today"
+        "soldOut": "All sold out"
       },
       "walkIn": "Walk in, or call and we’ll keep some aside.",
       "walkInUntil": "Walk in until {time}.",
       "walkInOnly": "Walk in while we’re open.",
-      "soldOut": "The counter’s empty for today — order ahead from the menu below.",
-      "none": "Nothing extra on the counter today — we’re baking orders. Order ahead from the menu below.",
-      "closed": "Closed today — back {day}. You can still order ahead from the menu below.",
-      "closedNoBack": "Closed today. You can still order ahead from the menu below.",
-      "call": "Call {phone}"
+      "soldOut": "The counter’s empty for today — order ahead from the menu below."
     },
     "menu": {
       "title": "Everything we bake",
@@ -1982,6 +1991,11 @@
       "range": "{first}–{last}",
       "open": "{days}, {from}–{to}",
       "closed": "{days} closed"
+    },
+    "credit": {
+      "lead": "App baked by",
+      "name": "Ripunjoy Buddha",
+      "site": "ripunjoybuddha.com"
     }
   },
   "offline": {

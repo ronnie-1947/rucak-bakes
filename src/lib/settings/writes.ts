@@ -16,6 +16,9 @@ export type BakeryRecord = {
   publicPhone: string | null
   pickupAddress: string | null
   openingHours: OpeningHours
+  /** socialPath()'d, or null to hide the icon. */
+  instagram: string | null
+  facebook: string | null
 }
 
 export async function saveBakery(record: BakeryRecord): Promise<void> {

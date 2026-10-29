@@ -4,15 +4,17 @@ import { loadBookingWindow } from "@/lib/orders/booking"
 import { dayAvailability } from "@/lib/orders/deadline"
 import { type OpeningHours, parseOpeningHours } from "@/lib/settings/hours"
 import { getSettings } from "@/lib/settings/row"
+import { socialUrl } from "@/lib/settings/social"
 import { catalogueOrder, storeItemSelect, toStoreItem } from "./catalogue"
 import { counterCloses, counterLines } from "./counter"
-import type { CatalogueItem, CounterItem, FreshState, FreshToday } from "./types"
+import type { CatalogueItem, CounterItem, FreshToday, StoreSocial } from "./types"
 
 /** Read model for the landing page (/): today's counter, everything we bake, how to find us (§10R). */
 
 export type LandingData = {
   today: IsoDate
-  fresh: FreshToday
+  /** Null when nothing's on the counter today — orders only, or closed — and the band isn't shown. */
+  fresh: FreshToday | null
   /** Every active item, in the bakery's category order, then by name. */
   catalogue: CatalogueItem[]
   /** The categories that have an item, in the bakery's order — the filter chips. */
@@ -26,12 +28,7 @@ export type LandingData = {
     /** Null until the owner first saves them. */
     hours: OpeningHours | null
   }
-}
-
-function freshState(open: boolean, items: CounterItem[]): FreshState {
-  if (!open) return "closed"
-  if (items.length === 0) return "none"
-  return items.every((item) => item.soldOut) ? "soldOut" : "on"
+  social: StoreSocial
 }
 
 export async function loadLanding(): Promise<LandingData> {
@@ -69,12 +66,14 @@ export async function loadLanding(): Promise<LandingData> {
 
   return {
     today,
-    fresh: {
-      state: freshState(open, freshItems),
-      items: freshItems,
-      closes: counterCloses(settings.openingHours, today),
-      back: open ? null : (window.days.find((day) => day.date > today && day.isOpen)?.date ?? null),
-    },
+    fresh:
+      freshItems.length > 0
+        ? {
+            state: freshItems.every((item) => item.soldOut) ? "soldOut" : "on",
+            items: freshItems,
+            closes: counterCloses(settings.openingHours, today),
+          }
+        : null,
     catalogue: ordered.map((item) => ({
       ...toStoreItem(item),
       category: item.category,
@@ -91,5 +90,6 @@ export async function loadLanding(): Promise<LandingData> {
       phone: settings.publicPhone,
       hours: parseOpeningHours(settings.openingHours),
     },
+    social: { instagram: socialUrl("instagram", settings.instagram), facebook: socialUrl("facebook", settings.facebook) },
   }
 }

@@ -37,18 +37,19 @@ export type CatalogueItem = StoreItem & {
   dates: IsoDate[]
 }
 
-/** `on` counter-items to walk in for · `soldOut` every one gone · `none` open, orders only · `closed` closed today. */
-export type FreshState = "on" | "soldOut" | "none" | "closed"
+/** `on` counter-items to walk in for · `soldOut` every one gone. Nothing on the counter (orders only, or closed) has no state — no band. */
+export type FreshState = "on" | "soldOut"
 
 export type FreshToday = {
   state: FreshState
-  /** Today's counter-items, in the menu's order. Empty when closed. */
+  /** Today's counter-items, in the menu's order — never empty. */
   items: CounterItem[]
   /** When the counter closes today, "16:00" — the opening hours' closing time. Null until the hours are saved. */
   closes: string | null
-  /** Closed today: the next date the bakery opens, within the order-ahead window — "back Tuesday". */
-  back: IsoDate | null
 }
+
+/** Where the bakery is online — full links, each null when the owner hasn't given one (no icon). */
+export type StoreSocial = { instagram: string | null; facebook: string | null }
 
 /** The strip across the top of every customer screen. Pause beats the announcement. */
 export type StoreBanner = { kind: "paused"; reason: string | null } | { kind: "note"; text: string }

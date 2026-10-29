@@ -95,7 +95,7 @@ src/
     sitemap.ts · robots.ts /sitemap.xml (landing + every active item) and /robots.txt — static, the menu actions revalidate the sitemap
     manifest.ts         /manifest.webmanifest — the installable app (name, icons incl. maskable, standalone); iOS reads appleWebApp in layout.tsx
     offline/            /offline — static, noindex; public/sw.js serves it for any page that can't load
-    sections/           landing bands (colocated, never a route) — landing/: hero, fresh-today, menu, visit-us
+    sections/           landing bands (colocated, never a route) — landing/: hero, reach-us, fresh-today, menu, visit-us, credit
   components/
     ui/                 Button (+ ButtonLink; variant, size, shape), CallLink (tel:), Checkbox, Chip(Link) (tone, size, shape), Container, Dialog, EmptyState, ItemsLine, ItemThumb, LazyOnView,
                         LinkSelect (?sort=), Meter, Notice, Rich, SearchBox (?q=), SelectBox (bulk tick), Skeleton (tone), Spinner (tone), StatusBadge, Switch,
@@ -159,7 +159,8 @@ src/
                         tick.ts (tick keys), notes.ts (allergen words) — client-safe except queries/ticks
     settings/           row.ts (getSettings() / findSettings() — the singleton row, cached per request), queries.ts (screen read model),
                         writes.ts, telegram.ts (connect code, state, recordDelivery), form.ts (values + rules, client-safe),
-                        hours.ts (opening hours + hoursRuns, client-safe), sections.ts (?section=, client-safe)
+                        hours.ts (opening hours + hoursRuns, client-safe), sections.ts (?section=, client-safe),
+                        social.ts (Instagram / Facebook: socialPath, socialValid, socialUrl — client-safe)
     storefront/         customer read models: shell.ts (banner, today), landing.ts (Fresh today, catalogue, categories, visit),
                         item.ts (loadItemPage — the item, related: the SSG page; loadItemLive — the booking window, today's counter; activeItems), catalogue.ts (card columns, menu order),
                         counter.ts (today's counter-items, the counter's closing time), types.ts (StoreItem, FreshToday…, client-safe),

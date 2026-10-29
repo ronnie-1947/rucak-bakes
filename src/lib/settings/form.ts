@@ -1,5 +1,6 @@
 import { MAX_ORDERS, OVERBOOK_MAX } from "@/lib/calendar/form"
 import { hoursProblem, type OpeningHours, WEEK } from "./hours"
+import { SOCIAL_KINDS, socialPath, socialValid } from "./social"
 
 /**
  * The three settings sections that save as a form — Bakery details, Ordering rules, Appearance — as the
@@ -35,9 +36,12 @@ export type BakeryValues = {
   phone: string
   pickupAddress: string
   hours: OpeningHours
+  /** As typed — a handle, @handle or pasted link. Empty hides the icon. */
+  instagram: string
+  facebook: string
 }
 
-export type BakeryField = "bakeryName" | "tagline" | "phone" | "pickupAddress" | "hours"
+export type BakeryField = "bakeryName" | "tagline" | "phone" | "pickupAddress" | "hours" | "instagram" | "facebook"
 
 /** The ten national digits, forgiving a leading 0 or 91; anything else comes back as typed (and fails). */
 export function phoneDigits(phone: string): string {
@@ -62,6 +66,7 @@ export function bakeryProblems(values: BakeryValues): Problems<BakeryField> {
   if (values.phone.trim() && phoneDigits(values.phone).length !== 10) problems.phone = "phoneInvalid"
   if (values.pickupAddress.trim().length > SETTINGS_LIMITS.pickupAddress) problems.pickupAddress = "addressTooLong"
   if (WEEK.some((day) => hoursProblem(values.hours[day]))) problems.hours = "hoursOrder"
+  for (const kind of SOCIAL_KINDS) if (!socialValid(kind, values[kind])) problems[kind] = `${kind}Invalid`
   return problems
 }
 
@@ -78,6 +83,8 @@ export function tidyBakery(values: BakeryValues): BakeryValues {
     tagline: values.tagline.trim(),
     phone: values.phone.trim(),
     pickupAddress: values.pickupAddress.trim(),
+    instagram: socialPath("instagram", values.instagram),
+    facebook: socialPath("facebook", values.facebook),
   }
 }
 

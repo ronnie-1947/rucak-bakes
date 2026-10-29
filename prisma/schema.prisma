@@ -229,6 +229,8 @@ model Settings {
   bakeryName           String    @default("Bakery")
   tagline              String?
   publicPhone          String?
+  instagram            String? // the handle — "sabihabakery"
+  facebook             String? // the path after facebook.com/ — "sabihabakery", or "profile.php?id=…"
   pickupAddress        String?
   openingHours         Json      @default("{}")
   heroImage            String?

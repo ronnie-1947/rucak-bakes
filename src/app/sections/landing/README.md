@@ -7,15 +7,19 @@ the header, the banner, the cart and the one `Container`; the bands bring no gut
 ## The bands, in render order
 
 1. [hero/](hero/) — the owner's photo with the tagline on a warm band (the page's `h1`)
-2. [fresh-today/](fresh-today/) — today's counter-items (§10R): status pill, walk in / Call, cards that open the item; or orders only / closed
-3. [menu/](menu/) — Everything we bake: category chips, every active item with its notice, Add to cart or Call to order
-4. [visit-us/](visit-us/) — address + Maps, opening hours, phone (each only when set)
+2. [reach-us/](reach-us/) — a warm card tucked under the hero: Call, Instagram, Facebook (each only when set)
+3. [fresh-today/](fresh-today/) — today's counter-items (§10R): status pill, the walk-in line, cards that open the item — only on a
+   day with something on the counter (`data.fresh` is null otherwise, and the page leaves the band out)
+4. [menu/](menu/) — Everything we bake: category chips, every active item with its notice, Add to cart or Call to order
+5. [visit-us/](visit-us/) — address + Maps, opening hours, phone (each only when set)
+6. [credit/](credit/) — the page's last line: "App baked by Ripunjoy Buddha · ripunjoybuddha.com"
 
 Removed in 7R.4: `day-strip` (became fresh-today), `menu-grid` (became menu) and `how-it-works` — folders, READMEs and dict keys together.
 
 ## The dict root
 
-`dict.landing`: `hero` → hero, `freshToday` → fresh-today, `menu` → menu, `visitUs` → visit-us. fresh-today and menu also take
+`dict.landing`: `hero` → hero, `reachUs` → reach-us, `freshToday` → fresh-today, `menu` → menu, `visitUs` → visit-us,
+`credit` → credit. fresh-today and menu also take
 `dict.store` — the item card's strings (`store.item`), the notice words (`store.notice`) and day words (`store.days`), shared with the
 other customer screens.
 
@@ -29,5 +33,5 @@ other customer screens.
   2 / 3 / 4 columns with 12px gaps. Only menu cards add to the cart (for the cart's day, else the item's earliest open date); Fresh
   today's counter-items are walked in for, never ordered online.
 - **Spacing** — the shell's `main` stacks the bands at 32px, 48px from `md` (the design's 56 / 64px at 1280 / 1920 are off the locked
-  spacing scale, so they stay 48px). Section headings are `h2` (`text-h2`); the hero's tagline
+  spacing scale, so they stay 48px). reach-us pulls itself 16px (24px from `md`) closer to the hero. Section headings are `h2` (`text-h2`); the hero's tagline
   is the page's only `h1`.
