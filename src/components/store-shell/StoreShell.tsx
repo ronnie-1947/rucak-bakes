@@ -5,6 +5,7 @@ import { CartBar } from "./CartBar"
 import { CartProvider } from "./CartProvider"
 import type { StoreCopy } from "./copy"
 import { PageTitleProvider } from "./PageTitleProvider"
+import { ServiceWorker } from "./ServiceWorker"
 import { StoreBannerStrip } from "./StoreBannerStrip"
 import { StoreHeader } from "./StoreHeader"
 import { StoreInfoProvider } from "./StoreInfoProvider"
@@ -17,7 +18,7 @@ type StoreShellProps = {
 
 /**
  * The frame of every customer screen: pause / announcement strip, sticky header with the cart, the page in
- * the one Container, and the View cart bar. Provides the cart, the header's page title and the bakery's StoreInfo to everything inside.
+ * the one Container, and the View cart bar; registers the service worker. Provides the cart, the header's page title and the bakery's StoreInfo to everything inside.
  */
 export function StoreShell({ data, dict, children }: StoreShellProps) {
   return (
@@ -30,6 +31,7 @@ export function StoreShell({ data, dict, children }: StoreShellProps) {
             {children}
           </Container>
           <CartBar dict={dict.shell} />
+          <ServiceWorker />
         </PageTitleProvider>
       </CartProvider>
     </StoreInfoProvider>

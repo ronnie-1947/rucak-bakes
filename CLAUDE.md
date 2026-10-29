@@ -93,6 +93,8 @@ src/
     api/auth/[...nextauth]/route.ts
     api/menu/[slug]/route.ts GET — the item page's live part (ItemLive: booking window, today's counter); the page itself is SSG
     sitemap.ts · robots.ts /sitemap.xml (landing + every active item) and /robots.txt — static, the menu actions revalidate the sitemap
+    manifest.ts         /manifest.webmanifest — the installable app (name, icons incl. maskable, standalone); iOS reads appleWebApp in layout.tsx
+    offline/            /offline — static, noindex; public/sw.js serves it for any page that can't load
     sections/           landing bands (colocated, never a route) — landing/: hero, fresh-today, menu, visit-us
   components/
     ui/                 Button (+ ButtonLink; variant, size, shape), CallLink (tel:), Checkbox, Chip(Link) (tone, size, shape), Container, Dialog, EmptyState, ItemsLine, ItemThumb, LazyOnView,
@@ -117,7 +119,8 @@ src/
     admin-daysheet/     the day sheet (/admin/daysheet): notes, For orders + Made to order, counter-items, pickups, Baked / Collected ticks, A4 print
     admin-settings/     settings (/admin/settings): five sections, save bars + leave guard, live switches, Telegram connect, staff access
     store-shell/        every customer screen's frame: banner, sticky header (home row on /, Back · title · cart elsewhere), View cart bar / pill,
-                        StoreInfoProvider, CartProvider + switch-day dialog, PageTitleProvider
+                        StoreInfoProvider, CartProvider + switch-day dialog, PageTitleProvider, ServiceWorker (registers public/sw.js) — no install button: the browser's menu installs
+    offline-screen/     the /offline page: You're offline, Try again (and reload on `online`), Go to the menu — no shell, renders from the worker's cache
     item-card/          a customer item card (photo, chip, price, green tag, Choose date / Call to order) and card.ts (priceParts, chip and action types)
     item-detail/        the item page (/menu/[slug]): SSG, rendered whole on the server + Product JSON-LD; only the order area is fetched; gallery, price + notice, counter block, pickup-date strip + legend + Add to cart (phone bar)
                         or the Call block, about / details / ingredients / allergens, related; availability.ts — each date judged by the deadline rule
@@ -164,7 +167,11 @@ src/
                         cart.ts (the cart page's days + fulfilment, checkLines — the cart's lines vs a day's live menu)
     cart/               cart.ts (localStorage['bakery.cart'] model, pure), store.ts (external store for useSyncExternalStore),
                         check.ts (reconcile — the live-menu check applied, pure), customer.ts (localStorage['bakery.customer'])
+    pwa/                register.ts (registerServiceWorker — production only), app.ts (theme + background hex for the manifest and theme-color)
 public/
+  sw.js                 the service worker, hand-written (no build step): offline page, cache-first /_next/static, network-first customer
+                        pages with a kept copy (4s slow-network cutoff), admin never stored — bump VERSION when its caching changes
+  favicon/              favicons, android-chrome (any) + maskable icons, opaque apple-touch-icon
 ```
 
 → Which directory a new file belongs in, and what its folder is called, is

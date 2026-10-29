@@ -39,6 +39,7 @@ const paths = {
   flame: "M12 3c2 3 5 5 5 9a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-3 0-5 1-7.5Z",
   bag: "M6 7h12l1 13H5L6 7ZM9 7a3 3 0 0 1 6 0",
   close: "M6 6l12 12M18 6 6 18",
+  wifiOff: "M3 3l18 18M8.5 16.4a5 5 0 0 1 7 0M5 12.9a10 10 0 0 1 4.4-2.6M19 12.9a10 10 0 0 0-2.2-1.6M2 8.8a15 15 0 0 1 4.3-2.7M22 8.8A15 15 0 0 0 10.8 5M12 20h.01",
 } as const
 
 export type IconName = keyof typeof paths

@@ -3,6 +3,13 @@
     "home": {
       "title": "Rucak",
       "description": "Order fresh bread, pastries and cakes from Sabiha Bakery for pickup. Pay in person when you collect."
+    },
+    "app": {
+      "name": "Rucak",
+      "shortName": "Rucak"
+    },
+    "offline": {
+      "title": "Offline · Rucak"
     }
   },
   "nav": {
@@ -1976,5 +1983,11 @@
       "open": "{days}, {from}–{to}",
       "closed": "{days} closed"
     }
+  },
+  "offline": {
+    "title": "You’re offline",
+    "body": "Check your connection. This page loads again by itself once you’re back online.",
+    "retry": "Try again",
+    "home": "Go to the menu"
   }
 }

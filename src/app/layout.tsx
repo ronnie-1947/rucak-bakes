@@ -1,6 +1,7 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Fraunces, Inter } from "next/font/google"
 import { defaultLocale, getDictionary } from "@/lib/i18n"
+import { APP_THEME_COLOR } from "@/lib/pwa/app"
 import { siteUrl } from "@/lib/site"
 import "./globals.css"
 
@@ -31,9 +32,17 @@ export async function generateMetadata(): Promise<Metadata> {
         { url: "/favicon/favicon-32x32.png", sizes: "32x32", type: "image/png" },
         { url: "/favicon/favicon-16x16.png", sizes: "16x16", type: "image/png" },
       ],
+      // Opaque white: iOS fills a transparent touch icon with black.
       apple: { url: "/favicon/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     },
+    // The manifest (app/manifest.ts) is linked by Next itself. iOS reads these instead: home-screen label, full-screen launch.
+    applicationName: dict.meta.app.name,
+    appleWebApp: { capable: true, title: dict.meta.app.shortName, statusBarStyle: "default" },
   }
+}
+
+export const viewport: Viewport = {
+  themeColor: APP_THEME_COLOR,
 }
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

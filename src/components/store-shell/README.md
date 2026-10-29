@@ -2,7 +2,7 @@
 
 The frame around every customer screen — rendered once by the `(store)` route group's layout
 ([layout.tsx](<../../app/(store)/layout.tsx>)), so the landing page (`/`), the item page (`/menu/[slug]`) and the cart (`/cart`) share it. It
-holds the pause / announcement strip, the sticky header with the cart, the page's one `Container`, the View cart bar, the cart itself
+holds the pause / announcement strip, the sticky header with the cart, the page's one `Container`, the View cart bar, the service worker's registration, the cart itself
 (`CartProvider`) and the header's page title (`PageTitleProvider`). Imported from `Bakery Order Landing.dc.html` (header, bar and pill)
 and `Menu-slug.dc.html` (the Back · title · cart header). Read model:
 [src/lib/storefront/shell.ts](../../lib/storefront/shell.ts); cart model: [src/lib/cart/](../../lib/cart/).
@@ -23,6 +23,7 @@ store-shell/
                         scrolls away), CartButton (not on /cart)
   CartButton.tsx        "use client" — 44px cart square with the unit-count badge
   CartBar.tsx           "use client" — View cart: bottom bar on phones, floating pill from 768px; hidden when empty, on /cart and on /menu/*
+  ServiceWorker.tsx     "use client" — registers public/sw.js (production only); renders nothing
   copy.ts               StoreCopy / CartCopy types, itemsText, cartLabel
   README.md
 ```
@@ -38,7 +39,8 @@ StoreShell data=StoreShellData dict=dict.store
    │  │  ├─ HomeBar  (on /)                          logo + name + "Pickup at …" + CartButton
    │  │  └─ PageBar  (elsewhere)                     Back + logo + name + title + CartButton
    │  ├─ Container as="main"  ← the page's bands stack here, gap-8 / md:gap-12
-   │  └─ CartBar dict.shell                          spacer div + bottom bar (<md) + pill (md+)
+   │  ├─ CartBar dict.shell                          spacer div + bottom bar (<md) + pill (md+)
+   │  └─ ServiceWorker                               renders nothing
    └─ SwitchDayDialog request                      (rendered by the provider; opens on a cross-day add)
 ```
 
@@ -58,6 +60,7 @@ StoreShell data=StoreShellData dict=dict.store
 | `@/hooks/useScrolled` | HomeBar condensing |
 | `@/components/ui/*` | `Container`, `Button`, `ButtonLink` (`shape="pill"`), `Dialog`, `Icon` (`cart`, `chevronLeft`) |
 | `@/lib/money` · `@/lib/template` | `formatPaise`, `fill` |
+| `@/lib/pwa/register` | `registerServiceWorker` |
 
 External: `next/link`, `next/image` (`/logo.png`), `next/navigation` (`usePathname`, `useRouter`). Tokens: `bg-red-soft`, `text-red`, `bg-o50`, `bg-o700`, `text-o700`,
 `border-border`, `bg-sunken`, `shadow-raised`, `rounded-button`, `rounded-pill`, `text-h1`, `text-h2`, `text-small`, `text-micro`,
@@ -77,6 +80,7 @@ HomeBar          { bakeryName; place: string | null; dict: StoreCopy["shell"] }
 PageBar          { bakeryName; canGoBack: boolean; showCart: boolean; dict: StoreCopy["shell"] }
 CartButton       { dict: StoreCopy["shell"] }
 CartBar          { dict: StoreCopy["shell"] }
+ServiceWorker    {}
 ```
 
 `CartCopy` is `{ shell, switchDay, days }` — the provider is a client component, so only the strings it uses cross to the browser.
@@ -114,6 +118,8 @@ CartBar          { dict: StoreCopy["shell"] }
   and then View cart, and two fixed bars would stack). When shown it puts a spacer in the flow (`h-32` / `md:h-24`) so
   the page's last lines clear it. Phones: fixed bottom bar, count + total over a 48px button, `pb-safe-lg` clears the home indicator.
   From `md`: a floating 48px pill bottom-right with the count in a white disc, its accessible name spelling out count and total.
+- **ServiceWorker** registers `public/sw.js` on mount — production builds only — and renders nothing. The store installs as an
+  app from the browser's own menu (manifest: `src/app/manifest.ts`); it shows no install button or prompt of its own.
 - Server: `StoreShell`, `StoreBannerStrip`. Client: the rest — state (cart), scroll, pathname, dialog.
 
 ## Responsive behavior
@@ -139,6 +145,8 @@ Test at `xxxs` (320px) and `3xl` (1920px+) any time you touch this component.
 | What the cart API offers components | [src/hooks/useCart.ts](../../hooks/useCart.ts) + [CartProvider.tsx](CartProvider.tsx) |
 | Banner precedence | `storeBanner` in [src/lib/storefront/shell.ts](../../lib/storefront/shell.ts) |
 | Bar / pill look | [CartBar.tsx](CartBar.tsx); the pill's shape is `Button`'s `shape="pill"` |
+| What the service worker caches | [public/sw.js](../../../public/sw.js) — bump `VERSION` when its caching changes |
+| App name, icons, colours on the home screen | [src/app/manifest.ts](../../app/manifest.ts), `meta.app` in `en.json`, [src/lib/pwa/app.ts](../../lib/pwa/app.ts) |
 | Page gutters / band spacing | the `Container` in [StoreShell.tsx](StoreShell.tsx) |
 
 ## Do not
