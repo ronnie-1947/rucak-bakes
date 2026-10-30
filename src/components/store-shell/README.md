@@ -41,7 +41,7 @@ StoreShell data=StoreShellData dict=dict.store
    │  ├─ StoreHeader bakeryName place call social dict.shell   <header> sticky
    │  │  ├─ HomeBar  (on /)                          logo + name + "Pickup at …" + ContactLinks + CartButton
    │  │  └─ PageBar  (elsewhere)                     Back + logo + name + title + ContactLinks (md+) + CartButton
-   │  ├─ Container as="main"  ← the page's bands stack here, gap-8 / md:gap-12
+   │  ├─ Container as="main"  ← its one child, the page's lang <div>, is the column: bands stack there, gap-8 / md:gap-12
    │  ├─ CartBar dict.shell                          spacer div + bottom bar (<md) + pill (md+)
    │  └─ ServiceWorker                               renders nothing
    └─ SwitchDayDialog request                      (rendered by the provider; opens on a cross-day add)
@@ -131,6 +131,9 @@ ServiceWorker    {}
 - **ServiceWorker** registers `public/sw.js` on mount — production builds only — and renders nothing. In dev it unregisters any worker
   an earlier `next start` left on the origin and empties its caches, since that worker would serve stale `/_next/static` chunks. The store installs as an
   app from the browser's own menu (manifest: `src/app/manifest.ts`); it shows no install button or prompt of its own.
+- **Scroll to top** — a store page's lang `<div>` is a real box, styled from `main` (`*:flex *:flex-1 *:flex-col *:gap-8`), never
+  `className="contents"`. Next scrolls a new page to the top only when the page's first element has a box; a `contents` wrapper has
+  none, so it is skipped and the next page opens at the previous one's scroll position. Back / forward keep the browser's restore.
 - Server: `StoreShell`, `StoreBannerStrip`. Client: the rest — state (cart), scroll, pathname, dialog.
 
 ## Responsive behavior

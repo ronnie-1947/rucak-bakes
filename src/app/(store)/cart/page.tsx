@@ -16,7 +16,7 @@ export default async function CartPage() {
   const dict = await getDictionary(locale)
 
   return (
-    <div lang={htmlLang(locale)} className="contents">
+    <div lang={htmlLang(locale)}>
       <Cart dict={dict.store} />
     </div>
   )

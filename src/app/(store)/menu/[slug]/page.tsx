@@ -53,7 +53,7 @@ export default async function ItemRoute({ params }: PageProps<"/menu/[slug]">) {
   if (!data) notFound()
 
   return (
-    <div lang={htmlLang(locale)} className="contents">
+    <div lang={htmlLang(locale)}>
       <ItemDetail data={data} dict={dict.store} />
     </div>
   )

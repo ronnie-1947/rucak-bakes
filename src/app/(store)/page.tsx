@@ -17,7 +17,7 @@ export default async function Home() {
   const [dict, data] = await Promise.all([getDictionary(locale), loadLanding()])
 
   return (
-    <div lang={htmlLang(locale)} className="contents">
+    <div lang={htmlLang(locale)}>
       <Hero hero={data.hero} phone={data.visit.phone} dict={dict.landing.hero} />
       {data.fresh ? <FreshToday fresh={data.fresh} hasPhone={Boolean(data.visit.phone)} dict={dict.landing.freshToday} store={dict.store} /> : null}
       <Menu

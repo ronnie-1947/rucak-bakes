@@ -34,7 +34,9 @@ export function StoreShell({ data, dict, children }: StoreShellProps) {
             social={data.social}
             dict={dict.shell}
           />
-          <Container as="main" className="flex flex-1 flex-col gap-8 pt-4 pb-8 md:gap-12 md:pt-6 md:pb-12 lg:pt-8">
+          {/* The page's lang wrapper is the column, not `display: contents`: Next scrolls a new page to the top only when its first
+              element has a box — a `contents` one is skipped, and the next page opened at the last one's scroll. */}
+          <Container as="main" className="flex flex-1 flex-col pt-4 pb-8 md:pt-6 md:pb-12 lg:pt-8 *:flex *:flex-1 *:flex-col *:gap-8 md:*:gap-12">
             {children}
           </Container>
           <CartBar dict={dict.shell} />

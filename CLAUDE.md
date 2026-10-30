@@ -267,6 +267,9 @@ creating any sibling segment.
 - **One root layout for every locale.** Only a root layout may render `<html>`,
   so it declares one `lang` — the source locale's. Every page re-declares its own
   on its outermost element: `<div lang={htmlLang(locale)} className="contents">`.
+  *Project note:* store pages (`src/app/(store)/`) drop `className="contents"` —
+  the store shell's `main` styles that div as the column. Next only scrolls a new
+  page to the top when its first element has a box (see `store-shell/README.md`).
 - Components receive copy through a `dict` prop. A section must **never** import
   a content JSON directly.
 
