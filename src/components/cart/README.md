@@ -20,7 +20,7 @@ cart/
   Confirmed.tsx        state 3 — order code, phone back, what was ordered (server-priced), what happens next
   StepLayout.tsx       one column, then 3 : 2 with the sticky side card from 1024px
   ActionBar.tsx        the step's action pinned to the bottom under 1024px, with its spacer
-  CartLineRow.tsx      one line: photo, name (links to the item on the cart's day), "₹1,200 each · Order 2 days ahead" + Price updated,
+  CartLineRow.tsx      one line: photo, name (links to the item on the cart's day), "1.5 kg · ₹720 each · Order 2 days ahead" + Price updated,
                        Remove, stepper 1–99, total; the too-soon flag under it
   TooSoonFlag.tsx      "Needs 3 days’ notice — too soon for Saturday" + Remove / Move to Tuesday (or Choose another day)
   DayCard.tsx          the o500 card — Pickup day / Delivery day, "Saturday, 10 Oct", "Order by Thursday 6pm · 3 orders left that day", Change day
@@ -117,9 +117,11 @@ notice", shared with the menu cards), `store.shell.items*`, `store.item.decrease
   a cart with lines shows them at once and holds the day card (a warm Skeleton) and Continue until the first check answers — if it
   fails, Try again. `today` is the window's, else worked out in the browser from the bakery's timezone. The saved customer
   (`bakery.customer`) is read in a lazy `useState`.
-- **Revalidate on mount.** `checkCart(ids)` returns each line as the menu has it (orderable, price, notice) and the booking window
+- **Revalidate on mount.** `checkCart(ids)` returns each line as the menu has it (orderable, price, sold by weight, notice) and the booking window
   (`BookingWindow`: today … today + orderAheadDays, planned or from the defaults, with orders taken). `reconcile` removes lines that can't be
-  ordered online any more (one warm notice names them), refreshes prices ("Price updated"), names, photos and notices. There is no stock: no
+  ordered online any more (one warm notice names them), refreshes prices ("Price updated"), names, photos and notices. A by-weight line
+  is priced at its size (`sizedPrice`); an older line of a PER_KG item without one becomes one piece of its quantity in kilos, and a line
+  whose item stopped being sold by weight drops its size. There is no stock: no
   quantity caps, no sold-out lines. A line arriving from another tab triggers another check. Offline, the cart stays and Place order checks again.
 - **The day** (`viewCartDay`). The card shows "Order by Thursday 6pm · 3 orders left that day" — the earliest deadline over the lines that
   fit, orders left only when ≤ 3 — or "Too soon for every item". When the day itself can't take an order (paused, closed, past its own

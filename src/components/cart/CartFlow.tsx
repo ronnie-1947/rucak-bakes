@@ -202,6 +202,7 @@ export function CartFlow({ copy }: CartFlowProps) {
         slug: line.slug,
         name: line.name,
         pricePaise: line.priceSnapshot,
+        grams: line.grams,
         imageId: line.imageId,
         date,
         max: MAX_LINE_QTY,
@@ -320,7 +321,7 @@ export function CartFlow({ copy }: CartFlowProps) {
       phone: details.phone,
       address: type === "DELIVERY" ? details.address : null,
       note: note.trim() || null,
-      items: cart.items.map((line) => ({ menuItemId: line.menuItemId, quantity: line.qty })),
+      items: cart.items.map((line) => ({ menuItemId: line.menuItemId, quantity: line.qty, grams: line.grams })),
     }
     setProblem(null)
     startTransition(async () => {

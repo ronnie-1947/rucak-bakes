@@ -47,19 +47,22 @@ CategoryFilter { label: string; filters: { key; label; count }[]; cards: { id; k
 ```json
 "menu": { "title", "filterLabel", "all", "other", "onCounter": "On the counter today",
           "add": "Add to cart", "addLabel": "Add {name} to cart for {day}", "forDay": "For {day}",
-          "call": "Call to order", "callLabel": "Call to order {name}" }
+          "call": "Call to order", "callLabel": "Call to order {name}",
+          "quantity": "Select quantity", "quantityLabel": "Select quantity for {name}" }
 ```
 
-Also `store.notice` (the chip), `store.item` (prices, units, "from {price}", the stepper's `decrease` / `increase`), `store.itemPage.inCart`
-(the status line) and `store.days`.
+Also `store.notice` (the chip), `store.item` (prices, units, "from {price}"), `store.itemPage` (`inCart` /
+`inCartSized` — the status line), `store.cart` (`remove`, `removeLabel`) and `store.days`.
 
 ## How it works
 
 - **Card** — `ItemCard` with the notice chip on the photo (white), name, price (a call-only item reads "from ₹1,500"), a green "On the
   counter today" tag when it's one of today's counter-items (on or sold out), and a full-width 44px control (`menuAction`):
-  - **Add to cart** when `dates` has one — the booking window's dates the item can be ordered for, judged by the deadline rule in
-    `loadLanding`. It adds for the cart's day when the item can be had then, else for the earliest date, then becomes a stepper with
-    "For Wednesday" ([item-card](../../../../components/item-card/)). The item page still lets the customer pick any date.
+  - **Size chips and Add to cart** when `dates` has one — the booking window's dates the item can be ordered for, judged by the
+    deadline rule in `loadLanding`. The chips are the usual sizes — 0.5, 1, 1.5, 2 kg for an item sold by weight, 1–4 otherwise (every
+    size is on the item page), the smallest picked to start so one tap adds it.
+    It adds for the cart's day when the item can be had then, else for the earliest date; then the chips edit the cart, with "For
+    Wednesday" and Remove under them ([item-card](../../../../components/item-card/)). The item page still lets the customer pick any date.
   - **Call to order** otherwise — call only, or no date open (fully booked, too soon, paused): `tel:` with the phone glyph, o700 border.
     No public phone → no button; the card still opens its page, which says why.
   - Tapping anywhere else on the card opens `/menu/[slug]`.

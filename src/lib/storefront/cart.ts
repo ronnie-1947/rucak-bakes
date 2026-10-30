@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/db"
 import type { CartCheck } from "@/lib/cart/check"
+import { soldByWeight } from "@/lib/menu/sizes"
+import { asPriceUnit } from "@/lib/menu/units"
 import { loadBookingWindow } from "@/lib/orders/booking"
 import { getSettings } from "@/lib/settings/row"
 
@@ -10,8 +12,9 @@ import { getSettings } from "@/lib/settings/row"
  */
 
 /**
- * The cart's lines as the menu has them now — orderable or not, the price, the notice — and the booking window to judge the
- * cart's day by. An inactive, archived or call-only item can't be ordered online: placeOrder refuses it.
+ * The cart's lines as the menu has them now — orderable or not, the price, whether it's sold by weight, the notice — and the
+ * booking window to judge the cart's day by. An inactive, archived or call-only item can't be ordered online: placeOrder
+ * refuses it.
  */
 export async function checkLines(ids: string[]): Promise<CartCheck> {
   const settings = await getSettings()
@@ -24,6 +27,7 @@ export async function checkLines(ids: string[]): Promise<CartCheck> {
         name: true,
         images: true,
         basePricePaise: true,
+        priceUnit: true,
         isActive: true,
         archivedAt: true,
         orderable: true,
@@ -46,6 +50,7 @@ export async function checkLines(ids: string[]): Promise<CartCheck> {
           image: item.images[0] ?? null,
           orderable: item.isActive && !item.archivedAt && item.orderable,
           pricePaise: item.basePricePaise,
+          byWeight: soldByWeight(asPriceUnit(item.priceUnit)),
           noticeDays: item.noticeDays,
         },
       ]

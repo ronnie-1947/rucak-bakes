@@ -1,6 +1,8 @@
 import { FulfilmentType, OrderSource, OrderStatus } from "@/generated/prisma/client"
 import { addDays, fromDbDate, type IsoDate, todayIn, toDbDate } from "@/lib/dates"
 import { OrderError, prisma, readCommitted } from "@/lib/db"
+import { isWeightChoice, sizedName, sizedPrice, soldByWeight } from "@/lib/menu/sizes"
+import { asPriceUnit } from "@/lib/menu/units"
 import { loadBookingWindow, newMenuDay } from "@/lib/orders/booking"
 import { deadlineFor, earliestDate, longestNotice, pastCutoff } from "@/lib/orders/deadline"
 import { LIVE_STATUSES, VERIFIED_STATUSES } from "@/lib/orders/status"
@@ -19,9 +21,10 @@ export type PlaceOrderInput = {
   note: string | null
   /**
    * One line per menu item — the action merges duplicates. A customer's price is never accepted from the client:
-   * `unitPricePaise` is read only for a staff order, and null there means the menu price.
+   * `unitPricePaise` is read only for a staff order, and null there means the menu price. `grams` is a PER_KG item's size —
+   * required on a customer's line for one, refused on any other; staff may leave it out and price the piece themselves.
    */
-  items: { menuItemId: string; quantity: number; unitPricePaise?: number | null }[]
+  items: { menuItemId: string; quantity: number; grams?: number; unitPricePaise?: number | null }[]
 }
 
 /**
@@ -141,10 +144,20 @@ export async function placeOrder(
     if (date > addDays(today, settings.orderAheadDays)) throw new OrderError("DAY_CLOSED", { date })
 
     // 4. Every line a menu item still on the menu — orderable online, unless staff take it (call only is what phone orders
-    //    are for). Priced SERVER-SIDE from the menu: the cart's prices are display-only. Staff may set their own.
+    //    are for). Priced SERVER-SIDE from the menu: the cart's prices are display-only. Staff may set their own. A PER_KG
+    //    line is pieces of one of the item page's sizes, each priced at its weight; the size goes into the name snapshot.
     const items = await tx.menuItem.findMany({
       where: { id: { in: input.items.map((item) => item.menuItemId) } },
-      select: { id: true, name: true, basePricePaise: true, isActive: true, archivedAt: true, orderable: true, noticeDays: true },
+      select: {
+        id: true,
+        name: true,
+        basePricePaise: true,
+        priceUnit: true,
+        isActive: true,
+        archivedAt: true,
+        orderable: true,
+        noticeDays: true,
+      },
     })
     const byId = new Map(items.map((item) => [item.id, item]))
     const lines = input.items.map((item) => {
@@ -152,13 +165,21 @@ export async function placeOrder(
       if (!row || !row.isActive || row.archivedAt || (!row.orderable && !staff)) {
         throw new OrderError("ITEM_UNAVAILABLE", { menuItemId: item.menuItemId, name: row?.name ?? null })
       }
-      const unitPricePaise = staff ? (item.unitPricePaise ?? row.basePricePaise) : row.basePricePaise
+      const byWeight = soldByWeight(asPriceUnit(row.priceUnit))
+      const sized = byWeight && item.grams !== undefined && isWeightChoice(item.grams)
+      if (item.grams !== undefined ? !sized : byWeight && !staff) {
+        throw new OrderError("ITEM_UNAVAILABLE", { menuItemId: item.menuItemId, name: row.name })
+      }
+      const grams = sized ? (item.grams as number) : null
+      const menuPricePaise = grams === null ? row.basePricePaise : sizedPrice(row.basePricePaise, grams)
+      const unitPricePaise = staff ? (item.unitPricePaise ?? menuPricePaise) : menuPricePaise
       return {
         menuItemId: row.id,
-        name: row.name,
+        name: sizedName(row.name, grams),
         noticeDays: row.noticeDays,
         unitPricePaise,
-        menuPricePaise: unitPricePaise === row.basePricePaise ? null : row.basePricePaise,
+        menuPricePaise: unitPricePaise === menuPricePaise ? null : menuPricePaise,
+        weightGrams: grams,
         quantity: item.quantity,
         lineTotalPaise: unitPricePaise * item.quantity,
       }
@@ -247,6 +268,7 @@ export async function placeOrder(
             name: line.name,
             unitPricePaise: line.unitPricePaise,
             menuPricePaise: line.menuPricePaise,
+            weightGrams: line.weightGrams,
             quantity: line.quantity,
             lineTotalPaise: line.lineTotalPaise,
           })),

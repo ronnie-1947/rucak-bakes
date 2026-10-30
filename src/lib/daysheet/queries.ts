@@ -39,7 +39,10 @@ export type BakeRow = {
   baked: boolean
 }
 
-/** A Made to order row — one line of an item that bakes separately (`MenuItem.bakeSeparately`), with its order's note. */
+/**
+ * A Made to order row — one line of an item that bakes separately (`MenuItem.bakeSeparately`), or of a size picked by weight
+ * (`OrderItem.weightGrams` — "Chocolate cake · 1.5 kg"), with its order's note.
+ */
 export type MadeRow = {
   /** The OrderItem — what its tick writes. */
   lineId: string
@@ -150,7 +153,7 @@ export type DaySheetData = {
   /** Earliest and latest chosen pickup time among verified pickups — "7:30am". */
   firstTime: string | null
   lastTime: string | null
-  /** For orders, by category — items that bake separately are under `made` instead. */
+  /** For orders, by category — items that bake separately, and lines ordered by weight, are under `made` instead. */
   bake: BakeGroup[]
   made: MadeRow[]
   counter: CounterRow[]
@@ -238,7 +241,10 @@ export async function loadDaySheet(searchParams: Record<string, string | string[
         customerPhone: true,
         customerNote: true,
         totalPaise: true,
-        items: { select: { id: true, menuItemId: true, name: true, quantity: true, bakedAt: true }, orderBy: { lineTotalPaise: "desc" } },
+        items: {
+          select: { id: true, menuItemId: true, name: true, quantity: true, weightGrams: true, bakedAt: true },
+          orderBy: { lineTotalPaise: "desc" },
+        },
         customer: { select: { isTrusted: true } },
       },
     }),
@@ -251,6 +257,8 @@ export async function loadDaySheet(searchParams: Record<string, string | string[
   ])
 
   const separate = new Set(catalogue.filter((item) => item.bakeSeparately).map((item) => item.id))
+  // A line sized by weight is its own bake whatever the item says — a 1 kg and a 2 kg cake never add up to "2".
+  const madeAlone = (line: { menuItemId: string; weightGrams: number | null }) => separate.has(line.menuItemId) || line.weightGrams !== null
   const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? name
 
   // For orders: verified and pending kept apart from the first line. A row is baked when every verified line of it is.
@@ -274,7 +282,7 @@ export async function loadDaySheet(searchParams: Record<string, string | string[
     const verified = isVerified(order.status)
     for (const line of order.items) {
       const row = rows.get(line.menuItemId)
-      if (!row) continue
+      if (!row || madeAlone(line)) continue
       if (verified) row.verified += line.quantity
       else row.pending += line.quantity
       if (verified && !line.bakedAt) unbaked.add(row.menuItemId)
@@ -284,19 +292,22 @@ export async function loadDaySheet(searchParams: Record<string, string | string[
     }
   }
   for (const row of rows.values()) row.baked = row.verified > 0 && !unbaked.has(row.menuItemId)
+  // An item whose every line was sized by weight has nothing left to total.
+  for (const [id, row] of rows) if (row.verified === 0 && row.pending === 0) rows.delete(id)
 
-  // Made to order: each line of an item that bakes separately, with its order's note, in pickup order.
+  // Made to order: each line of an item that bakes separately or was sized by weight, with its order's note, in pickup order.
   const sizeOf = new Map(catalogue.map((item) => [item.id, item.sizeNote]))
   const made: MadeRow[] = [...orders]
     .sort((a, b) => (a.pickupTime ?? "99:99").localeCompare(b.pickupTime ?? "99:99"))
     .flatMap((order) =>
       order.items
-        .filter((line) => separate.has(line.menuItemId))
+        .filter(madeAlone)
         .map((line) => ({
           lineId: line.id,
           quantity: line.quantity,
           name: line.name,
-          sizeNote: sizeOf.get(line.menuItemId) ?? null,
+          // A sized line's name already says its weight.
+          sizeNote: line.weightGrams === null ? (sizeOf.get(line.menuItemId) ?? null) : null,
           customer: order.customerName,
           code: order.code,
           note: order.customerNote,

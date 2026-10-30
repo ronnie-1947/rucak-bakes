@@ -43,6 +43,7 @@ export function ItemDetail({ data, dict }: ItemDetailProps) {
     name: item.name,
     image: item.photos[0]?.id ?? null,
     pricePaise: item.basePricePaise,
+    priceUnit: item.priceUnit,
     noticeDays: item.noticeDays,
   }
   // All the client island gets of `dict.store`.

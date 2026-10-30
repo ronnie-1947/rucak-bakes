@@ -16,7 +16,7 @@ type ItemCardProps = {
   muted?: boolean
   /** A green fact under the price — "On the counter today". */
   tag?: string | null
-  /** The full-width control at the foot — Add to cart (then its stepper) or Call to order. Omitted: a card that only links. */
+  /** The full-width control at the foot — the size chips and Add to cart, or Call to order. Omitted: a card that only links. */
   action?: CardAction
   dict: Dict["store"]["item"]
   className?: string

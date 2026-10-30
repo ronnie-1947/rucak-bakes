@@ -151,7 +151,8 @@ src/
                         staff-order.ts (staff order schema, warnings, missing step — client-safe), new-order.ts (the staff form's read model)
     menu/               queries.ts (library read model), filters.ts (URL state), changes.ts (writes + undo snapshots),
                         item.ts (form read model), form.ts (form values + rules, client-safe), save.ts (form writes),
-                        copy.ts, units.ts, allergens.ts, about.ts (the About text's marks → blocks, client-safe)
+                        copy.ts, units.ts, sizes.ts (Select size: 0.5–5 kg for PER_KG, sizedPrice, formatWeight — client-safe),
+                        allergens.ts, about.ts (the About text's marks → blocks, client-safe)
     calendar/           week.ts / day.ts (read models), writes.ts (patchDay, applyToWeek, copyWeek, saveDay),
                         form.ts (DayPlan + rules, client-safe), cutoffs.ts, copy-plan.ts (planWeekCopy), routes.ts
     customers/          queries.ts (list + trigram search), detail.ts (record read model), changes.ts (flags, rename, note),

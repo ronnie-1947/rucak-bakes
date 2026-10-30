@@ -56,7 +56,7 @@ StoreShell data=StoreShellData dict=dict.store
 | `@/hooks/useStoreInfo` | `StoreInfoContext` — the cart reads it with `useStoreInfo` |
 | `@/lib/dates` | `todayIn` — the provider's today, from the bakery's timezone |
 | `@/lib/storefront/words` | `relativeDay` — "today" / "tomorrow" / weekday in the dialog |
-| `@/lib/cart/cart` | pure cart model: `withQuantity`, `conflictsWith`, `isStale`, `cartCount`, `cartSubtotal`, `quantityOf`, `AddTarget` |
+| `@/lib/cart/cart` | pure cart model: `withQuantity`, `conflictsWith`, `isStale`, `cartCount`, `cartSubtotal`, `quantityOf`, `lineOf`, `AddTarget` |
 | `@/lib/cart/store` | the external store: `subscribeCart`, `getCart`, `getServerCart`, `writeCart` |
 | `@/hooks/useCart` | `CartContext`, `CartApi` |
 | `@/hooks/usePageTitle` | `PageTitleContext`, `usePageTitleState` (the page side calls `usePageTitle`, and `usePageBack` to take Back over) |
@@ -92,8 +92,9 @@ ServiceWorker    {}
 
 ## How it works
 
-- **The cart** lives in `localStorage['bakery.cart']` as `{ items: [{ menuItemId, slug, name, priceSnapshot, qty, imageId }],
-  fulfilmentDate, updatedAt }` (runbook 6.3). `src/lib/cart/store.ts` keeps one parsed snapshot and re-reads on the `storage` event, so
+- **The cart** lives in `localStorage['bakery.cart']` as `{ items: [{ menuItemId, slug, name, priceSnapshot, qty, grams?, imageId }],
+  fulfilmentDate, updatedAt }` (runbook 6.3). `grams` is a PER_KG item's size (500 … 5000) — `qty` pieces of it, `priceSnapshot` one
+  piece. `src/lib/cart/store.ts` keeps one parsed snapshot and re-reads on the `storage` event, so
   two tabs agree. The server (and the first client render) sees an empty cart; the real one appears right after hydration — the badge
   and bar come in then, never mismatched. Storage that throws (private mode) leaves a page-lifetime cart.
 - **Stale carts** — on mount the provider drops a cart whose day is before `today` (bakery-local — worked out in the browser from the timezone, since the shell is prerendered) or that hasn't

@@ -22,12 +22,12 @@ async function isPast(date: IsoDate): Promise<boolean> {
 }
 
 /**
- * A For orders row: `OrderItem.bakedAt` on every verified line of the item that day. A line that arrives later starts
- * unbaked, so the row un-ticks — the new units still need baking.
+ * A For orders row: `OrderItem.bakedAt` on every verified line of the item that day — not the lines sized by weight, which
+ * are Made to order rows. A line that arrives later starts unbaked, so the row un-ticks — the new units still need baking.
  */
 export async function setItemBaked(date: IsoDate, menuItemId: string, done: boolean): Promise<TickOutcome> {
   if (await isPast(date)) return PAST
-  const where = { menuItemId, order: { fulfilmentDate: toDbDate(date), status: { in: [...VERIFIED_STATUSES] } } }
+  const where = { menuItemId, weightGrams: null, order: { fulfilmentDate: toDbDate(date), status: { in: [...VERIFIED_STATUSES] } } }
   if ((await prisma.orderItem.count({ where })) === 0) return STALE
   await prisma.orderItem.updateMany({ where: { ...where, bakedAt: done ? null : { not: null } }, data: { bakedAt: done ? new Date() : null } })
   return { ok: true }

@@ -22,8 +22,8 @@ const OTHER = "__other"
 
 /**
  * "Everything we bake" (§10R): every active item, in category order, under category chips. Each card carries its notice
- * chip, "On the counter today" when it is, and Add to cart (straight into the cart, for the earliest date it can be had)
- * or Call to order for a call-only item. Nothing fades — every item can be ordered ahead or called about.
+ * chip, "On the counter today" when it is, and size chips with Add to cart (straight into the cart, for the earliest date it
+ * can be had) or Call to order for a call-only item. Nothing fades — every item can be ordered ahead or called about.
  */
 export function Menu({ catalogue, categories, phone, today, dict, store }: MenuProps) {
   if (catalogue.length === 0) return null

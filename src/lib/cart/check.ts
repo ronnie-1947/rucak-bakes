@@ -9,6 +9,7 @@ import {
   ordersLeft,
   pastCutoff,
 } from "@/lib/orders/deadline"
+import { nearestWeight, sizedPrice } from "@/lib/menu/sizes"
 import type { Cart, CartLine } from "./cart"
 
 /**
@@ -27,8 +28,10 @@ export type LineCheck = {
   image: string | null
   /** Active, not archived and orderable online — placeOrder takes it. */
   orderable: boolean
-  /** The menu price — display only. */
+  /** The menu price — display only. Per kg for a by-weight item. */
   pricePaise: number
+  /** PER_KG — its lines carry a size (lib/menu/sizes.ts). */
+  byWeight: boolean
   noticeDays: number
 }
 
@@ -54,7 +57,11 @@ export function lineNotice(line: CartLine): number {
   return line.noticeDays ?? 0
 }
 
-/** The cart as `check` says it stands: lines that can't be ordered removed; prices, names, photos and notices refreshed. */
+/**
+ * The cart as `check` says it stands: lines that can't be ordered removed; prices, names, photos and notices refreshed. A
+ * line's size follows the item's unit: an item now sold by weight turns an older line's quantity into kilos (2 → one 2 kg
+ * piece), and one no longer sold by weight drops the size.
+ */
 export function reconcile(cart: Cart, check: CartCheck, now: number): Reconciled {
   const byId = new Map(check.lines.map((line) => [line.menuItemId, line]))
   const notes: Record<string, LineNote> = {}
@@ -66,15 +73,19 @@ export function reconcile(cart: Cart, check: CartCheck, now: number): Reconciled
       removed.push(fresh?.name ?? line.name)
       return []
     }
-    if (fresh.pricePaise !== line.priceSnapshot) notes[line.menuItemId] = "price"
+    const grams = !fresh.byWeight ? undefined : (line.grams ?? nearestWeight(line.qty * 1000))
+    const qty = fresh.byWeight && line.grams === undefined ? 1 : line.qty
+    const price = grams === undefined ? fresh.pricePaise : sizedPrice(fresh.pricePaise, grams)
+    if (price !== line.priceSnapshot) notes[line.menuItemId] = "price"
     return [
       {
         menuItemId: line.menuItemId,
         slug: fresh.slug,
         name: fresh.name,
-        priceSnapshot: fresh.pricePaise,
+        priceSnapshot: price,
         imageId: fresh.image,
-        qty: line.qty,
+        qty,
+        ...(grams === undefined ? {} : { grams }),
         noticeDays: fresh.noticeDays,
       },
     ]
@@ -90,6 +101,7 @@ function sameLine(a: CartLine, b: CartLine | undefined): boolean {
     b &&
     a.menuItemId === b.menuItemId &&
     a.qty === b.qty &&
+    a.grams === b.grams &&
     a.priceSnapshot === b.priceSnapshot &&
     a.name === b.name &&
     a.slug === b.slug &&

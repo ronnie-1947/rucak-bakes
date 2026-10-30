@@ -213,9 +213,10 @@ model OrderItem {
   menuItemId     String
   menuItem       MenuItem  @relation(fields: [menuItemId], references: [id])
   name           String // SNAPSHOT
-  unitPricePaise Int // SNAPSHOT
+  unitPricePaise Int // SNAPSHOT — per piece; a PER_KG line's piece priced at its weight
   menuPricePaise Int? // the menu price when staff set a custom one; null = unitPricePaise IS the menu price
   quantity       Int
+  weightGrams    Int? // a PER_KG line: each piece's size (500, 1000 … 5000); the name snapshot carries it too ("… · 1.5 kg")
   lineTotalPaise Int
   bakedAt        DateTime? // the day sheet's Baked tick for ordered lines (counter-items tick MenuDayItem.bakedAt)
 

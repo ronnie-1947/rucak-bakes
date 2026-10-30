@@ -2,6 +2,7 @@ import { type AddTarget, MAX_LINE_QTY } from "@/lib/cart/cart"
 import { formatClock } from "@/lib/calendar/cutoffs"
 import { formatDayLabel, formatLongDayLabel, formatShortWeekday, formatTimeIn, formatWeekday, type IsoDate, isoDateInZone } from "@/lib/dates"
 import type { Dict } from "@/lib/i18n"
+import type { PriceUnit } from "@/lib/menu/units"
 import { type Availability, type BookingWindow, dayAvailability, deadlineFor, FEW_ORDERS_LEFT, ordersLeft } from "@/lib/orders/deadline"
 import { noticeLength, relativeDay } from "@/lib/storefront/words"
 import { fill } from "@/lib/template"
@@ -49,11 +50,22 @@ export type OrderCopy = {
   addPlain: string
   viewCart: string
   inCart: string
-  decrease: string
-  increase: string
+  inCartSized: string
+  pickWeight: string
+  pickCount: string
+  sizeLabel: string
 }
 
-export type ItemIdentity = { id: string; slug: string; name: string; image: string | null; pricePaise: number; noticeDays: number }
+/** `pricePaise` is per kg for a PER_KG item — the size picked prices the piece (lib/menu/sizes.ts). */
+export type ItemIdentity = {
+  id: string
+  slug: string
+  name: string
+  image: string | null
+  pricePaise: number
+  priceUnit: PriceUnit
+  noticeDays: number
+}
 
 export type CutoffDefault = { time: string; daysBefore: number }
 
@@ -144,7 +156,9 @@ export function orderCopy(dict: StoreCopy): OrderCopy {
     addPlain: d.addPlain,
     viewCart: d.viewCart,
     inCart: d.inCart,
-    decrease: dict.item.decrease,
-    increase: dict.item.increase,
+    inCartSized: d.inCartSized,
+    pickWeight: d.pickWeight,
+    pickCount: d.pickCount,
+    sizeLabel: d.sizeLabel,
   }
 }

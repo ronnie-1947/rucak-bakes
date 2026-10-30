@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { type IsoDate, isIsoDate } from "@/lib/dates"
+import { MAX_WEIGHT_GRAMS, WEIGHT_STEP_GRAMS } from "@/lib/menu/sizes"
 
 /**
  * The customer's cart, kept in `localStorage['bakery.cart']` (dev-docs/implementation.md 6.3). Client-safe, pure.
@@ -20,8 +21,11 @@ const lineSchema = z.object({
   menuItemId: z.string().min(1),
   slug: z.string().min(1),
   name: z.string().min(1),
+  /** One piece — for a by-weight line, one piece of `grams`. */
   priceSnapshot: z.number().int().nonnegative(),
   qty: z.number().int().min(1).max(MAX_LINE_QTY),
+  /** A PER_KG item's size, picked on the item page (lib/menu/sizes.ts); `qty` pieces of it. Absent for everything else. */
+  grams: z.number().int().min(WEIGHT_STEP_GRAMS).max(MAX_WEIGHT_GRAMS).multipleOf(WEIGHT_STEP_GRAMS).optional(),
   imageId: z.string().nullable(),
   /** The item's notice when it was added, refreshed by the live check — the deadline rule needs it. Older carts lack it. */
   noticeDays: z.number().int().min(0).max(30).optional(),
@@ -36,12 +40,16 @@ const cartSchema = z.object({
 export type CartLine = z.infer<typeof lineSchema>
 export type Cart = z.infer<typeof cartSchema>
 
-/** What an Add button puts in the cart. `max` caps the quantity (MAX_LINE_QTY unless the screen says less). */
+/**
+ * What an Add button puts in the cart. `max` caps the quantity (MAX_LINE_QTY unless the screen says less). A by-weight item
+ * carries its size in `grams`, and `pricePaise` is one piece of that size.
+ */
 export type AddTarget = {
   menuItemId: string
   slug: string
   name: string
   pricePaise: number
+  grams?: number
   imageId: string | null
   date: IsoDate
   max: number
@@ -69,9 +77,14 @@ export function conflictsWith(cart: Cart | null, date: IsoDate): boolean {
   return Boolean(cart && cart.items.length > 0 && cart.fulfilmentDate !== date)
 }
 
+/** The item's line in the cart for `date` — null when the cart is for another day or hasn't got it. */
+export function lineOf(cart: Cart | null, menuItemId: string, date: IsoDate): CartLine | null {
+  if (!cart || cart.fulfilmentDate !== date) return null
+  return cart.items.find((line) => line.menuItemId === menuItemId) ?? null
+}
+
 export function quantityOf(cart: Cart | null, menuItemId: string, date: IsoDate): number {
-  if (!cart || cart.fulfilmentDate !== date) return 0
-  return cart.items.find((line) => line.menuItemId === menuItemId)?.qty ?? 0
+  return lineOf(cart, menuItemId, date)?.qty ?? 0
 }
 
 export function cartCount(cart: Cart | null): number {
@@ -85,7 +98,7 @@ export function cartSubtotal(cart: Cart | null): number {
 
 /**
  * The cart with `target` set to `qty` (0 removes the line). A cart for another day is replaced, so call
- * this only once the customer has agreed to that. Re-adding refreshes the line's name and price.
+ * this only once the customer has agreed to that. Re-adding refreshes the line's name, price and size.
  */
 export function withQuantity(cart: Cart | null, target: AddTarget, qty: number, now: number): Cart | null {
   const base = cart && cart.fulfilmentDate === target.date ? cart.items : []
@@ -97,6 +110,7 @@ export function withQuantity(cart: Cart | null, target: AddTarget, qty: number, 
     priceSnapshot: target.pricePaise,
     qty: clamped,
     imageId: target.imageId,
+    ...(target.grams === undefined ? {} : { grams: target.grams }),
     ...(target.noticeDays === undefined ? {} : { noticeDays: target.noticeDays }),
   }
   const exists = base.some((existing) => existing.menuItemId === target.menuItemId)

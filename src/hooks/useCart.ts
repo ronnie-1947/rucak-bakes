@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext } from "react"
-import type { AddTarget, Cart } from "@/lib/cart/cart"
+import type { AddTarget, Cart, CartLine } from "@/lib/cart/cart"
 
 export type CartApi = {
   /** Null while empty — and on the server and the first client render, before localStorage is read. */
@@ -11,6 +11,8 @@ export type CartApi = {
   subtotalPaise: number
   /** How many of an item the cart holds for `date` — 0 when the cart is for another day. */
   quantityOf: (menuItemId: string, date: string) => number
+  /** The item's line for `date` — its size, for a by-weight item. Null when the cart is for another day or hasn't got it. */
+  lineOf: (menuItemId: string, date: string) => CartLine | null
   /**
    * Set an item's quantity for its day (0 removes it). When the cart holds another day's items, this asks
    * "Switch to Saturday?" first and only goes ahead on yes.

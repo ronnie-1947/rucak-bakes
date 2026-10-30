@@ -1751,6 +1751,10 @@
       "addPlain": "Add to cart",
       "viewCart": "View cart",
       "inCart": "{count} in your cart for {day}",
+      "inCartSized": "{size} in your cart for {day}",
+      "pickWeight": "Select size",
+      "pickCount": "Select size",
+      "sizeLabel": "Size of {name}",
       "call": "Call {phone}",
       "about": "About",
       "ingredients": "Ingredients",
@@ -1966,7 +1970,9 @@
       "addLabel": "Add {name} to cart for {day}",
       "forDay": "For {day}",
       "call": "Call to order",
-      "callLabel": "Call to order {name}"
+      "callLabel": "Call to order {name}",
+      "quantity": "Select quantity",
+      "quantityLabel": "Select quantity for {name}"
     },
     "visitUs": {
       "title": "Visit us",

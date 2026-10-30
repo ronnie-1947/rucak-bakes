@@ -22,9 +22,15 @@ export const checkoutSchema = z.object({
   phone: z.string().trim().min(1).max(20),
   address: z.string().trim().max(ADDRESS_MAX).nullable(),
   note: z.string().trim().max(NOTE_MAX).nullable(),
-  /** Display prices never travel: the server prices the order. */
+  /** Display prices never travel: the server prices the order. `grams` — a by-weight item's size, checked by placeOrder. */
   items: z
-    .array(z.object({ menuItemId: z.string().min(1).max(40), quantity: z.number().int().min(1).max(MAX_LINE_QTY) }))
+    .array(
+      z.object({
+        menuItemId: z.string().min(1).max(40),
+        quantity: z.number().int().min(1).max(MAX_LINE_QTY),
+        grams: z.number().int().positive().optional(),
+      }),
+    )
     .min(1)
     .max(40),
 })
@@ -72,9 +78,15 @@ export function detailsProblems(values: DetailsValues): DetailsField[] {
   return problems
 }
 
-/** One line per item — two Adds of the same thing become one quantity. */
-export function mergeLines(items: { menuItemId: string; quantity: number }[]): { menuItemId: string; quantity: number }[] {
-  const merged = new Map<string, number>()
-  for (const item of items) merged.set(item.menuItemId, (merged.get(item.menuItemId) ?? 0) + item.quantity)
-  return [...merged].map(([menuItemId, quantity]) => ({ menuItemId, quantity }))
+type CheckoutLine = { menuItemId: string; quantity: number; grams?: number }
+
+/** One line per item and size — two Adds of the same thing become one quantity. */
+export function mergeLines(items: CheckoutLine[]): CheckoutLine[] {
+  const merged = new Map<string, CheckoutLine>()
+  for (const item of items) {
+    const key = `${item.menuItemId}:${item.grams ?? ""}`
+    const seen = merged.get(key)
+    merged.set(key, { ...item, quantity: (seen?.quantity ?? 0) + item.quantity })
+  }
+  return [...merged.values()]
 }

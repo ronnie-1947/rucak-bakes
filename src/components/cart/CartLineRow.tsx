@@ -7,6 +7,7 @@ import { Tag } from "@/components/ui/Tag"
 import { type CartLine, MAX_LINE_QTY } from "@/lib/cart/cart"
 import type { LineNote } from "@/lib/cart/check"
 import type { IsoDate } from "@/lib/dates"
+import { formatWeight } from "@/lib/menu/sizes"
 import { formatPaise } from "@/lib/money"
 import { itemHref } from "@/lib/storefront/routes"
 import { fill } from "@/lib/template"
@@ -27,7 +28,8 @@ export type CartLineRowProps = {
 }
 
 /**
- * One cart line: photo and name (both open the item on the cart's day), price each and notice, Remove, then the stepper over
+ * One cart line: photo and name (both open the item on the cart's day), its size when picked by weight ("1.5 kg"), price each
+ * and notice, Remove, then the stepper over
  * the line total; under it the too-soon flag when the date doesn't give it enough notice. Under 480px the stepper row drops
  * below the name so neither squeezes.
  */
@@ -35,6 +37,7 @@ export function CartLineRow({ line, date, note, notice, flag, onQuantity, copy }
   const c = copy.cart
   const href = itemHref(line.slug, date)
   const removeAria = fill(c.removeLabel, { name: line.name })
+  const size = line.grams ? formatWeight(line.grams) : null
   return (
     <li className="flex flex-col gap-2 py-3">
       <div className="flex gap-3">
@@ -50,7 +53,7 @@ export function CartLineRow({ line, date, note, notice, flag, onQuantity, copy }
               {line.name}
             </Link>
             <span className="flex flex-wrap items-center gap-2 text-small text-muted tabular-nums">
-              <span>{[fill(c.each, { price: formatPaise(line.priceSnapshot) }), notice].filter(Boolean).join(" · ")}</span>
+              <span>{[size, fill(c.each, { price: formatPaise(line.priceSnapshot) }), notice].filter(Boolean).join(" · ")}</span>
               {note ? <Tag tone="warm">{c.notes[note]}</Tag> : null}
             </span>
             <Button variant="quiet" size="sm" onClick={() => onQuantity(0)} aria-label={removeAria} className="-ml-3 self-start">

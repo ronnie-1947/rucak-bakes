@@ -34,7 +34,8 @@ item-detail/
   DateStrip.tsx         "use client" — the booking window's dates as a listbox of 56×64 chips
   DateLegend.tsx        too soon / closed / fully booked swatches — always visible under the strip
   AvailabilityLine.tsx  dot + "Pickup Saturday 10 Oct · order by Friday 6pm" + "Only 2 orders left that day"
-  OrderBar.tsx          "use client" — stepper + Add to cart / View cart; fixed bar on phones
+  OrderBar.tsx          "use client" — size (the smallest to start) + Add to cart / View cart; fixed bar on phones
+  SizeSelect.tsx        "use client" — the size picker: 0.5 kg … 5 kg for a PER_KG item, 1, 2, 3 … otherwise (ui/SelectField lg)
   ItemAbout.tsx         the About text as paragraphs and lists (src/lib/menu/about.ts)
   AboutSpans.tsx        one line's bold / italic runs
   ItemIngredients.tsx   ingredient chips (ui/Tag md)
@@ -65,8 +66,8 @@ ItemDetail data=ItemPageData dict=dict.store      (server — all of it in the s
 │     └─ OrderPanel legend=<DateLegend/>     an orderable item with an open date
 │        ├─ DateStrip                         div[role=listbox] → button[role=option] × 8
 │        ├─ DateLegend · p[role=status] refusal · AvailabilityLine
-│        └─ OrderBar key=date                 Stepper lg + Button block "Add to cart · ₹480"
-│                                             or Stepper (bound to the cart) + ButtonLink "View cart"
+│        └─ OrderBar key=date                 SizeSelect "0.5 kg" / "1" + Button block "Add to cart · ₹500"
+│                                             or SizeSelect (bound to the cart's line) + ButtonLink "View cart"
 │        or CallBlock > CallLink (ui)         call only · no date open (paused included)
 ├─ div grid  About (md:order-1) · Ingredients (3) · Allergens (4) · Details (2)
 ├─ RelatedItems → ItemCard × ≤4              (no button)
@@ -87,10 +88,11 @@ ItemDetail data=ItemPageData dict=dict.store      (server — all of it in the s
 | `@/lib/menu/about` | `parseAbout`, `AboutSpan` |
 | `@/lib/menu/allergens` | `Allergen` |
 | `@/lib/cart/cart` | `AddTarget`, `MAX_LINE_QTY` |
-| `@/hooks/useCart` | `quantityOf`, `setQuantity` (inside the store-shell's CartProvider) |
+| `@/lib/menu/sizes` | `soldByWeight`, `weightChoices`, `sizedPrice`, `formatWeight` — the size picker and its prices |
+| `@/hooks/useCart` | `lineOf`, `setQuantity` (inside the store-shell's CartProvider) |
 | `@/hooks/usePageTitle` | `usePageTitle` (inside the store-shell's PageTitleProvider) |
 | `@/components/item-card/*` | `ItemCard` (related), `priceParts` |
-| `@/components/ui/*` | `CallLink`, `Stepper` (`size="lg"`), `Button` (`size="block"`), `ButtonLink`, `Tag`, `Icon` (`image`) |
+| `@/components/ui/*` | `CallLink`, `SelectField` (`size="lg"`), `Button` (`size="block"`), `ButtonLink`, `Tag`, `Icon` (`image`) |
 | `@/lib/calendar/cutoffs` · `@/lib/dates` | `formatClock`; `formatShortWeekday`, `formatDayLabel`, `formatLongDayLabel`, `formatWeekday`, `formatTimeIn`, `isoDateInZone` |
 | `@/lib/cloudinary` · `@/lib/money` · `@/lib/phone` · `@/lib/template` | `imageUrl`; `formatPaise`; `formatForDisplay`; `fill` |
 
@@ -113,11 +115,12 @@ ItemTitle        { id: string; name: string; description: string }
 ItemPrice        { price: string; unit: string; notice: string | null }
 CounterBlock     { text: string; phone: string | null; callLabel: string; callAria: string }
 CallBlock        { text: string; phone: string | null; callLabel: string }
-OrderPanel       { options: DateOption[]; initial: IsoDate | null; legend: ReactNode; name: string; dict: OrderCopy }
+OrderPanel       { options: DateOption[]; initial: IsoDate | null; legend: ReactNode; name: string; byWeight: boolean; dict: OrderCopy }
 DateStrip        { options: DateOption[]; selected: IsoDate | null; onSelect; onRefuse: (text) => void; label: string }
 DateLegend       { soon: string; closed: string; full: string }
 AvailabilityLine { line: string; fewLeft: string | null }
-OrderBar         { day: DateOption | null; name: string; dict: OrderCopy }
+OrderBar         { day: DateOption | null; name: string; byWeight: boolean; dict: OrderCopy }
+SizeSelect       { byWeight: boolean; value: number | null; max: number; onChange: (value) => void; placeholder: string; label: string }
 TitleSync        { text: string; target: string }
 ItemAbout        { text: string; title: string; className? }
 ItemIngredients  { ingredients: string[]; title: string; className? }
@@ -129,7 +132,8 @@ DateOption       { date; weekday: "Sat"; day: "10"; look: "open" | "soon" | "clo
                    line; fewLeft: string | null; target: AddTarget | null; when }
 ```
 
-The client components get `OrderCopy` (seven strings) and per-date data, never the whole dict.
+The client components get `OrderCopy` (nine strings) and per-date data, never the whole dict. `ItemIdentity` carries the `priceUnit`;
+`pricePaise` is per kg for a PER_KG item.
 
 ## Dictionary contract
 
@@ -142,7 +146,8 @@ The client components get `OrderCopy` (seven strings) and per-date data, never t
     "cutoff": { "sameDay", "dayBefore", "daysBefore" }, "refusal": "{date} · {status}",
     "pickup": "Pickup {date} · order by {deadline}", "byToday": "{time} today", "byDay": "{weekday} {time}", "fewLeft", "fewLeftOne",
     "counter": { "till", "tillNoPhone", "open", "openNoPhone" }, "counterCall", "callOnly", "noDates",
-    "add": "Add to cart · {total}", "addPlain", "viewCart", "inCart", "call": "Call {phone}",
+    "add": "Add to cart · {total}", "addPlain", "viewCart", "inCart", "inCartSized": "{size} in your cart for {day}",
+    "pickWeight": "Select size", "pickCount": "Select size", "sizeLabel": "Size of {name}", "call": "Call {phone}",
     "about", "ingredients", "allergens", "noAllergens", "disclaimer", "details", "size", "notice", "noticeSameDay", "noticeCallOnly",
     "storage", "related"
   },
@@ -150,7 +155,9 @@ The client components get `OrderCopy` (seven strings) and per-date data, never t
 }
 ```
 
-Also reads `store.notice` (the notice words), `store.item` (`units`, `from`, `decrease`, `increase`, the related cards) and `store.days`.
+Also reads `store.notice` (the notice words), `store.item` (`units`, `from`, the related cards) and `store.days`. `pickWeight` and
+`pickCount` are the placeholder for a by-weight and a by-count item — both "Select size" today, kept apart so either can change. The
+bar starts with a size picked, so the placeholder only shows for an older cart line of a PER_KG item without one.
 
 ## How it works
 
@@ -176,12 +183,19 @@ Also reads `store.notice` (the notice words), `store.item` (`units`, `from`, `de
 - **Which date opens** — `?day=` when that date is open, else the first open one.
 - **The line** — "Pickup Saturday 10 Oct · order by Friday 6pm" ("order by 6pm today" when the deadline is today) — the deadline rule
   for this item — plus "Only 2 orders left that day" in the accent when three or fewer remain.
-- **Price** — always the base price: online orders are priced at it (placeOrder); per-day overrides are the counter's. Call only:
+- **Price** — always the base price (per kg for a PER_KG item — the size picked prices the piece): online orders are priced at it
+  (placeOrder); per-day overrides are the counter's. Call only:
   "from ₹1,500". The notice pill: "Needs 1 day’s notice" / "Needs n days’ notice" / "Same day"; none for a call-only item.
-- **Add to cart** — pick a quantity (1…99, the cart's cap), then "Add to cart · ₹480". Once the cart holds the item for that date, the
-  stepper edits the cart (0 takes it out) and the button becomes View cart, which takes focus; a status line tells screen readers "2 in
-  your cart for Saturday". Adding for a date other than the cart's goes through CartProvider's "Switch to …?" dialog. The cart line
-  keeps the item's notice, for the cart's own deadline check.
+- **Size, then Add to cart** — the bar's select starts on the smallest size (`defaultSize`: 0.5 kg, or 1), so Add to cart works at once
+  ([src/lib/menu/sizes.ts](../../lib/menu/sizes.ts)):
+  - **PER_KG** — 0.5 kg, 1 kg, 1.5 kg … 5 kg. The piece is priced at its weight (₹480 per kg → 1.5 kg is ₹720) and goes in the cart as
+    one piece with `grams`; placeOrder prices it again on the server and snapshots the line as "Chocolate cake · 1.5 kg".
+  - **Each, per box, per slice** — 1, 2, 3 … 99 (the cart's cap): the count, at the base price.
+
+  Then "Add to cart · ₹720". Once the cart holds the item for that date, the select edits the cart's line (its size, or its count) and the
+  button becomes View cart, which takes focus; the cart page takes it out. A status line tells screen readers "2 in your cart for
+  Saturday" / "1.5 kg in your cart for Saturday". Adding for a date other than the cart's goes through CartProvider's "Switch to …?"
+  dialog. The cart line keeps the item's notice, for the cart's own deadline check.
 - **Call instead** — a call-only item (`orderable` off): no pill, strip or bar — "We make this to order — call us to talk it through."
   and a 48px Call. No date open (every one too soon, closed or booked, or ordering paused): "No dates open right now — call us and we’ll
   see what we can do." and Call. Without a public phone, the line alone.
@@ -199,14 +213,14 @@ Also reads `store.notice` (the notice words), `store.item` (`units`, `from`, `de
 - **Allergens** always render: chips, or "No allergens declared.", then the kitchen disclaimer.
 - **Related** — up to four other active items: orderable ones first, then the same category, then the menu's order.
 - Server: `ItemDetail`, `ItemTitle`, `ItemPrice`, `CounterBlock`, `CallBlock`, `DateLegend`, `AvailabilityLine`, `GalleryDots`, the info
-  sections, `RelatedItems`. Client: `TitleSync`, `ItemGallery`, `GalleryRail`, `OrderPanel`, `DateStrip`, `OrderBar`.
+  sections, `RelatedItems`. Client: `TitleSync`, `ItemGallery`, `GalleryRail`, `OrderPanel`, `DateStrip`, `OrderBar`, `SizeSelect`.
 
 ## Responsive behavior
 
 | Width | Effect |
 |---|---|
 | base (320px+) | one column; gallery full-bleed under the header, only its bottom corners rounded, dots; the date strip scrolls and bleeds to the screen edge; Add to cart in a fixed bottom bar; info sections stacked About → Ingredients → Allergens → Details; related as a 168px snap row |
-| `xxs` 375px | the Add button carries the total ("Add to cart · ₹480") |
+| `xxs` 375px | the Add button carries the total once a size is picked ("Add to cart · ₹720") |
 | `md` 768px | photo and panel side by side, 1 : 1; the panel sticks under the header; the strip stays inside the panel (scrolls there); Add sits inline; info two across; related cards 200px |
 | `lg` 1024px | 3 : 2 split, 48px gap; thumbnail rail (96px) replaces the dots; related four across |
 | `3xl` 1920px | rail 112px; width follows the shared Container (the design capped at 1280px) |
@@ -225,6 +239,7 @@ Test at `xxxs` (320px) and `3xl` (1920px+) any time you touch this component.
 | About formatting | [src/lib/menu/about.ts](../../lib/menu/about.ts) (and the form's `AboutField`) |
 | Photo sizes / crops | [photos.ts](photos.ts) and the `sizes` in [ItemGallery.tsx](ItemGallery.tsx) |
 | The phone bar | `bar` in [OrderBar.tsx](OrderBar.tsx); the shell's `CartBar` hides on `/menu/*` |
+| The sizes offered, how a size is priced | `weightChoices`, `sizedPrice` in [src/lib/menu/sizes.ts](../../lib/menu/sizes.ts) — shared with the cart and placeOrder |
 
 ## Do not
 

@@ -14,22 +14,26 @@ export function menuChip(item: CatalogueItem, notice: Dict["store"]["notice"]): 
   return { text: noticeChip(item.noticeDays, item.orderable, notice), tone: "plain" }
 }
 
-/** Add to cart's words — the band's, plus the item page's stepper labels and status line. */
+/** Add to cart's words — the band's, plus the item page's status lines and the cart's Remove. */
 export function addCopy(dict: MenuCopy, store: Dict["store"]): AddCopy {
   return {
     add: dict.add,
     addLabel: dict.addLabel,
+    quantity: dict.quantity,
+    quantityLabel: dict.quantityLabel,
     forDay: dict.forDay,
+    remove: store.cart.remove,
+    removeLabel: store.cart.removeLabel,
     inCart: store.itemPage.inCart,
-    decrease: store.item.decrease,
-    increase: store.item.increase,
+    inCartSized: store.itemPage.inCartSized,
     days: store.days,
   }
 }
 
 /**
- * Add to cart while the item can be ordered online for a date in the window; otherwise — call only, or no date open — Call
- * to order, which rings the bakery. No button without a public phone: the card still opens the item page, which says why.
+ * Size chips and Add to cart while the item can be ordered online for a date in the window; otherwise — call only, or no
+ * date open — Call to order, which rings the bakery. No button without a public phone: the card still opens the item page,
+ * which says why.
  */
 export function menuAction(item: CatalogueItem, phone: string | null, today: IsoDate, add: AddCopy, dict: MenuCopy): CardAction | undefined {
   if (item.dates.length > 0) return { look: "add", dates: item.dates, today, copy: add }

@@ -2,7 +2,7 @@
 
 import { type ReactNode, useEffect, useMemo, useState, useSyncExternalStore } from "react"
 import { CartContext, type CartApi } from "@/hooks/useCart"
-import { type AddTarget, cartCount, cartSubtotal, conflictsWith, isStale, quantityOf, withQuantity } from "@/lib/cart/cart"
+import { type AddTarget, cartCount, cartSubtotal, conflictsWith, isStale, lineOf, quantityOf, withQuantity } from "@/lib/cart/cart"
 import { getCart, getServerCart, subscribeCart, writeCart } from "@/lib/cart/store"
 import { todayIn } from "@/lib/dates"
 import type { CartCopy } from "./copy"
@@ -35,6 +35,7 @@ export function CartProvider({ timeZone, dict, children }: CartProviderProps) {
       count: cartCount(cart),
       subtotalPaise: cartSubtotal(cart),
       quantityOf: (menuItemId, date) => quantityOf(cart, menuItemId, date),
+      lineOf: (menuItemId, date) => lineOf(cart, menuItemId, date),
       setQuantity: (target, qty) => {
         const current = getCart()
         if (qty > 0 && conflictsWith(current, target.date)) setPending({ target, qty })

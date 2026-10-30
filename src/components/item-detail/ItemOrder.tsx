@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react"
 import { Button } from "@/components/ui/Button"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { formatClock } from "@/lib/calendar/cutoffs"
+import { soldByWeight } from "@/lib/menu/sizes"
 import type { ItemLive } from "@/lib/storefront/item"
 import { DAY_PARAM, itemApi } from "@/lib/storefront/routes"
 import { fill } from "@/lib/template"
@@ -108,6 +109,7 @@ export function ItemOrder({ item, orderable, defaultCutoff, phone, callLabel, di
           initial={initialDate(options, day)}
           legend={<DateLegend soon={soonText(item.noticeDays, defaultCutoff, dict)} closed={d.dateStatus.closed} full={d.dateStatus.full} />}
           name={item.name}
+          byWeight={soldByWeight(item.priceUnit)}
           dict={orderCopy(dict)}
         />
       ) : orderable ? (

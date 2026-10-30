@@ -2,7 +2,7 @@
 
 The day sheet at `/admin/daysheet` ([page](<../../app/admin/(shell)/daysheet/page.tsx>)) — imported from `Admin-daysheet.dc.html` and
 `Admin-daysheet-print.dc.html` (revised for order ahead, §10R). One fulfilment day as **what to bake** — Notes and allergies, then
-**For orders** (per-item totals from verified orders, then **Made to order** lines for items that bake separately), then the day's
+**For orders** (per-item totals from verified orders, then **Made to order** lines for items that bake separately and for every line ordered by weight — "Chocolate cake · 1.5 kg"), then the day's
 **counter-items** — and **who collects when**. It is read standing, from a metre away: bake quantities are 32px on phones and 40px from the tablet up. View state
 lives in the URL ([src/lib/daysheet/routes.ts](../../lib/daysheet/routes.ts)), domain code in [src/lib/daysheet/](../../lib/daysheet/).
 
